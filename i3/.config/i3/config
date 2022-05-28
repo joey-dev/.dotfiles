@@ -59,10 +59,10 @@ exec --no-startup-id /usr/lib/gsd-xsettings
 # bindsym $mod+d exec --no-startup-id i3-dmenu-desktop
 
 # change focus
-#bindsym $mod+h focus left
-#bindsym $mod+j focus down
-#bindsym $mod+k focus up
-#bindsym $mod+l focus right
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
 
 # alternatively, you can use the cursor keys:
 bindsym $mod+Left focus left
@@ -243,7 +243,7 @@ client.background       #F8F8F2
 # ------------------------------------------
 exec --no-startup-id nm-applet
 
-bindsym $mod+l exec --no-startup-id ~/Scripts/logout
+bindsym $mod+p exec --no-startup-id ~/Scripts/logout
 
 # FKeys
 # Pulse Audio controls
