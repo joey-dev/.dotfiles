@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Manage logout with rofi
+option=`echo -e "Primary\nWork" | rofi -width 600 -dmenu -p monitors`
+case $option in
+    Primary)
+		~/Scripts/Monitor/primary
+        ;;
+    Work)
+		~/Scripts/Monitor/work
+        ;;
+esac
