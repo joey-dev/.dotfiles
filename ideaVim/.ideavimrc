@@ -1,0 +1,12 @@
+set number
+ 
+set hlsearch
+set ignorecase
+set incsearch
+set showmode
+set undolevels=1000	
+set so=100
+set relativenumber
+
+
+nnoremap <ESC> :noh<CR>

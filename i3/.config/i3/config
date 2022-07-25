@@ -239,6 +239,18 @@ client.background       #F8F8F2
 
 
 # ------------------------------------------
+# CUSTOM APPLICATION ASSIGN START
+# ------------------------------------------
+
+#for_window [class="Gnome-terminal"] move to workspace 2
+
+# exec no-startup-id i3-msg 'workspace $ws2; exec gnome-terminal; workspace $ws1'
+
+#exec gnome-terminal
+
+
+
+# ------------------------------------------
 # CUSTOM KEYS START
 # ------------------------------------------
 exec --no-startup-id nm-applet
@@ -255,3 +267,7 @@ bindsym Print exec flameshot gui
 # Brightness
 bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +5%
 bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 5%-
+
+bindsym $mod+Shift+s exec ~/Scripts/i3-swap-display.sh 
+bindsym $mod+Shift+d exec ~/Scripts/i3-move-display.sh 
+
