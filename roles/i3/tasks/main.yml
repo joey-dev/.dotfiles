@@ -1,0 +1,25 @@
+- name: check to see if i3 is already installed
+  command: "i3 --version"
+  ignore_errors: true
+  register: i3_is_installed
+  changed_when: false
+
+- name: install i3
+  block:
+
+  - name: Create i3 config directory
+    file: path={{ i3_config_dir }} state=directory
+
+  - name: Install i3 and deps
+    become: yes
+    package: name={{ item }} state=latest
+    with_items:
+    - i3
+    - i3lock
+    - i3status
+
+  - name: Link i3 files
+    file: src={{item}} dest={{ i3_config_dir }}/{{ item | basename }} state=link
+    with_fileglob:
+    - i3/*
+

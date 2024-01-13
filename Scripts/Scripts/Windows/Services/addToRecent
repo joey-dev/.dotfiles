@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+ROOT="/home/joey/Scripts/Windows/Services/"
+RECENT_FILE="$ROOT.recentList"
+RECENT_FILE2="$ROOT.recentList2"
+
+if [ ! -f "$RECENT_FILE" ]; then
+  touch "$RECENT_FILE"
+fi
+
+name=$1
+value=$2
+escapedName=${name//./\\.}
+
+values=$(grep -v "^$escapedName" $RECENT_FILE)
+
+touch $RECENT_FILE2
+grep -v "^$escapedName" $RECENT_FILE | tee $RECENT_FILE2
+rm $RECENT_FILE
+touch $RECENT_FILE
+
+echo "$name $value" | tee -a "$RECENT_FILE"
+cat "$RECENT_FILE2" | tee -a "$RECENT_FILE"
+
+line_count=$(wc -l $RECENT_FILE | awk '{print $1}')
+
+if [[ $line_count -gt 10 ]]; then
+	sed -i '$d' $RECENT_FILE
+fi
+

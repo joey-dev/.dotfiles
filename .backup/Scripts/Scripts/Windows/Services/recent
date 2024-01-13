@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+ROOT="/home/joey/Scripts/Windows/Services"
+RECENT_FILE="$ROOT/.recentList"
+
+mostRecentPairs=()
+
+while read -r line; do
+	mostRecentPairs+=("$line")
+done < $RECENT_FILE
+
+commandNames=""
+for line in "${mostRecentPairs[@]}"; do
+  first_word=$(cut -d' ' -f1 <<< "$line")
+
+  commandNames+="$first_word\n"
+done
+
+commandNames="${commandNames:0:-2}"
+
+option=`echo -e "$commandNames" | rofi -width 600 -dmenu -p Recent`
+
+if [ ! -f "$RECENT_FILE" ]; then
+  touch "$RECENT_FILE"
+fi
+
+
+while read -r pair; do
+	name=$(echo "$pair" | cut -d " " -f 1)
+	value=$(echo "$pair" | cut -d " " -f 2-)
+
+	commandIndex=`expr $commandIndex + 1`
+
+	if [[ "$option" = "$name" ]]; then
+		usedName=$name
+
+		usedValue=$value
+	fi
+done < $RECENT_FILE
+
+if [[ -n "$usedName" && -n "$usedValue" ]]; then
+	eval $usedValue
+	eval "$ROOT/addToRecent \"$usedName\" \"$usedValue\""
+fi
+
+

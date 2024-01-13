@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+if [ -z ${1+x} ]
+then
+	SELECTION_FILE=".selection"
+else
+	SELECTION_FILE="$1.selection"
+fi
+
+NAME=$(grep "@" $SELECTION_FILE | sed "s/@//")
+COMMAND_NAMES=$(cat $SELECTION_FILE | grep "-" | sed "s/-//" | sed "s/ /\n/")
+COMMANDS=$(cat $SELECTION_FILE | sed "s/ /\n/" | grep "_" | sed "s/_//")
+
+
+option=`echo -e "$COMMAND_NAMES" | rofi -width 600 -dmenu -p $NAME`
+
+COMMAND_KEYS=($(echo $COMMAND_NAMES))
+COMMAND_LIST=($(cat $SELECTION_FILE | grep "_" | sed "s/_//"))
+
+
+for ((i = 0; i < ${#COMMAND_KEYS}; i++)); do
+    if [[ ${COMMAND_KEYS[$i]} = $option ]]; then
+		keyIndex=$i
+        break
+    fi
+done
+
+commandIndex=-1
+
+while read -r line; do
+	if [[ "${line:0:1}" = "_" ]]; then
+		commandIndex=`expr $commandIndex + 1`
+
+		if [[ "$keyIndex" = "$commandIndex" ]]; then
+			COMMAND=$(echo $line | sed "s/_//")
+		fi
+	fi
+done < $SELECTION_FILE
+
+if [[ "$COMMAND" == */ ]]
+then
+	/home/joey/Scripts/Windows/window $COMMAND
+else
+	$COMMAND
+fi
+

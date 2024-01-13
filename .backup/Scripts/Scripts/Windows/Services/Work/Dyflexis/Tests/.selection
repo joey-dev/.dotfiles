@@ -1,0 +1,15 @@
+@Tests
+-integration
+_/home/joey/Scripts/Windows/Services/Work/Dyflexis/Tests/test.sh integration
+
+-api
+_/home/joey/Scripts/Windows/Services/Work/Dyflexis/Tests/test.sh api
+
+-unit
+_/home/joey/Scripts/Windows/Services/Work/Dyflexis/Tests/test.sh unit
+
+-unitAll
+_/home/joey/Scripts/Windows/Services/Work/Dyflexis/Tests/test.sh unitAll
+
+-acceptance
+_/home/joey/Scripts/Windows/Services/Work/Dyflexis/Tests/test.sh acceptance

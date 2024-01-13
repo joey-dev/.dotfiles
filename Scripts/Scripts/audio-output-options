@@ -1,0 +1,13 @@
+#!/bin/bash
+
+
+active=$(pacmd list-sinks | grep -E 'device.description|index:' | sed 's/device.description = //' | sed 's/index: //' | sed -r 's/\s+//g' | sed 's/^[0-9]$//' | sed 's/\"//g' | grep  -v '^[[:space:]]*$' | grep -A 1 '*' | sed 's/*.*//' | grep -v '^[[:space:]]*$')
+
+pacmd list-sinks | grep -E 'device.description|index:' | sed 's/device.description = //' | sed 's/index: //' | sed -r 's/\s+//g' | sed 's/^[0-9]$//'| sed 's/^*[0-9]$//' | sed 's/\"//g' | grep  -v '^[[:space:]]*$' | sed "s/${active}/*${active}/"
+#test=$(pacmd list-sinks | grep -E 'device.description|index:' | sed 's/device.description = //' | sed 's/index: //' | sed -r 's/\s+//g' | sed 's/^[0-9]$//' | sed 's/\"//g' | grep  -v '^[[:space:]]*$')
+
+#echo "\n"
+#echo $active
+
+#echo $test
+#pacmd list-sinks | grep -E 'device.description|index:' | sed 's/device.description = //' | sed 's/index: //' | sed -r 's/\s+//g' | sed 's/^[0-9]$//' | sed 's/^*[0-9]$//' | sed 's/\"//g' | awk 'BEGIN{RS="";FS="\n";OFS="\\n"}{print $1,$2}' | tr -d '\n'

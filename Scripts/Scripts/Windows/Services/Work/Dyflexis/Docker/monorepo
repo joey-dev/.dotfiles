@@ -1,0 +1,3 @@
+cd ~/Code/Work/dyflexis-monorepo/ && docker-compose up -d app db dyflexis-composer dyflexis-webpack dyflexis mail proxy selenium tools api-docs
+
+

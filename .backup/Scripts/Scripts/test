@@ -1,0 +1,3 @@
+#!/bin/bash
+
+pacmd list-sinks | grep -E 'device.description|index:' | sed 's/device.description = //' | sed 's/index: //' | sed -r 's/\s+//g'

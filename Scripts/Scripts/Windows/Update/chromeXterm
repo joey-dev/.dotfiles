@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+xterm -hold -e "cd /home/joey/Scripts/Windows/Update/ && ./chrome"
+

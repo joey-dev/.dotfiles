@@ -1,0 +1,1 @@
+{"virtualbox":{"/home/vagrant/.dotfiles":{"guestpath":"/home/vagrant/.dotfiles","hostpath":"/home/joey/.dotfilesb","disabled":false,"__vagrantfile":true},"/vagrant":{"guestpath":"/vagrant","hostpath":"/home/joey/.dotfilesb","disabled":false,"__vagrantfile":true}}}
