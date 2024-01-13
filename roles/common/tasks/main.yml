@@ -1,0 +1,11 @@
+- name: install common tools
+  become: yes
+  package:
+    state: latest
+    name:
+      - wget
+      - curl
+      - unzip
+      - xclip
+      - flameshot
+      - brightnessctl
