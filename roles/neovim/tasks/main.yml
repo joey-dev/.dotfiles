@@ -1,0 +1,17 @@
+- name: install neovim
+  block:
+
+  - name: Create neovim config directory
+    file: path={{ neovim_config_dir }} state=directory
+
+  - name: Install neovim and deps
+    become: yes
+    package: name={{ item }} state=latest
+    with_items:
+    - neovim
+
+  - name: Link neovim confi files
+    file: src={{item}} dest={{ neovim_config_dir }}/{{ item | basename }} state=link
+    with_fileglob:
+        - config/*
+
