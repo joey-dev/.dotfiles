@@ -19,3 +19,8 @@ install-test:
 test:
 	vagrant up
 
+test-reload:
+	vagrant reload
+
+rest-new:
+	vagrant destroy

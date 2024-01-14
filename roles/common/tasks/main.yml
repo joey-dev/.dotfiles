@@ -1,3 +1,13 @@
+- name: Update apt package cache
+  become: yes
+  apt:
+    update_cache: yes
+
+- name: Upgrade all packages
+  become: yes
+  apt:
+    upgrade: yes
+
 - name: install common tools
   become: yes
   package:
