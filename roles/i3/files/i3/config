@@ -256,7 +256,7 @@ client.background       #F8F8F2
 exec --no-startup-id nm-applet
 
 # logout/suspend/powerOff/etc popup
-bindsym $mod+p exec --no-startup-id ~/Scripts/logout
+bindsym $mod+p exec --no-startup-id ~/.config/i3/i3-power-settings.sh
 
 # change monitor setup
 #bindsym $mod+o exec --no-startup-id ~/Scripts/monitors
@@ -279,8 +279,8 @@ bindsym XF86MonBrightnessUp exec light -A 10
 bindsym XF86MonBrightnessDown exec light -S 10 
 
 # Workspace Monitor swapping
-bindsym $mod+Shift+s exec ~/Scripts/i3-swap-display.sh 
-bindsym $mod+Shift+d exec ~/Scripts/i3-move-display.sh 
+bindsym $mod+Shift+s exec ~/.config/i3/i3-swap-display.sh 
+bindsym $mod+Shift+d exec ~/.config/i3/i3-move-display.sh 
 
 # Audio
 bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +2%; exec pactl set-sink-mute @DEFAULT_SINK@ 0

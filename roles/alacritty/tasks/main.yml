@@ -1,0 +1,21 @@
+- name: install alacritty
+  block:
+
+  - name: Create alacritty config directory
+    file: path={{ alacritty_config_dir }} state=directory
+
+  - name: Install aslatter ppa
+    become: yes
+    shell: add-apt-repository ppa:aslatter/ppa
+
+  - name: Install alacritty and deps
+    become: yes
+    package: name={{ item }} state=latest
+    with_items:
+        - alacritty
+
+  - name: Link alacritty files
+    file: src={{item}} dest={{ i3_config_dir }}/{{ item | basename }} state=link
+    with_fileglob:
+    - alacritty/*
+

@@ -1,0 +1,3 @@
+---
+alacritty_packages_state: present
+alacritty_config_dir: "{{ ansible_env.HOME }}/.config/alacritty"
