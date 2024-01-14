@@ -257,14 +257,14 @@ bindsym $mod+p exec --no-startup-id ~/.config/i3/i3-power-settings.sh
 
 # change monitor setup
 #bindsym $mod+o exec --no-startup-id ~/Scripts/monitors
-bindsym $mod+o exec --no-startup-id ~/Scripts/Windows/window ~/Scripts/Windows/Monitor/
+bindsym $mod+o exec --no-startup-id ~/scripts/i3/Windows/window ~/scripts/i3/Windows/Monitor/
 
 # update programs
 #bindsym $mod+u exec --no-startup-id ~/Scripts/update
-bindsym $mod+u exec --no-startup-id ~/Scripts/Windows/window ~/Scripts/Windows/Update/
+bindsym $mod+u exec --no-startup-id ~/scripts/i3/Windows/window ~/scripts/i3/Windows/Update/
 
 # services
-bindsym $mod+s exec --no-startup-id ~/Scripts/Windows/window ~/Scripts/Windows/Services/
+bindsym $mod+s exec --no-startup-id ~/scripts/i3/Windows/window ~/scripts/i3/Windows/Services/
 
 # Screenshot 
 bindsym Print exec flameshot gui

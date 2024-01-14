@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-ROOT="/home/joey/Scripts/Windows/Services/"
+ROOT="/home/joey/scripts/i3/Windows/Services/"
 RECENT_FILE="$ROOT.recentList"
 RECENT_FILE2="$ROOT.recentList2"
 

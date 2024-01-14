@@ -39,7 +39,7 @@ done < $SELECTION_FILE
 
 if [[ "$COMMAND" == */ ]]
 then
-	/home/joey/Scripts/Windows/window $COMMAND
+	/home/joey/scripts/i3/Windows/window $COMMAND
 else
 	$COMMAND
 fi

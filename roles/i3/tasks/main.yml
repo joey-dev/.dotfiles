@@ -23,3 +23,9 @@
     with_fileglob:
     - i3/*
 
+  - name: Link i3 scripts
+    file:
+      src: "{{ playbook_dir }}/roles/i3/files/scripts"
+      dest: "{{ i3_scripts_dir }}"
+      state: link
+

@@ -1,3 +1,4 @@
 ---
 i3_packages_state: present
 i3_config_dir: "{{ ansible_env.HOME }}/.config/i3"
+i3_scripts_dir: "{{ ansible_env.HOME }}/scripts/i3"

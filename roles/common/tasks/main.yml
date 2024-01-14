@@ -11,3 +11,13 @@
       - brightnessctl
       - rofi
       - fzf
+
+- name: Remove scripts folder
+  file:
+    path: "{{ ansible_env.HOME }}/scripts"
+    state: absent
+
+- name: Create scripts folder
+  file:
+    path: "{{ ansible_env.HOME }}/scripts"
+    state: directory
