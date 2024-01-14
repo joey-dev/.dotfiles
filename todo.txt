@@ -1,0 +1,2 @@
+- make nvim work as a IDE for PHP
+- make nvim work as a IDE for VUE
