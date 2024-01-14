@@ -1,0 +1,4 @@
+---
+tmux_config_file: "{{ ansible_env.HOME }}/.tmux.conf"
+bash_config_file: "{{ ansible_env.HOME }}/.bashrc"
+tmux_scripts_dir: "{{ ansible_env.HOME }}/.config/tmux"

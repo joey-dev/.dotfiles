@@ -2,5 +2,7 @@
 - hosts: localhost
   roles:
     - common
-    - i3
-    - alacritty
+      #- i3
+      #- alacritty
+    - zsh
+    - tmux

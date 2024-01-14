@@ -1,0 +1,48 @@
+- name: install zsh
+  block:
+
+    - name: Install zsh and deps
+      become: yes
+      package: name={{ item }} state=latest
+      with_items:
+        - zsh
+
+    - name: Change shell to zsh
+      shell: chsh -s $(which zsh)
+      become: yes
+
+    - name: Remove existing Oh My Zsh directory
+      file:
+        path: "{{ ansible_env.HOME }}/.oh-my-zsh"
+        state: absent
+
+    - name: Oh-My-Zsh
+      shell: "sh -c \"$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
+
+    - name: Install zsh-autosuggestions
+      ansible.builtin.git:
+        repo: 'https://github.com/zsh-users/zsh-autosuggestions.git'
+        dest: "~/.oh-my-zsh/plugins/zsh-autosuggestions"
+
+    - name: Install zsh-auto-notify
+      ansible.builtin.git:
+        repo: 'https://github.com/MichaelAquilina/zsh-auto-notify.git'
+        dest: "~/.oh-my-zsh/plugins/auto-notify"
+
+    - name: Install zsh-syntax-highlighting
+      ansible.builtin.git:
+        repo: 'https://github.com/zsh-users/zsh-syntax-highlighting.git'
+        dest: "~/.oh-my-zsh/plugins/zsh-syntax-highlighting"
+
+    - name: Remove existing zsh config file
+      file:
+        path: "{{ zsh_config_file }}"
+        state: absent
+
+    - name: Link zsh config file
+      file:
+        src: "{{ playbook_dir }}/roles/zsh/files/config/.zshrc"
+        dest: "{{ zsh_config_file }}"
+        state: link
+
+

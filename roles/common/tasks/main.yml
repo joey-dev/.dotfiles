@@ -10,3 +10,4 @@
       - flameshot
       - brightnessctl
       - rofi
+      - fzf

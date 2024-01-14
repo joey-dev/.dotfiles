@@ -1,0 +1,56 @@
+- name: install tmux
+  block:
+
+  - name: Create tmux scripts directory
+    file: path={{ tmux_scripts_dir }} state=directory
+
+  - name: Install tmux and deps
+    become: yes
+    package: name={{ item }} state=latest
+    with_items:
+    - tmux
+
+  - name: Link tmux files
+    file: src={{item}} dest={{ tmux_scripts_dir }}/{{ item | basename }} state=link
+    with_fileglob:
+        - tmux/*
+
+  - name: Link tmux config file
+    file:
+      src: "{{ playbook_dir }}/roles/tmux/files/config/.tmux.conf"
+      dest: "{{ tmux_config_file }}"
+      state: link
+
+  - name: Remove bash config file
+    file:
+      path: "{{ bash_config_file }}"
+      state: absent
+
+  - name: Link bash config file
+    file:
+      src: "{{ playbook_dir }}/roles/tmux/files/config/.bashrc"
+      dest: "{{ bash_config_file }}"
+      state: link
+
+  - name: Create code directory
+    file:
+      path: "{{ ansible_env.HOME }}/Code"
+      state: directory
+
+  - name: Create work code directory
+    file:
+      path: "{{ ansible_env.HOME }}/Code/Work"
+      state: directory
+
+  - name: Create learning code directory
+    file:
+      path: "{{ ansible_env.HOME }}/Code/Learning"
+      state: directory
+  - name: Create projects code directory
+    file:
+      path: "{{ ansible_env.HOME }}/Code/Projects"
+      state: directory
+  - name: Create test code directory
+    file:
+      path: "{{ ansible_env.HOME }}/Code/Test"
+      state: directory

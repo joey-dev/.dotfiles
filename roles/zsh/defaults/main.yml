@@ -1,0 +1,2 @@
+---
+zsh_config_file: "{{ ansible_env.HOME }}/.zshrc"
