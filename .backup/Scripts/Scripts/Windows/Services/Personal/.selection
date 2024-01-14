@@ -1,3 +1,0 @@
-@Personal
--cpu
-_xterm -hold -e \"watch \'lscpu | grep MHz\'\"
