@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-xterm -hold -e "cd /home/joey/Scripts/Windows/Update/ && ./system"
+xterm -hold -e "cd /home/joey/scripts/i3/Windows/Update/ && ./system"
 

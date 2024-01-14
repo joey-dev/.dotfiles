@@ -3,6 +3,10 @@ run:
 - make install
 - make provision
 
+do the following shortcuts:
+- win + shift + r (anywhere)
+- alt + r (in the terminal)
+
 # testing first time
 run: 
 - make install-test
