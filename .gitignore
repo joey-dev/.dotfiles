@@ -1,3 +1,4 @@
 vagrant_2.4.0-1_i686.deb
 .vagrant
 nvim/.config/nvim/init.vim
+i3/
