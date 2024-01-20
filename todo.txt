@@ -1,2 +1,4 @@
 - make nvim work as a IDE for PHP
 - make nvim work as a IDE for VUE
+- add dark theme to OS
+- install chrome

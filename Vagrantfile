@@ -4,7 +4,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.box = "gusztavvargadr/ubuntu-desktop"
 
-  config.vm.synced_folder "~/.dotfilesb", "/home/vagrant/.dotfiles"
+  config.vm.synced_folder "~/.dotfiles", "/home/vagrant/.dotfiles"
   config.vm.synced_folder ".", "/vagrant"
 
   config.vm.provider "virtualbox" do |vb|

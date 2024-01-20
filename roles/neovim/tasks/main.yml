@@ -1,17 +1,82 @@
 - name: install neovim
   block:
 
-  - name: Create neovim config directory
-    file: path={{ neovim_config_dir }} state=directory
-
-  - name: Install neovim and deps
+  - name: install luajit
     become: yes
-    package: name={{ item }} state=latest
-    with_items:
-    - neovim
+    package:
+      name: luajit
+      state: present
 
-  - name: Link neovim confi files
-    file: src={{item}} dest={{ neovim_config_dir }}/{{ item | basename }} state=link
+# - name: install & update neovim
+#   become: yes
+#   shell: >
+#     cd {{ ansible_env.HOME }}/Downloads && curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage && chmod u+x nvim.appimage && ./nvim.appimage --appimage-extract && ./squashfs-root/AppRun --version && sudo mv squashfs-root / && sudo ln -s /squashfs-root/AppRun /usr/bin/nvim
+
+
+  - name: Download Neovim
+    get_url:
+      url: https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
+      dest: "{{ ansible_env.HOME }}/Downloads/nvim.appimage"
+
+  - name: Make nvim download a executable
+    become: true
+    shell: cd {{ ansible_env.HOME}}/Downloads && chmod u+x nvim.appimage
+
+  - name: Extract Neomvim
+    become: true
+    shell: cd {{ ansible_env.HOME}}/Downloads && ./nvim.appimage --appimage-extract
+
+  - name: Remove Neovim directory if exists
+    ansible.builtin.file:
+      path: /squashfs-root
+      state: absent
+    become: yes
+
+  - name: Move Neovim directory
+    become: true
+    command: mv "{{ ansible_env.HOME }}/Downloads/squashfs-root" /
+
+  - name: Create symlink for nvim if it does not exist
+    become: true
+    command: ln -s /squashfs-root/AppRun /usr/bin/nvim
+    args:
+      creates: /usr/bin/nvim
+
+  - name: Create config dir
+    file:
+      path: "{{ neovim_config_dir }}"
+      state: directory
+
+  - name: Link neovim config dir
+    file:
+      src: "{{ item }}"
+      dest: "{{ neovim_config_dir }}/{{ item | basename }}"
+      state: link
     with_fileglob:
-        - config/*
+      - config/*
 
+  - name: Create lua config dir
+    file:
+      path: "{{ neovim_config_dir }}/lua"
+      state: directory
+
+  - name: Link neovim lua config dir
+    file:
+      src: "{{ item }}"
+      dest: "{{ neovim_config_dir }}/lua/{{ item | basename }}"
+      state: link
+    with_fileglob:
+      - config/lua/*
+
+  - name: Create ftplugin dir
+    file:
+      path: "{{ neovim_config_dir }}/after/ftplugin"
+      state: directory
+
+  - name: Link ftplugin files
+    file:
+      src: "{{ item }}"
+      dest: "{{ neovim_config_dir }}/after/ftplugin/{{ item | basename }}"
+      state: link
+    with_fileglob:
+      - ftplugin/*
