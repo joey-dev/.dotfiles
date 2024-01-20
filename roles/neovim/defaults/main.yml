@@ -1,2 +1,4 @@
----
+
 neovim_config_dir: "{{ ansible_env.HOME }}/.config/nvim"
+
+neovim_install_state: latest

@@ -24,3 +24,6 @@ run:
 # testing
 run:
 - make test
+
+# remove need to for passphrase this boot sycle:
+- ssh-add ~/.ssh/id_rsa

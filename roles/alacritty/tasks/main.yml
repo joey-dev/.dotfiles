@@ -6,7 +6,9 @@
 
   - name: Install aslatter ppa
     become: yes
-    shell: add-apt-repository ppa:aslatter/ppa
+    environment:
+      DEBIAN_FRONTEND: noninteractive
+    shell: add-apt-repository -y ppa:aslatter/ppa
 
   - name: Install alacritty and deps
     become: yes
