@@ -17,6 +17,11 @@ vim.g.mapleader = " "
 require("lazy").setup({
 	"leafOfTree/vim-project",
 	{
+		"ThePrimeagen/harpoon",
+		branch = "harpoon2",
+		dependencies = { "nvim-lua/plenary.nvim" }
+	},
+	{
 		"nvim-neo-tree/neo-tree.nvim",
 		branch = "v3.x",
 		dependencies = {
