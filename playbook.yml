@@ -1,9 +1,9 @@
 ---
 - hosts: localhost
   roles:
-    - common
-    - i3
-    - alacritty
-    - zsh
-    - tmux
+#   - common
+#   - i3
+#   - alacritty
+#   - zsh
+#   - tmux
     - neovim
