@@ -1,17 +1,14 @@
 - name: install neovim
   block:
 
-  - name: install luajit
+  - name: install required packages
     become: yes
     package:
-      name: luajit
       state: present
-
-# - name: install & update neovim
-#   become: yes
-#   shell: >
-#     cd {{ ansible_env.HOME }}/Downloads && curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage && chmod u+x nvim.appimage && ./nvim.appimage --appimage-extract && ./squashfs-root/AppRun --version && sudo mv squashfs-root / && sudo ln -s /squashfs-root/AppRun /usr/bin/nvim
-
+      name: 
+        - luajit
+        - ripgrep
+        - fd-find
 
   - name: Download Neovim
     get_url:
