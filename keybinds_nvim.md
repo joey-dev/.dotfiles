@@ -49,3 +49,15 @@
 ## Markdown Viewing
 - View Markdown: `<leader>vm`
 - Stop viewing Markdown: `<leader>vM`
+
+## Marked Files
+- Set mark on file: `<leader>mf`
+- Clear mark list: `<leader>mc`
+- Remove mark from file: `<leader>mr`
+- Show all marked files: `<leader>M`
+- Go to next marked file: `<leader>me`
+- Go to previous marked file: `<leader>mq`
+
+## Navigation
+- Go back 1 file: `Alt + q`
+- Go to next file: `Alt + e`
