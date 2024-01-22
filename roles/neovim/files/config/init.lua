@@ -90,22 +90,30 @@ vim.keymap.set("n", "<leader>mq", function() harpoon:list():prev() end)
 vim.keymap.set("n", "<leader>me", function() harpoon:list():next() end)
 
 -- php
-vim.api.nvim_set_keymap('n', '<leader>aa', '<Cmd>lua vim.lsp.buf.definition()<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>ama', ':lua RunPhpactorRefactorCommand("complete_constructor")<CR>', { noremap = true, silent = true, nowait = false })
 
 
 local lsp = require("lsp-zero")
 
-lsp.preset("recommended")
+--lsp.preset("recommended")
 
-lsp.on_attach(function(client, bufnr)
-	lsp.default_keymaps({buffer = bufnr})
-	--local opts = {buffer = bufnr}
+vim.api.nvim_create_autocmd('LspAttach', {
+  desc = 'LSP actions',
+  callback = function(event)
+    local opts = {buffer = event.buf}
 
-	--vim.keymap.set({'n', 'x'}, 'amm', function()
-		--vim.lsp.buf.format({async = false, timeout_ms = 10000})
-	--end, opts)
-end)
+    vim.keymap.set('n', '<leader>ss', '<cmd>lua vim.lsp.buf.hover()<cr>', opts)
+    vim.keymap.set('n', '<leader>sd', '<cmd>lua vim.lsp.buf.definition()<cr>', opts)
+    vim.keymap.set('n', '<leader>si', '<cmd>lua vim.lsp.buf.references()<cr>', opts)
+    vim.keymap.set('n', '<leader>rr', '<cmd>lua vim.lsp.buf.rename()<cr>', opts)
+    vim.keymap.set({'n', 'x'}, '<leader>rf', '<cmd>lua vim.lsp.buf.format({async = true})<cr>', opts)
+    vim.keymap.set('n', '<leader>ef', '<cmd>lua vim.lsp.buf.code_action()<cr>', opts)
+    vim.keymap.set('n', '<leader>eo', '<cmd>lua vim.diagnostic.open_float()<cr>', opts)
+    vim.keymap.set('n', '<leader>en', '<cmd>lua vim.diagnostic.goto_prev()<cr>', opts)
+    vim.keymap.set('n', '<leader>ep', '<cmd>lua vim.diagnostic.goto_next()<cr>', opts) 
+    vim.keymap.set('n', '<leader>sq', ':cclose<CR>', opts) 
+  end
+})
 
 require('mason').setup({})
 require'lspconfig'.phpactor.setup{}
