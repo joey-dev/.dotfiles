@@ -89,4 +89,45 @@ vim.keymap.set("n", "<leader>M", function() harpoon.ui:toggle_quick_menu(harpoon
 vim.keymap.set("n", "<leader>mq", function() harpoon:list():prev() end)
 vim.keymap.set("n", "<leader>me", function() harpoon:list():next() end)
 
+-- php
+vim.api.nvim_set_keymap('n', '<leader>aa', '<Cmd>lua vim.lsp.buf.definition()<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>ama', ':lua RunPhpactorRefactorCommand("complete_constructor")<CR>', { noremap = true, silent = true, nowait = false })
+
+
+local lsp = require("lsp-zero")
+
+lsp.preset("recommended")
+
+lsp.on_attach(function(client, bufnr)
+	lsp.default_keymaps({buffer = bufnr})
+	--local opts = {buffer = bufnr}
+
+	--vim.keymap.set({'n', 'x'}, 'amm', function()
+		--vim.lsp.buf.format({async = false, timeout_ms = 10000})
+	--end, opts)
+end)
+
+require('mason').setup({})
+require'lspconfig'.phpactor.setup{}
+require("mason-lspconfig").setup({
+    ensure_installed = {"phpactor"},
+})
+
+function RunPhpactorRefactorCommand(transform_type)
+  local current_file = vim.fn.shellescape(vim.fn.expand('%:p'))
+  local command = string.format('phpactor class:transform %s --transform=%s', current_file, transform_type)
+  
+  local job_id = vim.fn.jobstart(command, {
+    on_exit = function(_, code)
+      if code == 0 then
+        print('PHPactor command executed successfully')
+        
+        -- Reload the buffer to reflect changes
+        vim.cmd('e')
+      else
+        print('PHPactor command failed with exit code:', code)
+      end
+    end
+  })
+end
 
