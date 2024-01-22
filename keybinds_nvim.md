@@ -61,3 +61,21 @@
 ## Navigation
 - Go back 1 file: `Alt + q`
 - Go to next file: `Alt + e`
+
+## Symbol Navigation
+- Show symbol signature: `<leader>ss`
+- Go to symbol definition: `<leader>sd`
+- Find symbol implementations: `<leader>si`
+- Close symbol quick window: `<leader>sq`
+
+## Refactor Navigation
+- Refactor - Rename symbol: `<leader>rr`
+- Refactor - Format: `<leader>rf`
+
+
+## Error and Warning Navigation
+- Show all errors/warnings in file: `<leader>ef`
+- Open all errors on caret: `<leader>eo`
+- Go to next error: `<leader>en`
+- Go to previous error: `<leader>ep`
+
