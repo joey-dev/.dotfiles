@@ -62,6 +62,13 @@
 - Go back 1 file: `Alt + q`
 - Go to next file: `Alt + e`
 
+# PHP
+
+## Auto Complete
+- Go down while accepting: `<ctrl>n`
+- Go up while accepting: `<ctrl>p`
+- Accept highlighted: `<ctrl>y`
+
 ## Symbol Navigation
 - Show symbol signature: `<leader>ss`
 - Go to symbol definition: `<leader>sd`
@@ -71,11 +78,20 @@
 ## Refactor Navigation
 - Refactor - Rename symbol: `<leader>rr`
 - Refactor - Format: `<leader>rf`
+- Refactor - Change name/namespace to current file name/location: `<leader>rn`
+- Refactor - Move class: `<leader>rc`
+- Refactor Menu `<leader>rm`
 
+## Generate Navigation
+- Generate constructor fields and assign: `<leader>gc`
+- Generate methods from implementation/extended classes: `<leader>gm`
+- Generate imports: `<leader>gi`
+- Generate copy of current class: `<leader>gc`
+- Generate new class: `<leader>gn`
 
 ## Error and Warning Navigation
 - Show all errors/warnings in file: `<leader>ef`
-- Open all errors on caret: `<leader>eo`
-- Go to next error: `<leader>en`
+- Open all errors on caret: `<leader>ei`
+ Go to next error: `<leader>en`
 - Go to previous error: `<leader>ep`
 
