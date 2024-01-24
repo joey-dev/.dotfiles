@@ -1,7 +1,8 @@
 - make nvim work as a IDE for PHP
 	- csfix
 	- xdebug
-	- auto-close
+	- live templates / snippets
+	- move config from init to php
 - make nvim work as a IDE for VUE
 - add dark theme to OS
 - install chrome
