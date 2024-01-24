@@ -77,3 +77,14 @@
       state: link
     with_fileglob:
       - ftplugin/*
+
+  - name: Create phpactor dir
+    file:
+      path: "{{ phpactor_config_dir }}"
+      state: directory
+
+  - name: Link ftplugin files
+    file:
+      src: "{{ ansible_env.HOME }}/.dotfiles/roles/neovim/files/plugin_config/phpactor.json"
+      dest: "{{ phpactor_config_dir }}/phpactor.json"
+      state: link
