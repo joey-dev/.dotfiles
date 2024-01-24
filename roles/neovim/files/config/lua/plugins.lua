@@ -87,6 +87,10 @@ require("lazy").setup({
 		  'nvim-lua/plenary.nvim',
 		  'neovim/nvim-lspconfig',
 		},
+	},
+	{
+		'windwp/nvim-autopairs',
+		event = "InsertEnter",
+		opts = {} -- this is equalent to setup({}) function
 	}
-
 })
