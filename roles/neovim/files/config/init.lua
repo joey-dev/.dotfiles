@@ -12,6 +12,8 @@ require("plugins")
 
 vim.api.nvim_set_keymap("n", "<leader>vi", ":e ~/.dotfiles/roles/neovim/files/config/init.lua<cr>", { noremap = true })
 vim.api.nvim_set_keymap("n", "<leader>vs", ":source ~/.dotfiles/roles/neovim/files/config/init.lua<cr>", { noremap = true })
+-- copy to clipboard
+vim.api.nvim_set_keymap('v', '<M-c>', '"+y', { noremap = true, silent = true })
 
 -- nvim settings
 vim.o.completeopt = "menuone,noinsert,noselect"
