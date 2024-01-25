@@ -1,4 +1,15 @@
+- fix nvim things
+	- add current branch
+	- add git
+	- change folder structure for all plugins
+		- every plugin in another file, with the folder called with the language name, or Common:
+			- plugins
+				- common
+				- php
 - make nvim work as a IDE for PHP
+	- fix: 
+		- ff crashes in large project
+		- fif crashes in large project
 	- csfix
 	- xdebug
 	- live templates / snippets
@@ -6,3 +17,4 @@
 - make nvim work as a IDE for VUE
 - add dark theme to OS
 - install chrome
+- add pipeline testing with ubuntu
