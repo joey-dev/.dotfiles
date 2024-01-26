@@ -1,0 +1,23 @@
+- name: Get LazyGit latest version
+  uri:
+    url: "https://api.github.com/repos/jesseduffield/lazygit/releases/latest"
+    return_content: yes
+  register: lazygit_release
+
+- name: Extract LazyGit version
+  set_fact:
+    lazygit_version: "{{ lazygit_release.json.tag_name | regex_replace('^v', '') }}"
+
+- name: Download LazyGit
+  command: "curl -Lo /tmp/lazygit.tar.gz https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_{{ lazygit_version }}_Linux_x86_64.tar.gz"
+
+- name: Extract LazyGit
+  command: "tar xf /tmp/lazygit.tar.gz lazygit"
+  args:
+    chdir: /tmp
+
+- name: Move LazyGit to /usr/local/bin
+  command: "install lazygit /usr/local/bin"
+  become: true
+  args:
+    chdir: /tmp

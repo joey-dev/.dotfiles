@@ -48,7 +48,7 @@ vim.keymap.set('n', '<Leader>pcf', ':Neotree reveal<cr>')
 vim.keymap.set('n', '<Leader>pof', ':Neotree buffers<cr>')
 
 --- git
-vim.keymap.set('n', '<Leader>gs', ':Neotree git_status<cr>')
+vim.keymap.set('n', '<Leader>gs', ':FloatermNew lazygit<cr>')
 
 -- view
 vim.keymap.set('n', '<Leader>vm', ':MarkdownPreview<cr>')

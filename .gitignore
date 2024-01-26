@@ -8,3 +8,4 @@ nvim/.config/nvim/init.vim
 /composer.json
 /composer.lock
 /vendor
+/lazygit.tar.gz
