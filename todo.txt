@@ -1,8 +1,4 @@
 - fix nvim things
-	- add current branch
-	- add git
-		- jesseduffield/lazygit
-		- voldikss/vim-floaterm
 	- change folder structure for all plugins
 		- every plugin in another file, with the folder called with the language name, or Common:
 			- plugins

@@ -95,5 +95,9 @@ require("lazy").setup({
 	},
 	{
 		'voldikss/vim-floaterm'
+	},
+	{
+		'nvim-lualine/lualine.nvim',
+		dependencies = { 'nvim-tree/nvim-web-devicons' }
 	}
 })
