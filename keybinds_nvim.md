@@ -99,3 +99,10 @@
  Go to next error: `<leader>en`
 - Go to previous error: `<leader>ep`
 
+## Debugging
+- Toggle breakpoint: `Alt + b`
+- Continue: `Alt + c`
+- step into: `Alt + i`
+- step over: `Alt + o`
+- list?: `Alt + l`
+

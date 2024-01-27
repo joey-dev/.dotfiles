@@ -145,6 +145,12 @@ vim.api.nvim_set_keymap('n', '<leader>gc', ":lua require('phpactor').rpc('copy_c
 vim.api.nvim_set_keymap('n', '<leader>gn', ":lua require('phpactor').rpc('new_class', {})<CR>", { noremap = true, silent = true, nowait = false })
 vim.api.nvim_set_keymap('n', '<leader>rc', ":lua require('phpactor').rpc('move_class', {})<CR>", { noremap = true, silent = true, nowait = false })
 
+vim.api.nvim_set_keymap('n', '<A-b>', ":lua require'dap'.toggle_breakpoint()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-c>', ":lua require'dap'.continue()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-o>', ":lua require'dap'.step_over()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-i>', ":lua require'dap'.step_into()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-l>', ":lua require'dap'.repl.open()<CR>", { noremap = true, silent = true, nowait = false })
+
 -- wanted:
 -- PhpactorExtractExpression
 -- PhpactorExtractMethod
@@ -192,4 +198,21 @@ function RunPhpactorRefactorCommand(transform_type)
     end
   })
 end
+
+local dap = require('dap')
+
+dap.adapters.php = {
+  type = 'executable',
+  command = 'node',
+  args = { '~/vscode-php-debug/out/phpDebug.js' }
+}
+
+dap.configurations.php = {
+  {
+    type = 'php',
+    request = 'launch',
+    name = 'Listen for Xdebug',
+    port = 9000
+  }
+}
 

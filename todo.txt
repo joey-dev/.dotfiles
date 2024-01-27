@@ -6,7 +6,7 @@
 				- php
 - make nvim work as a IDE for PHP
 	- csfix
-	- xdebug
+	- xdebug (might've fixed this https://github.com/mfussenegger/nvim-dap)
 	- live templates / snippets
 	- move config from init to php
 - make nvim work as a IDE for VUE

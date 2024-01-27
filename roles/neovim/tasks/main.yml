@@ -88,3 +88,17 @@
       src: "{{ ansible_env.HOME }}/.dotfiles/roles/neovim/files/plugin_config/phpactor.json"
       dest: "{{ phpactor_config_dir }}/phpactor.json"
       state: link
+
+- name: install neovim dependencies
+  block:
+
+  - name: Clone vscode-php-debug repository
+    ansible.builtin.git:
+      repo: https://github.com/xdebug/vscode-php-debug.git
+      dest: ~/vscode-php-debug
+
+  - name: Install dependencies
+    shell: cd {{ ansible_env.HOME}}/vscode-php-debug && npm install 2>&1 || true
+
+  - name: Build dependencies
+    shell: cd {{ ansible_env.HOME}}/vscode-php-debug && npm run build
