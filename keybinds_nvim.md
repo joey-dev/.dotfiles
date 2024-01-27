@@ -42,6 +42,10 @@
 ## File Search
 - Find text in all files in the current project: `<leader>fif`
 - Find a file in the current project: `<leader>ff`
+    - Within File Search (ff/fif):
+        - prev item `ctrl + p`
+        - next item `ctrl + n`
+        - enter file `enter`
 
 ## Task Management (tm)
 - Find/Run all tasks in the current project: `<leader>tm`

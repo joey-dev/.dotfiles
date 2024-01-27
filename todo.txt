@@ -5,9 +5,6 @@
 				- common
 				- php
 - make nvim work as a IDE for PHP
-	- fix: 
-		- ff crashes in large project
-		- fif crashes in large project
 	- csfix
 	- xdebug
 	- live templates / snippets

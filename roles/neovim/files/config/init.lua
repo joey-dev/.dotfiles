@@ -36,8 +36,10 @@ harpoon:setup()
 -- global keymap
 -- projects
 vim.keymap.set('n', '<Leader>pl', ':ProjectList<cr>')
-vim.keymap.set('n', '<Leader>fif', ':ProjectFindInFiles<cr>')
-vim.keymap.set('n', '<Leader>ff', ':ProjectSearchFiles<cr>')
+
+local tbuiltin = require('telescope.builtin')
+vim.keymap.set('n', '<leader>ff', tbuiltin.find_files, {})
+vim.keymap.set('n', '<leader>fif', tbuiltin.live_grep, {})
 
 -- task manager
 vim.keymap.set('n', '<Leader>tm', ':ProjectRun<cr>')
