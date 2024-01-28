@@ -5,7 +5,9 @@ nvim/.config/nvim/init.vim
 /nvim
 /alacritty
 /test.php
+/test.html
 /composer.json
 /composer.lock
 /vendor
 /lazygit.tar.gz
+/phpstan.neon
