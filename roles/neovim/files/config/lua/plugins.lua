@@ -110,5 +110,8 @@ require("lazy").setup({
     },
 	{
 		'mfussenegger/nvim-dap'
+	},
+	{
+		'f-person/git-blame.nvim',
 	}
 })

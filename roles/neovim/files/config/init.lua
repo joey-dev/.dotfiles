@@ -52,6 +52,9 @@ vim.keymap.set('n', '<Leader>pof', ':Neotree buffers<cr>')
 
 --- git
 vim.keymap.set('n', '<Leader>gs', ':FloatermNew lazygit<cr>')
+vim.keymap.set('n', '<Leader>gb', ':GitBlameToggle<cr>')
+vim.keymap.set('n', '<Leader>go', ':GitBlameOpenCommitURL<cr>')
+vim.g.gitblame_date_format = '%a %d-%m-%y'
 
 -- view
 vim.keymap.set('n', '<Leader>vm', ':MarkdownPreview<cr>')

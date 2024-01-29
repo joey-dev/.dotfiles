@@ -9,6 +9,8 @@
   - Commit: `gc`
   - Push: `gp`
   - Commit and Push: `gg`
+- Toggle git blane: `<leader>gb`
+- Open git merge commit in browser: `<leader>go`
 
 ## Project Tree (pf)
 - Open Tree: `<leader>pf`
