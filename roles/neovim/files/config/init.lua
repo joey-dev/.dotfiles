@@ -13,7 +13,7 @@ require("plugins")
 vim.api.nvim_set_keymap("n", "<leader>vi", ":e ~/.dotfiles/roles/neovim/files/config/init.lua<cr>", { noremap = true })
 vim.api.nvim_set_keymap("n", "<leader>vs", ":source ~/.dotfiles/roles/neovim/files/config/init.lua<cr>", { noremap = true })
 -- copy to clipboard
-vim.api.nvim_set_keymap('v', '<M-c>', '"+y', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('v', '<C-M-c>', '"+y', { noremap = true, silent = true })
 
 -- nvim settings
 vim.o.completeopt = "menuone,noinsert,noselect"
@@ -149,11 +149,6 @@ vim.api.nvim_set_keymap('n', '<leader>gc', ":lua require('phpactor').rpc('copy_c
 vim.api.nvim_set_keymap('n', '<leader>gn', ":lua require('phpactor').rpc('new_class', {})<CR>", { noremap = true, silent = true, nowait = false })
 vim.api.nvim_set_keymap('n', '<leader>rc', ":lua require('phpactor').rpc('move_class', {})<CR>", { noremap = true, silent = true, nowait = false })
 
-vim.api.nvim_set_keymap('n', '<A-b>', ":lua require'dap'.toggle_breakpoint()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-c>', ":lua require'dap'.continue()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-o>', ":lua require'dap'.step_over()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-i>', ":lua require'dap'.step_into()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-l>', ":lua require'dap'.repl.open()<CR>", { noremap = true, silent = true, nowait = false })
 
 -- wanted:
 -- PhpactorExtractExpression
@@ -225,12 +220,14 @@ function RunPhpactorRefactorCommand(transform_type)
   })
 end
 
+-- xdebug
+
 local dap = require('dap')
 
 dap.adapters.php = {
   type = 'executable',
   command = 'node',
-  args = { '~/vscode-php-debug/out/phpDebug.js' }
+  args = { '/home/joey/vscode-php-debug/out/phpDebug.js' }
 }
 
 dap.configurations.php = {
@@ -238,10 +235,38 @@ dap.configurations.php = {
     type = 'php',
     request = 'launch',
     name = 'Listen for Xdebug',
-    port = 9000
+    port = 9003,
+	pathMappings = {
+		["/app"] = "${workspaceFolder}/legacy",
+	}
   }
 }
 
+vim.api.nvim_set_keymap('n', '<A-b>', ":lua require'dap'.toggle_breakpoint()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-c>', ":lua require'dap'.continue()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-o>', ":lua require'dap'.step_over()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-O>', ":lua require'dap'.step_into()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-s>', ":lua OpenDebugWidget()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-S>', ":lua OpenDebugWidgetInWindow()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-i>', ":lua require'dap.ui.widgets'.hover()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-t>', ":lua require'dap'.repl.open()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-I>', ":lua require'dap'.run_to_cursor()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-p>', ":lua require'dap'.step_back()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-C>', ":lua require'dap'.reverse_continue()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-e>', ":lua require'dap'.set_exception_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-l>', ":lua require'dap'.list_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-r>', ":lua require'dap'.clear_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
+
+function OpenDebugWidget()
+  local widgets = require('dap.ui.widgets')
+  widgets.centered_float(widgets.scopes)
+end
+
+function OpenDebugWidgetInWindow()
+  local widgets = require('dap.ui.widgets')
+  local my_sidebar = widgets.sidebar(widgets.scopes)
+  my_sidebar.open()
+end
 
 -- snippets
 

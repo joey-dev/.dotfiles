@@ -102,9 +102,18 @@
 - Go to previous error: `<leader>ep`
 
 ## Debugging
-- Toggle breakpoint: `Alt + b`
-- Continue: `Alt + c`
-- step into: `Alt + i`
-- step over: `Alt + o`
-- list?: `Alt + l`
+- Toggle Breakpoint: `Alt + b`
+- Continue/Start: `Alt + c`
+- Step Over: `Alt + o`
+- Step Into: `Alt + O`
+- See All Symbols Hover: `Alt + s`
+- See All Symbols: `Alt + S`
+- See Value Under Cursor: `Alt + i`
+- Open Cmd for Current Scope: `Alt + t`
+- Run to Cursor: `Alt + I`
+- Go Back: `Alt + p`
+- Continue Back: `Alt + C`
+- Toggle Exception Breakpoints: `Alt + e`
+- List All Breakpoints: `Alt + l`
+- Remove All Breakpoints: `Alt + r`
 
