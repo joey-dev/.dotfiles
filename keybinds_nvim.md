@@ -113,7 +113,7 @@
 - Run to Cursor: `Alt + I`
 - Go Back: `Alt + p`
 - Continue Back: `Alt + C`
-- Toggle Exception Breakpoints: `Alt + e`
+- Toggle Exception Breakpoints: `Alt + E`
 - List All Breakpoints: `Alt + l`
 - Remove All Breakpoints: `Alt + r`
 
