@@ -1,1 +1,0 @@
-/home/joey/.dotfiles/roles/neovim/files/ftplugin/yaml.vim

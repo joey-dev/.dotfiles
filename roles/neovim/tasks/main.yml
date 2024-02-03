@@ -39,6 +39,16 @@
     args:
       creates: /usr/bin/nvim
 
+  - name: Ensure ~/.config/nvim directory exists
+    file:
+      path: "~/.config/nvim"
+      state: absent
+
+  - name: Recreate ~/.config/nvim directory
+    file:
+      path: "~/.config/nvim"
+      state: directory
+
   - name: Recursively link nvim configs
     find:
       paths: "{{ role_path }}/files/nvim"
