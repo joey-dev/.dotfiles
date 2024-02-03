@@ -4,10 +4,33 @@
 			- plugins
 				- common
 				- php
-- make nvim work as a IDE for PHP
-	- csfix
 	- move config from init to php
 - make nvim work as a IDE for VUE
 - add dark theme to OS
 - install chrome
 - add pipeline testing with ubuntu
+- add phpmd
+- add php csfix
+- add eslint
+- add mysql workbench
+- add git mergetool (meld)
+- add to readme how to create a new project, and what to do for what languages
+- add better color's for:
+	- php
+	- js
+	- xdebug popup (able to see int's)
+- add to lazyvim plugins to lazy load on file type
+- add more filetypes to nvim (refs: https://github.com/phux/.dotfiles/blob/master/roles/neovim/files/ftplugin/.vim):
+	- .vim
+	- html
+	- javascript
+	- json
+	- markdown
+	- sh
+	- bash
+	- text
+	- todo
+	- yaml/yml
+- add stylelint_lsp to nvim for vue (css/sass/etc)
+- add emmet_ls to nvim
+
