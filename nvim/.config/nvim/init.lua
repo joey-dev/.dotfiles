@@ -1,1 +1,1 @@
-/home/joey/.dotfiles/roles/neovim/files/config/init.lua
+/home/joey/.dotfiles/roles/neovim/files/nvim/init.lua

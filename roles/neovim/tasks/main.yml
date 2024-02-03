@@ -39,18 +39,18 @@
     args:
       creates: /usr/bin/nvim
 
-  - name: Create config dir
-    file:
-      path: "{{ neovim_config_dir }}"
-      state: directory
+  - name: Recursively link nvim configs
+    find:
+      paths: "{{ role_path }}/files/nvim"
+      file_type: any
+    register: nvim_files
 
-  - name: Link neovim config dir
+  - name: Create symbolic links for nvim configs
     file:
-      src: "{{ item }}"
-      dest: "{{ neovim_config_dir }}/{{ item | basename }}"
+      src: "{{ item.path }}"
+      dest: "~/.config/nvim/{{ item.path | regex_replace(role_path + '/files/nvim/', '') }}"
       state: link
-    with_fileglob:
-      - config/*
+    loop: "{{ nvim_files.files }}"
 
   - name: Create lua config dir
     file:
