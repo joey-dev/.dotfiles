@@ -69,7 +69,7 @@
 
   - name: Link ftplugin files
     file:
-      src: "{{ ansible_env.HOME }}/.dotfiles/roles/neovim/files/plugin_config/phpactor.json"
+      src: "{{ role_path  }}/files/plugin_config/phpactor.json"
       dest: "{{ phpactor_config_dir }}/phpactor.json"
       state: link
 
