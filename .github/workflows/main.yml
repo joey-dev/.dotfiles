@@ -3,7 +3,7 @@ run-name: Test ansbile playbook
 on:
   pull_request:
     branches:
-    - main
+    - master
 jobs:
   Ubuntu:
     runs-on: ubuntu-20.04
