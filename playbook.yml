@@ -6,5 +6,6 @@
 #   - alacritty
 #   - zsh
 #   - tmux
-    - neovim
+#   - neovim
 #   - git
+    - gtk

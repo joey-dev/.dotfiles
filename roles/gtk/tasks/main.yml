@@ -1,0 +1,22 @@
+- name: Ensure ~/.config/gtk-3.0 directory exists
+  file:
+    path: "~/.config/gtk-3.0"
+    state: directory
+
+- name: Create symbolic link for gtk-3.0 settings.ini
+  file:
+    src: "{{ role_path }}/files/gtk-3.0/settings.ini"
+    dest: "~/.config/gtk-3.0/settings.ini"
+    state: link
+
+- name: Ensure ~/.config/gtk-4.0 directory exists
+  file:
+    path: "~/.config/gtk-4.0"
+    state: directory
+
+- name: Create symbolic link for gtk-4.0 settings.ini
+  file:
+    src: "{{ role_path }}/files/gtk-4.0/settings.ini"
+    dest: "~/.config/gtk-4.0/settings.ini"
+    state: link
+
