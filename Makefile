@@ -22,5 +22,5 @@ test:
 test-reload:
 	vagrant reload
 
-rest-new:
+test-new:
 	vagrant destroy

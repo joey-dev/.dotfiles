@@ -1,11 +1,11 @@
 ---
 - hosts: localhost
   roles:
-#   - common
-#   - i3
-#   - alacritty
-#   - zsh
-#   - tmux
-#   - neovim
-#   - git
+    - common
+    - i3
+    - alacritty
+    - zsh
+    - tmux
+    - neovim
+    - git
     - gtk

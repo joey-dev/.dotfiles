@@ -2,11 +2,13 @@
   become: yes
   apt:
     update_cache: yes
+  ignore_errors: yes
 
 - name: Upgrade all packages
   become: yes
   apt:
     upgrade: yes
+  ignore_errors: yes
 
 - name: install common tools
   become: yes
@@ -21,6 +23,7 @@
       - brightnessctl
       - rofi
       - fzf
+      - npm
 
 - name: Remove scripts folder
   file:
@@ -31,3 +34,15 @@
   file:
     path: "{{ ansible_env.HOME }}/scripts"
     state: directory
+
+- name: Download Google Chrome .deb file
+  get_url:
+    url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+    dest: /tmp/google-chrome-stable_current_amd64.deb
+
+- name: Install Google Chrome from .deb file
+  apt:
+    deb: /tmp/google-chrome-stable_current_amd64.deb
+    state: present
+  become: yes
+
