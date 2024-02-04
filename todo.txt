@@ -1,4 +1,3 @@
-- make nvim work as a IDE for VUE
 - add dark theme to OS
 - install chrome
 - add pipeline testing with ubuntu

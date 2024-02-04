@@ -62,32 +62,6 @@
       state: link
     loop: "{{ nvim_files.files }}"
 
-  - name: Create lua config dir
-    file:
-      path: "{{ neovim_config_dir }}/lua"
-      state: directory
-
-  - name: Link neovim lua config dir
-    file:
-      src: "{{ item }}"
-      dest: "{{ neovim_config_dir }}/lua/{{ item | basename }}"
-      state: link
-    with_fileglob:
-      - config/lua/*
-
-  - name: Create ftplugin dir
-    file:
-      path: "{{ neovim_config_dir }}/after/ftplugin"
-      state: directory
-
-  - name: Link ftplugin files
-    file:
-      src: "{{ item }}"
-      dest: "{{ neovim_config_dir }}/after/ftplugin/{{ item | basename }}"
-      state: link
-    with_fileglob:
-      - ftplugin/*
-
   - name: Create phpactor dir
     file:
       path: "{{ phpactor_config_dir }}"
@@ -112,3 +86,11 @@
 
   - name: Build dependencies
     shell: cd {{ ansible_env.HOME}}/vscode-php-debug && npm run build
+
+  - name: Install Vue Language Server globally
+    become: yes
+    command: npm install -g @vue/language-server
+
+  - name: Install Typescript globally
+    become: yes
+    command: npm install -g typescript
