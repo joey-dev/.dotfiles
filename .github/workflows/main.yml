@@ -12,3 +12,4 @@ jobs:
         uses: dawidd6/action-ansible-playbook@v2.7.0
         with:
           playbook: playbook.yml
+          directory: ./
