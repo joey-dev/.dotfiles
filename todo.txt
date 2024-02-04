@@ -1,6 +1,3 @@
-- add dark theme to OS
-- install chrome
-- add pipeline testing with ubuntu
 - add to readme how to create a new project, and what to do for what languages
 - add better color's for:
 	- php

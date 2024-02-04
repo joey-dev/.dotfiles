@@ -46,3 +46,8 @@
     state: present
   become: yes
 
+- name: Create Downloads folder
+  file:
+    path: "{{ ansible_env.HOME }}/Downloads"
+    state: directory
+
