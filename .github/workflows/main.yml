@@ -8,6 +8,8 @@ jobs:
   Ubuntu:
     runs-on: ubuntu-20.04
     steps:
+      - name: checkout branch
+        uses: actions/checkout@v4
       - name: ansible-playbook
         uses: dawidd6/action-ansible-playbook@v2.7.0
         with:
