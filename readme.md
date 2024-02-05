@@ -102,8 +102,8 @@ For some language's, you might need to do more. Please go to [Language specific 
 - Go to next file: `Alt + e`
 
 ## Language specific Documentation/Keybinds <a name = "language"></a>
-- [PHP](documentation/php.md)
-- [VUE](documentation/php.vue)
+- [PHP](documentation/PHP.md)
+- [VUE](documentation/Vue.md)
 
 ## Testing <a name = "testing"></a>
 To test the new features/improvements in ansible, there are 2 things:
