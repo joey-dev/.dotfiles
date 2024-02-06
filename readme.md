@@ -5,6 +5,7 @@ These are all my settings and program's I use. Written in Ansible for easy insta
 ## Table of Contents
 - [Getting Started](#getting_started)
 - [Create a new project](#project)
+- [Commands](#commands)
 - [Keybinds](#keybinds)
 - [Language specific Documentation/Keybinds](#language)
 - [Testing](#testing)
@@ -28,6 +29,17 @@ run `nvim`.
 within neovin run: `:Project {root}` (example: Project ~/Code/ProjectName)
 
 For some language's, you might need to do more. Please go to [Language specific Documentation/Keybinds](#language)
+
+
+## Commands <a name = "commands"></a>
+- [Todo List](#commands_todo_list)
+
+### Todo List <a name = "commands_todo_list"></a>
+- switch context (work, project): `task context work`
+- add task: `task add {description of the task} +{tag} due:{31st} priority:{L,M,H}`
+    - tags: later, problem, work, project
+- show all tasks: `task`
+- complete task: `task {id} done`
 
 ## Keybinds <a name = "keybinds"></a>
 - [Nvim](#keybinds_nvim)
