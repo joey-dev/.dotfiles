@@ -7,14 +7,6 @@ local execute = vim.api.nvim_command
 local fn = vim.fn
 local lsp = require("lsp-zero")
 
--- colors
-vim.fn.matchadd("GreenBang", "!")
-
-vim.cmd("hi GreenBang ctermfg=lightgreen ctermbg=darkgreen")
-
-vim.cmd("syntax enable")
-
-
 -- keybinds
 vim.api.nvim_set_keymap('n', '<leader>rn', ':lua RunPhpactorRefactorCommand("fix_namespace_class_name")<CR>', { noremap = true, silent = true, nowait = false }) -- needs testing
 vim.api.nvim_set_keymap('n', '<leader>gf', ':lua RunPhpactorRefactorCommand("complete_constructor")<CR>', { noremap = true, silent = true, nowait = false })

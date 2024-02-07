@@ -16,4 +16,13 @@
 - add stylelint_lsp to nvim for vue (css/sass/etc)
 - add emmet_ls to nvim
 - add php csfix
+- add todo finder in current branch
+- add to pipeline, check if all roles are there, and no `#`
+- add syncthing (for task)
+- create todo script:
+	- asks to generate ssh key
+		- says to link it to: github, homeserver
+	- ask to set-up syncthing key
+	- ask to setup protonpass
+- add new distro (with less bloat)
 
