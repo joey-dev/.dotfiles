@@ -1,7 +1,3 @@
-- add better color's for:
-	- php
-	- js
-	- xdebug popup (able to see int's)
 - add phpmd
 - add eslint
 - add mysql workbench
