@@ -94,3 +94,4 @@
   - name: Install Typescript globally
     become: yes
     command: npm install -g typescript
+
