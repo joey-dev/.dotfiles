@@ -27,6 +27,10 @@ vim.api.nvim_create_autocmd('LspAttach', {
   end
 })
 
+vim.b.ale_linter_aliases = {'css', 'javascript', 'vue', 'typescript'}
+
+vim.b.ale_linters = {'eslint', 'stylelint'}
+
 require('mason').setup({})
 require("mason-lspconfig").setup({
     ensure_installed = {"volar"},
