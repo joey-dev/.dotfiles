@@ -39,6 +39,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
 vim.g.ale_linters = {php = {'phpmd'}}
 
 vim.g.ale_php_phpmd_executable = os.getenv("HOME") .. '/.config/composer/vendor/bin/phpmd'
+vim.g.ale_php_phpmd_ruleset = os.getenv("HOME") .. '/.dotfiles/roles/neovim/files/phpmd_ruleset.xml'
 
 require('mason').setup({})
 require'lspconfig'.phpactor.setup{}
