@@ -29,6 +29,7 @@
 - find tests for file: https://kushellig.de/vim-switch-tests-files/
 - open php manual with keybind: alvan/vim-php-manual
 - remove lsp-zero, and change it to ale if possible
+- add ai code assistent
 - add syncthing (for task)
 - create todo script:
 	- asks to generate ssh key
