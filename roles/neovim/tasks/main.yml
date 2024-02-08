@@ -95,3 +95,7 @@
     become: yes
     command: npm install -g typescript
 
+  - name: Install Stylelint globally
+    become: yes
+    command: npm install -g stylelint postcss-html stylelint-config-recommended-vue
+
