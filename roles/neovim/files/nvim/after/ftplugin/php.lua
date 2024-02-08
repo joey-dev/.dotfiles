@@ -36,10 +36,40 @@ vim.api.nvim_create_autocmd('LspAttach', {
   end
 })
 
-vim.g.ale_linters = {php = {'phpmd'}}
+vim.g.ale_linters = {php = {'phpmd', 'phpstan'}}
 
+-- phpmd
 vim.g.ale_php_phpmd_executable = os.getenv("HOME") .. '/.config/composer/vendor/bin/phpmd'
 vim.g.ale_php_phpmd_ruleset = os.getenv("HOME") .. '/.dotfiles/roles/neovim/files/phpmd_ruleset.xml'
+
+-- phpstan
+local function find_project_root()
+    local path = vim.fn.expand('%:p:h') -- Get the directory of the current file
+    while path ~= '/' do -- Stop when reaching the root directory
+        if vim.fn.filereadable(path .. '/composer.json') == 1 then
+            return path
+        end
+        path = vim.fn.fnamemodify(path, ':h') -- Move up one directory
+    end
+    return vim.fn.getcwd() -- If no composer.json found, return the current working directory
+end
+
+local function find_phpstan_neon(root_path)
+    local phpstan_neon_path = root_path .. '/phpstan.neon'
+    if vim.fn.filereadable(phpstan_neon_path) == 1 then
+        return phpstan_neon_path
+    else
+        return os.getenv("HOME") .. '/.dotfiles/roles/neovim/files/phpstan_configuration.neon'
+    end
+end
+
+local project_root = find_project_root()
+
+vim.g.ale_php_phpstan_executable = os.getenv("HOME") .. '/.config/composer/vendor/bin/phpstan'
+vim.g.ale_php_phpstan_configuration = find_phpstan_neon(project_root)
+vim.g.ale_php_phpstan_autoload = project_root .. '/vendor/autoload.php'
+
+-- mason
 
 require('mason').setup({})
 require'lspconfig'.phpactor.setup{}

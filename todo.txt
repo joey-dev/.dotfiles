@@ -1,7 +1,6 @@
-- change phpstan to use global install, and config file with extensions
-	- change the config files to php container?
 - add mysql workbench
 - add git mergetool (meld)
+- install docker & docker compose
 - add more filetypes to nvim (refs: https://github.com/phux/.dotfiles/blob/master/roles/neovim/files/ftplugin/.vim):
 	- .vim
 	- html

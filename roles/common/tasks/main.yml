@@ -1,14 +1,11 @@
-- name: Update apt package cache
-  become: yes
-  apt:
-    update_cache: yes
+- name: Update system
   ignore_errors: yes
-
-- name: Upgrade all packages
-  become: yes
-  apt:
-    upgrade: yes
-  ignore_errors: yes
+  become: true
+  ansible.builtin.apt:
+    autoclean: true
+    autoremove: true
+    update_cache: true
+    upgrade: true
 
 - name: install common tools
   become: yes

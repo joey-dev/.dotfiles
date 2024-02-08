@@ -1,0 +1,10 @@
+parameters:
+	level: 9
+	strictRules:
+		booleansInConditions: false
+
+includes:
+	- phar://phpstan.phar/conf/bleedingEdge.neon
+	- /home/joey/.config/composer/vendor/phpstan/phpstan-strict-rules/rules.neon
+	- /home/joey/.config/composer/vendor/phpstan/phpstan-phpunit/extension.neon
+
