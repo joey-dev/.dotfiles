@@ -36,7 +36,7 @@
     command: php -r "unlink('/tmp/composer-setup.php');"
 
   - name: Make composer global
-    command: mv {{ ansible_env.HOME }}/.dotfiles/composer.phar /usr/local/bin/composer
+    command: mv {{ ansible_env.playbook_dir }}/composer.phar /usr/local/bin/composer
     become: true
 
   - name: Install phpMD
