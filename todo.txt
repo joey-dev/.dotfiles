@@ -1,4 +1,5 @@
-- add eslint
+- change phpstan to use global install, and config file with extensions
+	- change the config files to php container?
 - add mysql workbench
 - add git mergetool (meld)
 - add more filetypes to nvim (refs: https://github.com/phux/.dotfiles/blob/master/roles/neovim/files/ftplugin/.vim):
@@ -12,11 +13,21 @@
 	- text
 	- todo
 	- yaml/yml
-- add stylelint_lsp to nvim for vue (css/sass/etc)
 - add emmet_ls to nvim
-- add php csfix
-- add todo finder in current branch
+- add phpcs
+- look into the following for nvim integrations with ale and ?php:
+	- cspell
+	- intelephense
+	- langserver
+	- phan
+	- psalm
+	- tlint
+	- php
+- add todo finder in current branch/open files
+- find better snippets tool
 - add to pipeline, check if all roles are there, and no `#`
+- find tests for file: https://kushellig.de/vim-switch-tests-files/
+- open php manual with keybind: alvan/vim-php-manual
 - remove lsp-zero, and change it to ale if possible
 - add syncthing (for task)
 - create todo script:
@@ -24,5 +35,5 @@
 		- says to link it to: github, homeserver
 	- ask to set-up syncthing key
 	- ask to setup protonpass
-- add new distro (with less bloat)
+- add new distro (with less bloat, maybe arch)
 
