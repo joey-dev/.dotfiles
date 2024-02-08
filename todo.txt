@@ -1,4 +1,3 @@
-- add phpmd
 - add eslint
 - add mysql workbench
 - add git mergetool (meld)
@@ -18,6 +17,7 @@
 - add php csfix
 - add todo finder in current branch
 - add to pipeline, check if all roles are there, and no `#`
+- remove lsp-zero, and change it to ale if possible
 - add syncthing (for task)
 - create todo script:
 	- asks to generate ssh key

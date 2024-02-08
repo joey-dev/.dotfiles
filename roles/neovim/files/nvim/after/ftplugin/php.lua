@@ -36,7 +36,9 @@ vim.api.nvim_create_autocmd('LspAttach', {
   end
 })
 
-vim.g.ale_php_phpmd_executable = '/home/joey/.config/composer/vendor/bin/phpmd'
+vim.g.ale_linters = {php = {'phpmd'}}
+
+vim.g.ale_php_phpmd_executable = os.getenv("HOME") .. '/.config/composer/vendor/bin/phpmd'
 
 require('mason').setup({})
 require'lspconfig'.phpactor.setup{}
