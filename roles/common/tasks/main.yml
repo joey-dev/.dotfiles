@@ -23,9 +23,6 @@
     - fzf
     - npm
     - uuid-dev
-    - libzip5
-    - libproj15
-    - libopengl0
 
 - name: Remove scripts folder
   file:
