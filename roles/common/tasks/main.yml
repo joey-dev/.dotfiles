@@ -7,11 +7,12 @@
     update_cache: true
     upgrade: true
 
-- name: install common tools
-  become: yes
-  package:
-    state: latest
-    name:
+  - name: Install common tools
+    become: true
+    apt:
+      name: "{{ item }}"
+      state: present
+    loop:
       - wget
       - curl
       - unzip
@@ -23,6 +24,7 @@
       - npm
       - uuid-dev
       - libzip5
+      - libproj15
 
 - name: Remove scripts folder
   file:
