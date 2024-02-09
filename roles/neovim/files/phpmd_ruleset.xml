@@ -9,10 +9,10 @@
     <rule ref="rulesets/codesize.xml"></rule>
     <rule ref="rulesets/controversial.xml"></rule>
     <rule ref="rulesets/design.xml"></rule>
-    <rule ref="rulesets/naming.xml"></rule>
-	<rule ref="rulesets/unusedcode.xml">
+	<rule ref="rulesets/naming.xml">
         <exclude name="LongClassName"/>
         <exclude name="LongVariable"/>
 	</rule>
+	<rule ref="rulesets/unusedcode.xml"></rule>
     
 </ruleset>
