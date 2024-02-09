@@ -4,6 +4,7 @@ These are all my settings and program's I use. Written in Ansible for easy insta
 
 ## Table of Contents
 - [Getting Started](#getting_started)
+- [Configure Program](#configure)
 - [Create a new project](#project)
 - [Commands](#commands)
 - [Keybinds](#keybinds)
@@ -23,6 +24,22 @@ If you have a new system, without i3. Logout, and login agin
 If you already have set-up i3, Run the following shortcut's:
 -   win + shift + r (anywhere)
 -   alt + r (in the terminal)
+
+## Configure Program <a name = "configure"></a>
+Some programs require custom configuration, which might be hard to automate
+
+- [Meld](#configure_meld)
+
+### Meld <a name = "configure_meld"> </a>
+
+1. nvim ~/.gitconfig
+2. add the following lines:
+```
+[merge]
+tool = meld
+[mergetool "meld"]
+cmd = meld "$LOCAL" "$MERGED" "$REMOTE" --output "$MERGED"
+```
 
 ## Create a new project <a name = "project"></a>
 run `nvim`.
