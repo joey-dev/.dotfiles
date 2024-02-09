@@ -1,6 +1,10 @@
 install:
-	sudo apt -y install ansible
+	#sudo apt -y install ansible
+	python3 -m pip install --user ansible
 	# do git stuff
+
+update:
+	python3 -m pip install --upgrade --user ansible
 
 sshtoken:
 	echo 'hi'

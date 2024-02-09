@@ -22,6 +22,14 @@
       - php{{ php_version }}-cli
       - php{{ php_version }}-common
       - php{{ php_version }}-mysql
+      - php{{ php_version }}-xml
+      - php{{ php_version }}-curl
+      - php{{ php_version }}-mbstring
+      - php{{ php_version }}-intl
+      - php{{ php_version }}-gd
+      - php{{ php_version }}-pdo
+      - php{{ php_version }}-simplexml
+      - php{{ php_version }}-zip
 
   - name: Download Composer installer
     command: php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');"
@@ -38,4 +46,13 @@
 
   - name: Install phpMD
     command: composer global require phpmd/phpmd
+
+  - name: Install phpStan
+    command: composer global require phpstan/phpstan
+
+  - name: Install phpStan strict rules
+    command: composer global require phpstan/phpstan-strict-rules
+
+  - name: Install phpStan phpunit
+    command: composer global require phpstan/phpstan-phpunit
 
