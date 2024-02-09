@@ -7,24 +7,24 @@
     update_cache: true
     upgrade: true
 
-  - name: Install common tools
-    become: true
-    apt:
-      name: "{{ item }}"
-      state: present
-    loop:
-      - wget
-      - curl
-      - unzip
-      - xclip
-      - flameshot
-      - brightnessctl
-      - rofi
-      - fzf
-      - npm
-      - uuid-dev
-      - libzip5
-      - libproj15
+- name: Install common tools
+  become: true
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - wget
+    - curl
+    - unzip
+    - xclip
+    - flameshot
+    - brightnessctl
+    - rofi
+    - fzf
+    - npm
+    - uuid-dev
+    - libzip5
+    - libproj15
 
 - name: Remove scripts folder
   file:
