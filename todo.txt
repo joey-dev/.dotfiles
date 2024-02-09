@@ -1,5 +1,5 @@
-- add git mergetool (meld)
 - install docker & docker compose
+- install npm using nvm - and move npm/node to seperate javascript role
 - add script to switch php version: sudo update-alternatives --config php (also phar, and phar.phar)
 - add more filetypes to nvim (refs: https://github.com/phux/.dotfiles/blob/master/roles/neovim/files/ftplugin/.vim):
 	- .vim

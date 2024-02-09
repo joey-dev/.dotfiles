@@ -1,3 +1,11 @@
+- name: Install git tools
+  become: true
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - meld
+
 - name: Get LazyGit latest version
   uri:
     url: "https://api.github.com/repos/jesseduffield/lazygit/releases/latest"
@@ -21,3 +29,4 @@
   become: true
   args:
     chdir: /tmp
+
