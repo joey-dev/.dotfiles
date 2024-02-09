@@ -1,0 +1,20 @@
+- name: Download mysql workbench installer
+  command: "wget --content-disposition 'https://downloads.mysql.com/archives/get/p/8/file/mysql-workbench-community_{{ mysql_workbench_version }}-1ubuntu20.04_amd64.deb' -P /tmp/"
+
+- name: Install MySQL Workbench
+  become: true
+  command: "dpkg -i --force-confold /tmp/mysql-workbench-community_{{ mysql_workbench_version  }}-1ubuntu20.04_amd64.deb"
+
+- name: Update apt package cache
+  become: true
+  ignore_errors: yes
+  apt:
+    update_cache: yes
+
+- name: install mysql workbench
+  become: yes
+  package:
+    state: latest
+    name:
+      - mysql-workbench-community
+

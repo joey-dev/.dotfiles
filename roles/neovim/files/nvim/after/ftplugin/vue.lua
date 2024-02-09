@@ -36,9 +36,22 @@ require("mason-lspconfig").setup({
     ensure_installed = {"volar"},
 })
 
+local function find_node_module_path()
+	local path1 = '/usr/local/lib/node_modules/typescript/lib'
+    local path2 = '/usr/lib/node_modules/typescript/lib'
+
+    if vim.fn.isdirectory(path1) == 1 then
+        return path1
+    elseif vim.fn.isdirectory(path2) == 1 then
+        return path2
+    else
+        return nil
+    end
+end
+
 require'lspconfig'.volar.setup{
   filetypes = {'typescript', 'javascript', 'javascriptreact', 'typescriptreact', 'vue', 'json'},
   on_new_config = function(new_config, new_root_dir)
-    new_config.init_options.typescript.tsdk = "/usr/local/lib/node_modules/typescript/lib"
+    new_config.init_options.typescript.tsdk = find_node_module_path()
   end,
 }
