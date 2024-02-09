@@ -1,6 +1,6 @@
-- add mysql workbench
 - add git mergetool (meld)
 - install docker & docker compose
+- add script to switch php version: sudo update-alternatives --config php (also phar, and phar.phar)
 - add more filetypes to nvim (refs: https://github.com/phux/.dotfiles/blob/master/roles/neovim/files/ftplugin/.vim):
 	- .vim
 	- html
