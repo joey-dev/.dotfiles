@@ -9,7 +9,6 @@
     - libopengl0
     - libgtk2.0-0
     - libgtkmm-3.0-1v5
-    - libatkmm-1.6-1v5
 
 - name: Download mysql workbench installer
   command: "wget --content-disposition 'https://downloads.mysql.com/archives/get/p/8/file/mysql-workbench-community_{{ mysql_workbench_version }}-1ubuntu20.04_amd64.deb' -P /tmp/"
