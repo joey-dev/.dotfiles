@@ -81,5 +81,8 @@ return {
 	},
 	{
 		"dense-analysis/ale"
+	},
+	{
+		"bfredl/nvim-miniyank"
 	}
 }

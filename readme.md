@@ -130,6 +130,14 @@ For some language's, you might need to do more. Please go to [Language specific 
 - Go back 1 file: `Alt + q`
 - Go to next file: `Alt + e`
 
+#### Pasting
+- Past current yanked: `p`
+- Past current yanked before carret: `P`
+- Sycle through pasted: `<leader>n`
+- Sycle through pasted back: `<leader>N`
+- copy to clipboard: `ctrl + alt + c`
+- paste from clipboard: `ctrl + shift + v`
+
 ## Language specific Documentation/Keybinds <a name = "language"></a>
 - [PHP](documentation/PHP.md)
 - [VUE](documentation/Vue.md)
