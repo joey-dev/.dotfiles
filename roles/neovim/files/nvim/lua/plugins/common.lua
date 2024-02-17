@@ -84,5 +84,8 @@ return {
 	},
 	{
 		"bfredl/nvim-miniyank"
+	},
+	{
+		"moll/vim-bbye"
 	}
 }

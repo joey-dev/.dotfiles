@@ -1,4 +1,3 @@
-- install bbye (https://github.com/moll/vim-bbye)
 - install commentary (https://github.com/tpope/vim-commentary)
 - install abolish for improved search and replace in file (https://github.com/tpope/vim-abolish)
 - install tagbar for displaying the file structure (https://github.com/preservim/tagbar)
