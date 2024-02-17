@@ -87,5 +87,9 @@ return {
 	},
 	{
 		"moll/vim-bbye"
+	},
+	{
+		"tomtom/tcomment_vim",
+		event="BufEnter"
 	}
 }

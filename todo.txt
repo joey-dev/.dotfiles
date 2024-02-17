@@ -1,7 +1,7 @@
-- install commentary (https://github.com/tpope/vim-commentary)
 - install abolish for improved search and replace in file (https://github.com/tpope/vim-abolish)
 - install tagbar for displaying the file structure (https://github.com/preservim/tagbar)
 - see if sqlfluff works with sql written in php (https://github.com/sqlfluff/sqlfluff)
+- Install plugin for having split screen in nvim
 - install docker & docker compose
 - install npm using nvm - and move npm/node to seperate javascript role
 - add script to switch php version: sudo update-alternatives --config php (also phar, and phar.phar)
