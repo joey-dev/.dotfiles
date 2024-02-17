@@ -139,6 +139,10 @@ For some language's, you might need to do more. Please go to [Language specific 
 - copy to clipboard: `ctrl + alt + c`
 - paste from clipboard: `ctrl + shift + v`
 
+#### Comments
+- Toggle comment line: `gcc`
+- Toggle comment line in visual mode: `gc`
+
 ## Language specific Documentation/Keybinds <a name = "language"></a>
 - [PHP](documentation/PHP.md)
 - [VUE](documentation/Vue.md)
