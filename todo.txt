@@ -1,3 +1,8 @@
+- install bbye (https://github.com/moll/vim-bbye)
+- install commentary (https://github.com/tpope/vim-commentary)
+- install abolish for improved search and replace in file (https://github.com/tpope/vim-abolish)
+- install tagbar for displaying the file structure (https://github.com/preservim/tagbar)
+- see if sqlfluff works with sql written in php (https://github.com/sqlfluff/sqlfluff)
 - install docker & docker compose
 - install npm using nvm - and move npm/node to seperate javascript role
 - add script to switch php version: sudo update-alternatives --config php (also phar, and phar.phar)
@@ -28,6 +33,7 @@
 - find tests for file: https://kushellig.de/vim-switch-tests-files/
 - open php manual with keybind: alvan/vim-php-manual
 - remove lsp-zero, and change it to ale if possible
+- find alt for project plugin (amiorin/vim-project + startify)
 - add ai code assistent
 - add syncthing (for task)
 - create todo script:
