@@ -129,6 +129,7 @@ For some language's, you might need to do more. Please go to [Language specific 
 #### Navigation
 - Go back 1 file: `Alt + q`
 - Go to next file: `Alt + e`
+- Close currentl file: `Alt + w`
 
 #### Pasting
 - Past current yanked: `p`

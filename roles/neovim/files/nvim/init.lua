@@ -222,3 +222,6 @@ vim.api.nvim_set_keymap('n', 'P', '<Plug>(miniyank-autoPut)', { noremap = false 
 vim.api.nvim_set_keymap('n', '<leader>n', '<Plug>(miniyank-cycle)', { noremap = false })
 vim.api.nvim_set_keymap('n', '<leader>N', '<Plug>(miniyank-cycleback)', { noremap = false })
 
+-- bbye
+vim.api.nvim_set_keymap('n', '<M-w>', ':Bdelete<cr>', { noremap = false })
+
