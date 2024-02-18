@@ -110,6 +110,15 @@ For some language's, you might need to do more. Please go to [Language specific 
         - prev item `ctrl + p`
         - next item `ctrl + n`
         - enter file `enter`
+- Find and replace: `:%Subvert/find/replace/g`
+    - example: `:%Subvert/facilit{y,ies}/building{,s}/g`
+
+#### Text manipulation
+- Word to snake_case: `crs`
+- Word to camelCase: `crc`
+- Word to UPPER_CASE: `cru`
+- Word to dash-case: `cr-`
+- Word to dot.case: `cr.`
 
 #### Task Management (tm)
 - Find/Run all tasks in the current project: `<leader>tm`
