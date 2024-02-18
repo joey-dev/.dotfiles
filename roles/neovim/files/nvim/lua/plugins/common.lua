@@ -91,5 +91,9 @@ return {
 	{
 		"tomtom/tcomment_vim",
 		event="BufEnter"
+	},
+	{
+		"tpope/vim-abolish",
+		event="BufEnter"
 	}
 }
