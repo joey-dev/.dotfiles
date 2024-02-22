@@ -1,5 +1,9 @@
 - install tagbar for displaying the file structure (https://github.com/preservim/tagbar)
 - install, configure, and try DBeaver
+- on startup, open terminal with the command (ssh-add {path-to-ssh-key})
+- create profiles (for work and personal, able to create new profiles within a normal file), with select on startup, and shortcut. change the following:
+	- npm/node/php version
+	- taskmaster
 - see if sqlfluff works with sql written in php (https://github.com/sqlfluff/sqlfluff)
 - Install plugin for having split screen in nvim
 - install docker & docker compose
@@ -35,7 +39,7 @@
 - find alt for project plugin (amiorin/vim-project + startify)
 - add ai code assistent
 - add syncthing (for task)
-- create todo script:
+- create todo script (for when installing a new system):
 	- asks to generate ssh key
 		- says to link it to: github, homeserver
 	- ask to set-up syncthing key
