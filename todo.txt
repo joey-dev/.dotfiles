@@ -1,4 +1,5 @@
 - install tagbar for displaying the file structure (https://github.com/preservim/tagbar)
+- install, configure, and try DBeaver
 - see if sqlfluff works with sql written in php (https://github.com/sqlfluff/sqlfluff)
 - Install plugin for having split screen in nvim
 - install docker & docker compose
