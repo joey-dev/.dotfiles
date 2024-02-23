@@ -1,0 +1,134 @@
+- name: Retrieve username of user invoking the playbook
+  become: false
+  tags: env
+  changed_when: false
+  command: whoami
+  failed_when: "'root' in host_local_user.stdout"
+  register: host_local_user
+
+- name: Retrieve group of user invoking the playbook
+  become: false
+  tags: env
+  changed_when: false
+  command: id -gn
+  failed_when: "'root' in host_local_user.stdout"
+  register: host_local_group
+
+- name: Set a fact with the retrieved user name
+  tags: env
+  set_fact:
+    host_local_user: "{{ host_local_user.stdout }}"
+
+- name: Ensure apt uses https
+  ansible.builtin.apt:
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: false
+
+- name: Remove old Docker versions
+  ansible.builtin.apt:
+    pkg:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+    state: absent
+    update_cache: false
+
+- name: Verify and add the Docker package signing key
+  become: true
+  ansible.builtin.apt_key:
+    id: 8D81803C0EBFCD88
+    keyring: /usr/share/keyrings/docker-archive-keyring.gpg
+    state: present
+    url: https://download.docker.com/linux/ubuntu/gpg
+    validate_certs: true
+
+- name: Add Docker deb repository
+  become: true
+  ansible.builtin.apt_repository:
+    repo: deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ansible_facts.lsb.codename }} stable
+    state: present
+    update_cache: true
+    validate_certs: true
+
+- name: Install the latest version of Docker CE, Docker Compose, and containerd
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: present
+    update_cache: false
+
+- name: Pass docker.sock ownership to the user so they can pull from the docker image repository
+  become: true
+  ansible.builtin.file:
+    owner: "{{ host_local_user }}"
+    path: /var/run/docker.sock
+
+- name: Eliminate the need for sudo when issuing docker commands (1/2)
+  become: true
+  ansible.builtin.user:
+    name: "{{ host_local_user }}"
+    append: true
+    groups:
+      - docker
+
+- name: Eliminate the need for sudo when issuing docker commands (2/2)
+  become: false
+  ansible.builtin.shell: newgrp docker
+
+- name: Ensure Ansible is able to manage Docker (1/2)
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - python3-pip
+    state: present
+    update_cache: false
+
+- name: Ensure Ansible is able to manage Docker (2/2)
+  become: true
+  ansible.builtin.pip:
+    name: docker
+
+- name: Verify that Docker CE is installed correctly (1/2)
+  community.docker.docker_container:
+    detach: false
+    image: hello-world
+    name: hello-world
+    state: started
+  register: hello_world_container
+
+- name: Verify that Docker CE is installed correctly (2/2)
+  ansible.builtin.debug:
+    msg: '{{ hello_world_container.container.Output }}'
+  failed_when:
+    - '"This message shows that your installation appears to be working correctly." not in hello_world_container.container.Output'
+
+- name: Cleanup - ensure hello world container is stopped
+  community.docker.docker_container:
+    detach: false
+    image: hello-world
+    name: hello-world
+    state: stopped
+
+- name: Cleanup - remove hello world container
+  community.docker.docker_container:
+    image: hello-world
+    name: hello-world
+    state: absent
+
+- name: Cleanup - remove hello world image
+  community.docker.docker_image:
+    state: absent
+    name: hello-world
+

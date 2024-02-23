@@ -1,4 +1,3 @@
-- install docker & docker compose
 - install npm using nvm - and move npm/node to seperate javascript role
 - add script to switch versions
 	- php: sudo update-alternatives --config php (also phar, and phar.phar)
