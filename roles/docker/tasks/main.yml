@@ -70,11 +70,13 @@
     update_cache: false
 
 - name: Pass docker.sock ownership to the user so they can pull from the docker image repository
+  become: true
   ansible.builtin.file:
     owner: "{{ host_local_user }}"
     path: /var/run/docker.sock
 
 - name: Eliminate the need for sudo when issuing docker commands (1/2)
+  become: true
   ansible.builtin.user:
     name: "{{ host_local_user }}"
     append: true
@@ -94,6 +96,7 @@
     update_cache: false
 
 - name: Ensure Ansible is able to manage Docker (2/2)
+  become: true
   ansible.builtin.pip:
     name: docker
 
