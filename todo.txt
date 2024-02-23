@@ -1,4 +1,3 @@
-- Install plugin for having split screen in nvim
 - install docker & docker compose
 - install npm using nvm - and move npm/node to seperate javascript role
 - add script to switch versions

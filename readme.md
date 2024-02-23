@@ -142,6 +142,12 @@ For some language's, you might need to do more. Please go to [Language specific 
 - Go to next file: `Alt + e`
 - Close currentl file: `Alt + w`
 
+#### Split-screen
+- Split window: `ctrl+w,ctrl+v`
+- Split window horizantally: `ctrl+w,ctrl+s`
+- Go to left window: `ctrl+w,ctrl+h`
+- Go to right window: `ctrl+w,ctrl+l`
+
 #### Pasting
 - Past current yanked: `p`
 - Past current yanked before carret: `P`
