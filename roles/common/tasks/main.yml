@@ -21,7 +21,6 @@
     - brightnessctl
     - rofi
     - fzf
-    - npm
     - uuid-dev
 
 - name: Remove scripts folder
