@@ -51,6 +51,7 @@
     validate_certs: true
 
 - name: Add Docker deb repository
+  become: true
   ansible.builtin.apt_repository:
     repo: deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ansible_facts.lsb.codename }} stable
     state: present
@@ -58,6 +59,7 @@
     validate_certs: true
 
 - name: Install the latest version of Docker CE, Docker Compose, and containerd
+  become: true
   ansible.builtin.apt:
     pkg:
       - docker-ce
@@ -84,6 +86,7 @@
   ansible.builtin.shell: newgrp docker
 
 - name: Ensure Ansible is able to manage Docker (1/2)
+  become: true
   ansible.builtin.apt:
     pkg:
       - python3-pip
