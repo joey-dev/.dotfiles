@@ -60,6 +60,7 @@ For some language's, you might need to do more. Please go to [Language specific 
 
 ## Keybinds <a name = "keybinds"></a>
 - [Nvim](#keybinds_nvim)
+- [DBeaver](#keybinds_dbeaver)
 
 ### Nvim <a name = "keybinds_nvim"> </a>
 #### Git
@@ -152,6 +153,23 @@ For some language's, you might need to do more. Please go to [Language specific 
 #### Comments
 - Toggle comment line: `gcc`
 - Toggle comment line in visual mode: `gc`
+
+### DBeaver <a name = "keybinds_dbeaver"> </a>
+
+#### In Table view
+- View data in table: `Ctrl+d`
+
+#### In Data view
+- Go to table in overview, from inside: `ctrl + shift + ,`
+- Go to definition of foreign key: `alt + space`
+- Go back: `alt + arrow left`
+- Go forward: `alt + arrow right`
+- Select all row(s): `ctrl + alt + r`
+- Select all column(s): `ctrl + alt + c`
+- Show context menu for column: `ctrl + shift + alt + c`
+- Go to filter: `ctrl + shift + alt + t`
+- Go between data and value panel: `alt + v`
+- Show row details: `tab`
 
 ## Language specific Documentation/Keybinds <a name = "language"></a>
 - [PHP](documentation/PHP.md)
