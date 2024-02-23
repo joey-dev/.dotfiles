@@ -2,6 +2,7 @@
 - hosts: localhost
   roles:
     - common
+    - docker
     - i3
     - alacritty
     - zsh
@@ -12,4 +13,3 @@
     - taskmaster
     - php
     - sql
-    - docker

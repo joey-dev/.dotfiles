@@ -42,6 +42,7 @@
     update_cache: false
 
 - name: Verify and add the Docker package signing key
+  become: true
   ansible.builtin.apt_key:
     id: 8D81803C0EBFCD88
     keyring: /usr/share/keyrings/docker-archive-keyring.gpg
