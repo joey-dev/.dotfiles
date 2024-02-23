@@ -225,3 +225,6 @@ vim.api.nvim_set_keymap('n', '<leader>N', '<Plug>(miniyank-cycleback)', { norema
 -- bbye
 vim.api.nvim_set_keymap('n', '<M-w>', ':Bdelete<cr>', { noremap = false })
 
+-- tagbar
+vim.api.nvim_set_keymap('n', '<leader>fs', ':TagbarOpenAutoClose<cr>', { noremap = false })
+

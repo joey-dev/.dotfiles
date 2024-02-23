@@ -98,3 +98,50 @@
   - name: Install Stylelint globally
     become: yes
     command: npm install -g stylelint postcss-html stylelint-config-recommended-vue
+
+
+- name: install universal-ctags
+  block:
+
+  - name: universal-ctags - install required packages
+    become: yes
+    package:
+      state: present
+      name: 
+        - gcc
+        - make
+        - pkg-config 
+        - autoconf
+        - automake
+        - python3-docutils
+        - libseccomp-dev
+        - libjansson-dev
+        - libyaml-dev
+        - libxml2-dev
+
+  - name: universal-ctags - Clone repo
+    ansible.builtin.git:
+      repo: https://github.com/universal-ctags/ctags.git
+      dest: /tmp/ctags
+
+  - name: universal-ctags - Run autogen
+    command: "./autogen.sh"
+    args:
+      chdir: "/tmp/ctags"
+
+  - name: universal-ctags - Run configure
+    command: "./configure"
+    args:
+      chdir: "/tmp/ctags"
+
+  - name: universal-ctags - Run make
+    command: "make"
+    args:
+      chdir: "/tmp/ctags"
+
+  - name: universal-ctags - Run make install
+    command: "make install"
+    become: true
+    args:
+      chdir: "/tmp/ctags"
+

@@ -95,5 +95,9 @@ return {
 	{
 		"tpope/vim-abolish",
 		event="BufEnter"
+	},
+	{
+		"preservim/tagbar",
+		event="BufEnter"
 	}
 }
