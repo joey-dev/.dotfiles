@@ -1,4 +1,3 @@
-- install, configure, and try DBeaver
 - on startup, open terminal with the command (ssh-add {path-to-ssh-key})
 - create profiles (for work and personal, able to create new profiles within a normal file), with select on startup, and shortcut. change the following:
 	- npm/node/php version
@@ -38,10 +37,11 @@
 - find alt for project plugin (amiorin/vim-project + startify)
 - add ai code assistent
 - add syncthing (for task)
-- create todo script (for when installing a new system):
+- create todo script (for when installing a new system, or maybe update like DBeaver settings), should be called after make provision, and saved in a local .env file:
 	- asks to generate ssh key
 		- says to link it to: github, homeserver
 	- ask to set-up syncthing key
 	- ask to setup protonpass
+	- ask to import DBeaver settings
 - add new distro (with less bloat, maybe arch)
 
