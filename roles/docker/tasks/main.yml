@@ -20,6 +20,7 @@
     host_local_user: "{{ host_local_user.stdout }}"
 
 - name: Ensure apt uses https
+  become: true
   ansible.builtin.apt:
     pkg:
       - apt-transport-https

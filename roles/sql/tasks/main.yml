@@ -1,32 +1,10 @@
-- name: Install required packages
-  become: true
+- name: Download DBeaver .deb file
+  get_url:
+    url: https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb
+    dest: /tmp/dbeaver-ce_latest_amd64.deb
+
+- name: Install DBeaver from .deb file
   apt:
-    name: "{{ item }}"
+    deb: /tmp/dbeaver-ce_latest_amd64.deb
     state: present
-  loop:
-    - libzip5
-    - libproj15
-    - libopengl0
-    - libgtk2.0-0
-    - libgtkmm-3.0-1v5
-
-- name: Download mysql workbench installer
-  command: "wget --content-disposition 'https://downloads.mysql.com/archives/get/p/8/file/mysql-workbench-community_{{ mysql_workbench_version }}-1ubuntu20.04_amd64.deb' -P /tmp/"
-
-- name: Install MySQL Workbench
-  become: true
-  command: "dpkg -i --force-confold /tmp/mysql-workbench-community_{{ mysql_workbench_version  }}-1ubuntu20.04_amd64.deb"
-
-- name: Update apt package cache
-  become: true
-  ignore_errors: yes
-  apt:
-    update_cache: yes
-
-- name: install mysql workbench
   become: yes
-  package:
-    state: latest
-    name:
-      - mysql-workbench-community
-

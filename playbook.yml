@@ -3,9 +3,9 @@
   roles:
     - common
     - i3
-    - javascript
     - alacritty
     - zsh
+    - javascript
     - tmux
     - neovim
     - git
