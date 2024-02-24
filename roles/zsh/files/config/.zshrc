@@ -120,3 +120,7 @@ export NNN_BMS='h:~;d:~/.dotfiles;s:~/Scripts'
 export NNN_PLUG='v:preview-tabbed'
 set --export NNN_INFO "/tmp/nnn.fifo"
 
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
