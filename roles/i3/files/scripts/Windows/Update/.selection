@@ -2,6 +2,9 @@
 -npm
 _/home/joey/scripts/i3/Windows/Update/npmXterm
 
+-php
+_/home/joey/scripts/i3/Windows/Update/phpXterm
+
 -System
 _/home/joey/scripts/i3/Windows/Update/systemXterm
 

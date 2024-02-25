@@ -22,3 +22,4 @@ do
     sudo npm install -g "$package"
 done
 
+echo "done"

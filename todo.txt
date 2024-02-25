@@ -1,6 +1,3 @@
-- add script to switch versions
-	- php: sudo update-alternatives --config php (also phar, and phar.phar)
-	- npm/node: nvm
 - create profiles (for work and personal, able to create new profiles within a normal file), with select on startup, and shortcut. change the following:
 	- npm/node/php version
 	- taskmaster
