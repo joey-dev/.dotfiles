@@ -1,0 +1,25 @@
+#!/bin/zsh
+
+source ~/.nvm/nvm.sh
+
+vared -p 'Version (lastest = node): ' -c version
+
+# Define packages to blacklist
+blacklist=("lib" "npm" "corepack")
+
+# Fetch all globally installed npm packages and exclude blacklisted packages
+packages=()
+while IFS= read -r package; do
+    packages+=("$package")
+done < <(npm list -g --depth=0 --parseable | awk -F/ '{print $NF}' | grep -v -E "$(IFS="|"; echo "${blacklist[*]}")")
+
+# Switch Node.js version using nvm
+nvm use "$1"
+
+# Install non-blacklisted packages globally
+for package in "${packages[@]}"
+do
+    sudo npm install -g "$package"
+done
+
+echo "done"
