@@ -1,4 +1,7 @@
 @Update
+-npm
+_/home/joey/scripts/i3/Windows/Update/npmXterm
+
 -System
 _/home/joey/scripts/i3/Windows/Update/systemXterm
 
