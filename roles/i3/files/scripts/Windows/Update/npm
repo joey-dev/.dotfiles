@@ -2,7 +2,9 @@
 
 source ~/.nvm/nvm.sh
 
-vared -p 'Version (lastest = node): ' -c version
+if [ ! -v 1 ]; then
+	vared -p 'Version (lastest = node): ' -c 1
+fi
 
 # Define packages to blacklist
 blacklist=("lib" "npm" "corepack")

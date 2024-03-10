@@ -1,6 +1,10 @@
 #!/bin/zsh
 
-vared -p 'Version: ' -c version
+if [ ! -v 1 ]; then
+	vared -p 'Version: ' -c version
+else
+	version=$1
+fi
 
 sudo update-alternatives --set php "/usr/bin/php$version"
 sudo update-alternatives --set phar "/usr/bin/phar$version"

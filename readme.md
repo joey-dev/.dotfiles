@@ -59,8 +59,17 @@ For some language's, you might need to do more. Please go to [Language specific 
 - complete task: `task {id} done`
 
 ## Keybinds <a name = "keybinds"></a>
+- [I3](#keybinds_i3)
 - [Nvim](#keybinds_nvim)
 - [DBeaver](#keybinds_dbeaver)
+
+### I3 <a name = "keybinds_i3"> </a>
+- Find programs: `Win+d`
+- Power settings: `Win+s`
+- Monitor settings: `Win+o`
+- Switch profile: `Win+i`
+- Update/switch version: `Win+u`
+- Switch workspace from monitor: `Win+shift+d`
 
 ### Nvim <a name = "keybinds_nvim"> </a>
 #### Git

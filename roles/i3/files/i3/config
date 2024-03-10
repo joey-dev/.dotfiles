@@ -245,7 +245,7 @@ client.background       #F8F8F2
 
 #exec gnome-terminal
 
-exec --no-startup-id xterm -e ssh-add
+exec --no-startup-id xterm -e ~/.dotfiles/roles/i3/files/scripts/Startup/main.sh
 
 
 # ------------------------------------------
@@ -269,6 +269,8 @@ bindsym $mod+s exec --no-startup-id ~/scripts/i3/Windows/window ~/scripts/i3/Win
 
 # Screenshot 
 bindsym Print exec flameshot gui
+
+bindsym $mod+i exec --no-startup-id xterm -e ~/.dotfiles/roles/i3/files/scripts/Startup/main.sh
 
 # Brightness
 # bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +5%
