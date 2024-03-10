@@ -46,4 +46,4 @@ context.work.write=+work
 context.project.read=+project
 context.project.write=+project
 
-context=work
+context=project

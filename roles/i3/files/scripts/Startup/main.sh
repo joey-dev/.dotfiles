@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
+CONFIG_FILE=$(eval echo '~/.dotfiles/roles/i3/files/scripts/Startup/config.json')
+
 names=()
 
 while read i; do
     name=$(jq --raw-output '.name' <<< "$i")
     names+=($name)
-done < <(jq -c '.[]' config.json)
+done < <(jq -c '.[]' $CONFIG_FILE)
 
 printf -v namesString '%s,' "${names[@]}"
 echo "What profile do you want?"
 echo $namesString
 read profile
-
-echo $profile
 
 while read i; do
 	name=$(jq --raw-output '.name' <<< "$i")
@@ -21,7 +21,7 @@ while read i; do
 		nodeVersion=$(jq --raw-output '.node_version' <<< "$i")
 		phpVersion=$(jq --raw-output '.php_version' <<< "$i")
 	fi
-done < <(jq -c '.[]' config.json)
+done < <(jq -c '.[]' $CONFIG_FILE)
 
 if [ ! -v task ]; then
     echo "profile not found" >&2
