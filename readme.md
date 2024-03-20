@@ -36,9 +36,11 @@ Some programs require custom configuration, which might be hard to automate
 2. add the following lines:
 ```
 [merge]
-tool = meld
+	tool = meld
+
 [mergetool "meld"]
-cmd = meld "$LOCAL" "$MERGED" "$REMOTE" --output "$MERGED"
+	cmd = meld "$LOCAL" "$MERGED" "$REMOTE" --output "$MERGED"
+	keepBackup = false
 ```
 
 ## Create a new project <a name = "project"></a>
