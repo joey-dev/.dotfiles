@@ -1,14 +1,5 @@
-- add more filetypes to nvim (refs: https://github.com/phux/.dotfiles/blob/master/roles/neovim/files/ftplugin/.vim):
-	- .vim
-	- html
-	- javascript
-	- json
-	- markdown
-	- sh
-	- bash
-	- text
-	- todo
-	- yaml/yml
+- fix vue files
+- fix json files
 - add emmet_ls to nvim
 - add todo finder in current branch/open files
 - find better snippets tool
