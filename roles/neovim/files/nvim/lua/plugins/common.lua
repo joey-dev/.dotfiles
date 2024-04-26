@@ -99,5 +99,15 @@ return {
 	{
 		"preservim/tagbar",
 		event="BufEnter"
-	}
+	},
+	{
+		"folke/todo-comments.nvim",
+		dependencies = { "nvim-lua/plenary.nvim" },
+		opts = {
+			keywords = {
+				DOING = { icon = " ", color = "warning" },
+				HACK = { icon = " ", color = "warning" },
+			}
+		}
+  }
 }

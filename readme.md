@@ -125,6 +125,8 @@ For some language's, you might need to do more. Please go to [Language specific 
 - Find and replace: `:%Subvert/find/replace/g`
     - example: `:%Subvert/facilit{y,ies}/building{,s}/g`
 - Find structure in current files (ctag's): `<leader>fs`
+- Find all todo's: `<leader>ft`
+    - This will find all the keywords: `DOING:` and `HACK:`
 
 #### Text manipulation
 - Word to snake_case: `crs`
