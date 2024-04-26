@@ -99,6 +99,10 @@
     become: yes
     command: npm install -g stylelint postcss-html stylelint-config-recommended-vue
 
+  - name: Install FixJson globally
+    become: yes
+    command: npm install -g fixjson
+
 
 - name: install universal-ctags
   block:
