@@ -228,3 +228,5 @@ vim.api.nvim_set_keymap('n', '<M-w>', ':Bdelete<cr>', { noremap = false })
 -- tagbar
 vim.api.nvim_set_keymap('n', '<leader>fs', ':TagbarOpenAutoClose<cr>', { noremap = false })
 
+vim.api.nvim_set_keymap('n', '<leader>ft', ':TodoTelescope keywords=DOING,HACK<cr>', { noremap = false })
+

@@ -1,5 +1,3 @@
-- add emmet_ls to nvim
-- add todo finder in current branch/open files
 - find better snippets tool
 - add to pipeline, check if all roles are there, and no `#`
 - find tests for file: https://kushellig.de/vim-switch-tests-files/
