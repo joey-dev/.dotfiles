@@ -1,4 +1,3 @@
-- fix vue files
 - fix json files
 - add emmet_ls to nvim
 - add todo finder in current branch/open files
