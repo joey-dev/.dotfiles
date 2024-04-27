@@ -11,7 +11,7 @@ jobs:
       - name: checkout branch
         uses: actions/checkout@v4
       - name: Run playbook check script
-        run: ./check_playbook.sh
+        run: ./checkPlaybook.sh
       - name: ansible-playbook
         uses: dawidd6/action-ansible-playbook@v2.8.0
         with:
