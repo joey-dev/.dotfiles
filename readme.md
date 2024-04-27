@@ -6,6 +6,7 @@ These are all my settings and program's I use. Written in Ansible for easy insta
 - [Getting Started](#getting_started)
 - [Configure Program](#configure)
 - [Create a new project](#project)
+- [Configuration](#configuration)
 - [Commands](#commands)
 - [Keybinds](#keybinds)
 - [Language specific Documentation/Keybinds](#language)
@@ -48,6 +49,32 @@ run `nvim`.
 within neovin run: `:Project {root}` (example: Project ~/Code/ProjectName)
 
 For some language's, you might need to do more. Please go to [Language specific Documentation/Keybinds](#language)
+
+## Configuration <a name = "configuration"></a>
+- [Neovim Snippets](#configuration_snippets)
+
+### Neovim Snippets <a name = "configuration_snippets"></a>
+To create new snippets go to the nvim/snippets directory.
+The filename is: `fileType.snippets`.
+If all the snippets from one filetype are also used in another filetype, use extends {fileType}.
+    Example, the vue.snippets has as first line: `extends js`
+A snippets looks like this:
+```
+snippet {snippetWord}
+    {codeHere}
+```
+
+In the code you can use `${1:name}`. This will be the first item your carot goes to when selecting the snippetWord.
+It starts with number 1, and goes up. number 0 will be the last one.
+
+example:
+```
+snippet pubf
+	public function ${1:name}(${2:params}): ${3:return}
+	{
+		${0:body}
+	}
+```
 
 
 ## Commands <a name = "commands"></a>
@@ -172,6 +199,12 @@ For some language's, you might need to do more. Please go to [Language specific 
 #### Comments
 - Toggle comment line: `gcc`
 - Toggle comment line in visual mode: `gc`
+
+#### Snippets
+- Next snippet: `ctrl + n`
+- Previous snippet: `ctrl + p`
+- Select snippet: `enter`
+- Go to next selection of current snippet: `tab`
 
 ### DBeaver <a name = "keybinds_dbeaver"> </a>
 
