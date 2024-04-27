@@ -1,4 +1,4 @@
-name: GitHub Actions Demo
+name: GitHub Action
 run-name: Test ansbile playbook
 on:
   pull_request:
@@ -10,6 +10,8 @@ jobs:
     steps:
       - name: checkout branch
         uses: actions/checkout@v4
+      - name: Run playbook check script
+        run: ./check_playbook.sh
       - name: ansible-playbook
         uses: dawidd6/action-ansible-playbook@v2.8.0
         with:
