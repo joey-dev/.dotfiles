@@ -200,6 +200,12 @@ snippet pubf
 - Toggle comment line: `gcc`
 - Toggle comment line in visual mode: `gc`
 
+#### Snippets
+- Next snippet: `ctrl + n`
+- Previous snippet: `ctrl + p`
+- Select snippet: `enter`
+- Go to next selection of current snippet: `tab`
+
 ### DBeaver <a name = "keybinds_dbeaver"> </a>
 
 #### In Table view
