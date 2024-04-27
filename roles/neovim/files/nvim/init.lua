@@ -246,14 +246,14 @@ cmp.setup({
   mapping = cmp.mapping.preset.insert({
 		['<CR>'] = cmp.mapping(function(fallback)
 			if cmp.visible() then
-        if luasnip.expandable() then
-          luasnip.expand()
-        else
-          cmp.confirm({
+				if luasnip.expandable() then
+					luasnip.expand()
+				else
+					cmp.confirm({
 						select = true,
 					})
-        end
-      else
+				end
+			else
 				fallback()
       end
     end),
