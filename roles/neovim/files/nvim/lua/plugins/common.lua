@@ -51,6 +51,14 @@ return {
 	  },
 	},
 	{
+		"dcampos/nvim-snippy",
+	  dependencies = {
+			"honza/vim-snippets",
+			{"hrsh7th/nvim-cmp", event = "InsertEnter"},
+			"dcampos/cmp-snippy",
+		}
+	},
+	{
 		'windwp/nvim-autopairs',
 		event = "InsertEnter",
 		opts = {} -- this is equalent to setup({}) function

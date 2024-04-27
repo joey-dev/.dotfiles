@@ -230,3 +230,28 @@ vim.api.nvim_set_keymap('n', '<leader>fs', ':TagbarOpenAutoClose<cr>', { noremap
 
 vim.api.nvim_set_keymap('n', '<leader>ft', ':TodoTelescope keywords=DOING,HACK<cr>', { noremap = false })
 
+-- snippets
+require 'cmp'.setup {
+  snippet = {
+    expand = function(args)
+      require 'snippy'.expand_snippet(args.body)
+    end
+  },
+
+  sources = {
+    { name = 'snippy' }
+  }
+}
+
+require('snippy').setup({
+    mappings = {
+        is = {
+            ['<Tab>'] = 'expand_or_advance',
+            ['<S-Tab>'] = 'previous',
+        },
+        nx = {
+            ['<leader>x'] = 'cut_text',
+        },
+    },
+})
+
