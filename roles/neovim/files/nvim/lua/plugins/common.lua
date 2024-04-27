@@ -32,31 +32,23 @@ return {
 	{
 	  "VonHeikemen/lsp-zero.nvim",
 	  dependencies = {
-		-- LSP Support
-		{"neovim/nvim-lspconfig"},
-		{"williamboman/mason.nvim"},
-		{"williamboman/mason-lspconfig.nvim"},
+			-- LSP Support
+			{"neovim/nvim-lspconfig"},
+			{"williamboman/mason.nvim"},
+			{"williamboman/mason-lspconfig.nvim"},
 
-		-- Autocompletion
-		{"hrsh7th/nvim-cmp", event = "InsertEnter"},
-		{"hrsh7th/cmp-buffer"},
-		{"hrsh7th/cmp-path"},
-		{"saadparwaiz1/cmp_luasnip"},
-		{"hrsh7th/cmp-nvim-lsp"},
-		{"hrsh7th/cmp-nvim-lua"},
-
-		-- Snippets
-		{"L3MON4D3/LuaSnip", event = "InsertEnter"},
-		{"honza/vim-snippets"},
-	  },
-	},
-	{
-		"dcampos/nvim-snippy",
-	  dependencies = {
-			"honza/vim-snippets",
+			-- Autocompletion
 			{"hrsh7th/nvim-cmp", event = "InsertEnter"},
-			"dcampos/cmp-snippy",
-		}
+			{"hrsh7th/cmp-buffer"},
+			{"hrsh7th/cmp-path"},
+			{"saadparwaiz1/cmp_luasnip"},
+			{"hrsh7th/cmp-nvim-lsp"},
+			{"hrsh7th/cmp-nvim-lua"},
+
+			-- Snippets
+			{"L3MON4D3/LuaSnip", event = "InsertEnter"},
+			{"honza/vim-snippets"},
+	  },
 	},
 	{
 		'windwp/nvim-autopairs',
