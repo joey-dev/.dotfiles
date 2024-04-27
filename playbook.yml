@@ -1,6 +1,7 @@
 ---
 - hosts: localhost
   roles:
+    #- common
     - i3
     - alacritty
     - zsh
