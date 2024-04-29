@@ -55,7 +55,7 @@
 
 - name: Install yay
   when: ansible_distribution == "Archlinux"
-  command: command: "echo 'MAKEFLAGS=\"-j$(nproc)\"' | sudo tee -a /etc/makepkg.conf && sudo chown -R $(whoami) /tmp/yay && cd /tmp/yay && makepkg -si --noconfirm"
+  command: "echo 'MAKEFLAGS=\"-j$(nproc)\"' | sudo tee -a /etc/makepkg.conf && sudo chown -R $(whoami) /tmp/yay && cd /tmp/yay && makepkg -si --noconfirm"
 
 - name: Remove scripts folder
   file:
