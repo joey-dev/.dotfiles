@@ -55,6 +55,7 @@
 
 - name: Install yay
   when: ansible_distribution == "Archlinux"
+  become: false
   command: makepkg -si
   args:
     chdir: "/tmp/yay"
