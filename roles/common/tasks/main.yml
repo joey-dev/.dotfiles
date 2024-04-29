@@ -57,6 +57,17 @@
   when: ansible_distribution == "Archlinux"
   command: "echo 'MAKEFLAGS=\"-j$(nproc)\"' | sudo tee -a /etc/makepkg.conf && sudo chown -R $(whoami) /tmp/yay && cd /tmp/yay && makepkg -si --noconfirm"
 
+- name: Get path of yay executable
+  when: ansible_distribution == "Archlinux"
+  command: "which yay"
+  register: yay_path_result
+  changed_when: false
+  check_mode: no
+
+- set_fact:
+    yay_path: "{{ yay_path_result.stdout }}"
+  when: ansible_distribution == "Archlinux"
+
 - name: Remove scripts folder
   file:
     path: "{{ ansible_env.HOME }}/scripts"
@@ -83,9 +94,8 @@
 - name: Download and install Google Chrome
   when: ansible_distribution == "Archlinux"
   become: true
-  command: yay -S google-chrome
+  command: "{{ yay_path }} -S google-chrome"
 
-- name: Create Downloads folder
   file:
     path: "{{ ansible_env.HOME }}/Downloads"
     state: directory
