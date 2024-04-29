@@ -47,17 +47,22 @@
     path: "{{ ansible_env.HOME }}/tmp"
     state: directory
 
-- name: Download yay
-  when: ansible_distribution == "Archlinux"
-  ansible.builtin.git:
-    repo: 'https://aur.archlinux.org/yay-git.git'
-    dest: "/tmp/yay"
-
-- name: Install yay
-  when: ansible_distribution == "Archlinux"
-  command: makepkg -si --noconfirm
-  args:
-    chdir: "/tmp/yay"
+- name: Install Yay from AUR
+  aur:
+    name: yay
+    state: present
+    update: yes
+# - name: Download yay
+#   when: ansible_distribution == "Archlinux"
+#   ansible.builtin.git:
+#     repo: 'https://aur.archlinux.org/yay-git.git'
+#     dest: "/tmp/yay"
+#
+# - name: Install yay
+#   when: ansible_distribution == "Archlinux"
+#   command: makepkg -si --noconfirm
+#   args:
+#     chdir: "/tmp/yay"
 
 - name: Remove scripts folder
   file:
