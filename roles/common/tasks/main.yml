@@ -1,8 +1,3 @@
-- name: Create temp user
-  when: ansible_distribution == "Archlinux"
-  become: false
-  command: useradd -m -G wheel tempuser && su tempuser
-
 - name: Update system
   become: true
   when: ansible_distribution == "Archlinux"
