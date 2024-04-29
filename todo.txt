@@ -1,4 +1,3 @@
-- find tests for file: https://kushellig.de/vim-switch-tests-files/
 - open php manual with keybind: alvan/vim-php-manual
 - create todo script (for when installing a new system, or maybe update like DBeaver settings), should be called after make provision, and saved in a local .env file:
 	- asks to generate ssh key
