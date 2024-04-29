@@ -1,5 +1,11 @@
 - name: Update system
   become: true
+  when: ansible_distribution == "Ubuntu"
+  run: pacman -Syu --noconfirm
+
+- name: Update system
+  become: true
+  when: ansible_distribution == "Archlinux"
   ansible.builtin.apt:
     autoclean: true
     autoremove: true
@@ -8,7 +14,7 @@
 
 - name: Install common tools
   become: true
-  apt:
+  ansible.builtin.package:
     name: "{{ item }}"
     state: present
   loop:
