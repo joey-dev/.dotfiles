@@ -5,6 +5,10 @@ install:
 
 update:
 	python3 -m pip install --upgrade --user ansible
+	./configure.sh
+
+configure:
+	./configure.sh
 
 sshtoken:
 	echo 'hi'
