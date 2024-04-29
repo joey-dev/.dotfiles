@@ -52,6 +52,10 @@
 - List All Breakpoints: `Alt + l`
 - Remove All Breakpoints: `Alt + r`
 
+### Switch between test file and code, and back
+- Switch to unit test: `<leader>fut`
+- Switch to integration test: `<leader>fit`
+- Switch to api test: `<leader>fat`
 
 ## New Project <a name = "new_project"></a>
 

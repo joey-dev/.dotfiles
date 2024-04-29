@@ -142,3 +142,25 @@ function OpenDebugWidgetInWindow()
   my_sidebar.open()
 end
 
+-- Switch between test file
+function switch_between_file_and_test(test_type)
+    local current_file_path = vim.fn.expand("%:p")
+    local is_test_file = string.find(current_file_path, "/tests/" .. test_type .. "/") ~= nil
+
+    if is_test_file then
+        local source_file_path = string.gsub(current_file_path, "/tests/" .. test_type .. "/", "/")
+        source_file_path = string.gsub(source_file_path, "Test%.php$", ".php")
+
+        vim.cmd("edit " .. source_file_path)
+    else
+        local test_file_path = string.gsub(current_file_path, "Component", "tests/" .. test_type .. "/Component")
+        test_file_path = string.gsub(test_file_path, "%.php$", "Test.php")
+
+        vim.cmd("edit " .. test_file_path)
+    end
+end
+
+vim.api.nvim_set_keymap('n', '<leader>fut', '<cmd>lua switch_between_file_and_test("unit")<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>fit', '<cmd>lua switch_between_file_and_test("integration")<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>fat', '<cmd>lua switch_between_file_and_test("api")<CR>', { noremap = true, silent = true })
+
