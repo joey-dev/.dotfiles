@@ -58,9 +58,9 @@
   command: "echo 'MAKEFLAGS=\"-j$(nproc)\"' | sudo tee -a /etc/makepkg.conf && sudo chown -R $(whoami) /tmp/yay && cd /tmp/yay && makepkg -si --noconfirm"
 
 - name: Set path of yay executable
-  when: ansible_distribution == "Archlinux"
-  command: "command -v yay"
+  command: "find / -type f -name yay 2>/dev/null | head -n 1"
   register: yay_path_result
+  when: ansible_distribution == "Archlinux"
   ignore_errors: true
 
 - set_fact:
