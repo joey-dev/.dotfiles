@@ -53,7 +53,6 @@
     shell: /bin/bash
     password: "!"
     system: yes
-  notify: Delete passwordless sudo user
   changed_when: yes # Always mark as changed, so that the handler can be invoked
 
 - name: Add passwordless sudo user to sudoers
