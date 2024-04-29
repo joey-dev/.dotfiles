@@ -96,6 +96,7 @@
   become: true
   command: "{{ yay_path }} -S google-chrome"
 
+- name: Create Downloads folder
   file:
     path: "{{ ansible_env.HOME }}/Downloads"
     state: directory
