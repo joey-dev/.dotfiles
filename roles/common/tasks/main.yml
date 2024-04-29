@@ -28,6 +28,26 @@
     - fzf
     - uuid-dev
 
+- name: Install common ubuntu tools
+  become: true
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  when: ansible_distribution == "Ubuntu"
+  loop:
+    - uuid-dev
+
+- name: Download yay
+  when: ansible_distribution == "Archlinux"
+  ansible.builtin.git:
+    repo: 'https://aur.archlinux.org/yay-git.git'
+    dest: "/tmp/yay"
+
+- name: Install yay
+  when: ansible_distribution == "Archlinux"
+  become: true
+  command: cd /tmp/yay && makepkg -si
+
 - name: Remove scripts folder
   file:
     path: "{{ ansible_env.HOME }}/scripts"
@@ -39,15 +59,22 @@
     state: directory
 
 - name: Download Google Chrome .deb file
+  when: ansible_distribution == "Ubuntu"
   get_url:
     url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
     dest: /tmp/google-chrome-stable_current_amd64.deb
 
 - name: Install Google Chrome from .deb file
+  when: ansible_distribution == "Ubuntu"
   apt:
     deb: /tmp/google-chrome-stable_current_amd64.deb
     state: present
   become: yes
+
+- name: Download and install Google Chrome
+  when: ansible_distribution == "Archlinux"
+  become: true
+  command: yay -S google-chrome
 
 - name: Create Downloads folder
   file:
