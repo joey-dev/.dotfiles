@@ -26,7 +26,6 @@
     - brightnessctl
     - rofi
     - fzf
-    - uuid-dev
 
 - name: Install common ubuntu tools
   become: true
