@@ -48,7 +48,7 @@
     state: directory
 
 - name: Install Yay from AUR
-  aur:
+  community.general.aur:
     name: yay
     state: present
     update: yes
