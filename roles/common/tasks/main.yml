@@ -1,11 +1,11 @@
 - name: Update system
   become: true
-  when: ansible_distribution == "Ubuntu"
+  when: ansible_distribution == "Archlinux"
   run: pacman -Syu --noconfirm
 
 - name: Update system
   become: true
-  when: ansible_distribution == "Archlinux"
+  when: ansible_distribution == "Ubuntu"
   ansible.builtin.apt:
     autoclean: true
     autoremove: true
