@@ -57,16 +57,12 @@
   when: ansible_distribution == "Archlinux"
   command: "echo 'MAKEFLAGS=\"-j$(nproc)\"' | sudo tee -a /etc/makepkg.conf && sudo chown -R $(whoami) /tmp/yay && cd /tmp/yay && makepkg -si --noconfirm"
 
-- name: Get path of yay executable
-  when: ansible_distribution == "Archlinux"
-  command: "which yay"
-  register: yay_path_result
-  changed_when: false
-  check_mode: no
-
-- set_fact:
-    yay_path: "{{ yay_path_result.stdout }}"
-  when: ansible_distribution == "Archlinux"
+- name: Set path of yay executable
+  set_fact:
+    yay_path: "{{ item }}"
+  with_items:
+    - "/usr/bin/yay"
+    - "/usr/local/bin/yay"
 
 - name: Remove scripts folder
   file:
