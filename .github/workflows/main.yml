@@ -18,8 +18,8 @@ jobs:
       uses: actions/checkout@v4
     - name: Run playbook check script
       run: ./checkPlaybook.sh
-    - name: Install ansible community.general
-      run: ansible-galaxy collection install community.general
+    - name: Install ansible-aur
+      run: pip install ansible-aur
     - name: ansible-playbook
       uses: dawidd6/action-ansible-playbook@v2.8.0
       with:
