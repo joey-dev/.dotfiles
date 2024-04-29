@@ -143,40 +143,24 @@ function OpenDebugWidgetInWindow()
 end
 
 -- Switch between test file
--- Define a function to switch between the file and its test file
 function switch_between_file_and_test(test_type)
-    -- Get the current file path
     local current_file_path = vim.fn.expand("%:p")
-
-    -- Check if the file is a test file
     local is_test_file = string.find(current_file_path, "/tests/" .. test_type .. "/") ~= nil
 
     if is_test_file then
-        -- Construct the source file path based on the test type
         local source_file_path = string.gsub(current_file_path, "/tests/" .. test_type .. "/", "/")
         source_file_path = string.gsub(source_file_path, "Test%.php$", ".php")
 
-        -- Open the source file
         vim.cmd("edit " .. source_file_path)
     else
-        -- Construct the test file path based on the test type
         local test_file_path = string.gsub(current_file_path, "Component", "tests/" .. test_type .. "/Component")
-        -- Replace ".php" with "Test.php" in the file name
         test_file_path = string.gsub(test_file_path, "%.php$", "Test.php")
 
-        -- Open the test file
         vim.cmd("edit " .. test_file_path)
     end
 end
 
--- Map the function to the key sequence '<leader>fut'
 vim.api.nvim_set_keymap('n', '<leader>fut', '<cmd>lua switch_between_file_and_test("unit")<CR>', { noremap = true, silent = true })
-
--- Map the function to the key sequence '<leader>fit'
 vim.api.nvim_set_keymap('n', '<leader>fit', '<cmd>lua switch_between_file_and_test("integration")<CR>', { noremap = true, silent = true })
-
--- Map the function to the key sequence '<leader>fat'
 vim.api.nvim_set_keymap('n', '<leader>fat', '<cmd>lua switch_between_file_and_test("api")<CR>', { noremap = true, silent = true })
-
-
 
