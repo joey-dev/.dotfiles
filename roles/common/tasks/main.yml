@@ -51,12 +51,14 @@
   when: ansible_distribution == "Archlinux"
   ansible.builtin.git:
     repo: 'https://aur.archlinux.org/yay-git.git'
-    dest: "/tmp/yay"
+    dest: "/tmp/yay/"
 
 - name: Install yay
   when: ansible_distribution == "Archlinux"
   become: true
-  command: cd /tmp/yay && makepkg -si
+  command: makepkg -si
+  args:
+    chdir: "/tmp/yay"
 
 - name: Remove scripts folder
   file:
