@@ -37,6 +37,16 @@
   loop:
     - uuid-dev
 
+- name: Remove tmp folder
+  file:
+    path: "{{ ansible_env.HOME }}/tmp"
+    state: absent
+
+- name: Create tmp folder
+  file:
+    path: "{{ ansible_env.HOME }}/tmp"
+    state: directory
+
 - name: Download yay
   when: ansible_distribution == "Archlinux"
   ansible.builtin.git:
