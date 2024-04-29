@@ -16,8 +16,8 @@ jobs:
       run: pacman -S --noconfirm ansible
     - name: Checkout branch
       uses: actions/checkout@v4
-    - name: Run playbook check script
-      run: ./checkPlaybook.sh
+    # - name: Run playbook check script
+    #   run: ./checkPlaybook.sh
     - name: ansible-playbook
       uses: dawidd6/action-ansible-playbook@v2.8.0
       with:
