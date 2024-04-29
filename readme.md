@@ -29,6 +29,8 @@ If you already have set-up i3, Run the following shortcut's:
 ## Configure Program <a name = "configure"></a>
 Some programs require custom configuration, which might be hard to automate
 
+To open the questions, run `make configure`
+
 - [Meld](#configure_meld)
 
 ### Meld <a name = "configure_meld"> </a>

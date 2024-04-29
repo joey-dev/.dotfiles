@@ -11,3 +11,4 @@ nvim/.config/nvim/init.vim
 /vendor
 /lazygit.tar.gz
 /phpstan.neon
+/configured.env

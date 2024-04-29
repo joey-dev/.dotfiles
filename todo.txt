@@ -1,10 +1,3 @@
-- open php manual with keybind: alvan/vim-php-manual
-- create todo script (for when installing a new system, or maybe update like DBeaver settings), should be called after make provision, and saved in a local .env file:
-	- asks to generate ssh key
-		- says to link it to: github, homeserver
-	- ask to set-up syncthing key
-	- ask to setup protonpass
-	- ask to import DBeaver settings
 - add new distro (with less bloat, maybe arch)
 - add ai code assistent
 - find alt for project plugin (amiorin/vim-project + startify)
@@ -20,3 +13,4 @@
 	- tlint
 	- php
 - add phpcs
+- open php manual with keybind: alvan/vim-php-manual
