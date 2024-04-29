@@ -63,9 +63,15 @@
   ignore_errors: true
   when: ansible_distribution == "Archlinux"
 
+- debug:
+    var: yay_path_result
+
 - set_fact:
     yay_path: "{{ yay_path_result.stdout }}"
-  when: yay_path_result.rc == 0
+  when: yay_path_result.rc == 0 and yay_path_result.stdout | length > 0
+
+- debug:
+    var: yay_path
 
 - name: Remove scripts folder
   file:
