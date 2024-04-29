@@ -1,7 +1,7 @@
 - name: Update system
   become: true
   when: ansible_distribution == "Archlinux"
-  run: pacman -Syu --noconfirm
+  command: pacman -Syu --noconfirm
 
 - name: Update system
   become: true
