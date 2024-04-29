@@ -58,11 +58,14 @@
   command: "echo 'MAKEFLAGS=\"-j$(nproc)\"' | sudo tee -a /etc/makepkg.conf && sudo chown -R $(whoami) /tmp/yay && cd /tmp/yay && makepkg -si --noconfirm"
 
 - name: Set path of yay executable
-  set_fact:
-    yay_path: "{{ item }}"
-  with_items:
-    - "/usr/bin/yay"
-    - "/usr/local/bin/yay"
+  when: ansible_distribution == "Archlinux"
+  command: "command -v yay"
+  register: yay_path_result
+  ignore_errors: true
+
+- set_fact:
+    yay_path: "{{ yay_path_result.stdout }}"
+  when: yay_path_result.rc == 0
 
 - name: Remove scripts folder
   file:
