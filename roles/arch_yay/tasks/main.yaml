@@ -5,7 +5,7 @@
 
 - name: Install yay
   import_role:
-    name: makepkg
+    name: arch_makepkg
   vars:
     packages:
       - yay-bin

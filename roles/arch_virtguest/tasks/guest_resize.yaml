@@ -1,6 +1,6 @@
 - name: Install xorg-xev and xorg-xrandr
   import_role:
-    name: packages
+    name: arch_packages
   vars:
     packages:
       - xorg-xev
