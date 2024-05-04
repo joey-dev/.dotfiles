@@ -31,9 +31,6 @@
     - role: arch_utils
       when: utils_enabled | default(True) | bool && ansible_distribution == "Archlinux"
 
-    - role: xutils # move to common
-      when: xutils_enabled | default(True) | bool && ansible_distribution == "Archlinux"
-
     - role: arch_bluetooth
       when: bluetooth_enabled | default(True) | bool && ansible_distribution == "Archlinux"
 
