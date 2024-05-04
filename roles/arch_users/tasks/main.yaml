@@ -25,10 +25,4 @@
   shell: echo root:{{ users_root_info.password | quote }} | chpasswd
   no_log: true
 
-- name: Allow admins to sudo by authorizing the wheel group
-  lineinfile:
-    path: /etc/sudoers
-    state: present
-    regexp: '^%wheel ALL='
-    line: '%wheel ALL=(ALL) ALL'
-    validate: '/usr/sbin/visudo -cf %s'
+
