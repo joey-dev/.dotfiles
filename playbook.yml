@@ -1,8 +1,8 @@
 ---
 - hosts: localhost
   roles:
-    - role: arch_hostname
-      when: ansible_distribution == "Archlinux"
+    #- role: arch_hostname
+    #  when: ansible_distribution == "Archlinux"
 
     - role: arch_custom_repos
       when: ansible_distribution == "Archlinux"
