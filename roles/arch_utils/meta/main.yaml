@@ -1,0 +1,4 @@
+dependencies:
+  - role: arch_packages
+    vars:
+      packages: "{{ utils_packages }}"
