@@ -13,7 +13,7 @@
     - role: arch_locale # change timezone in defaults
       when: ansible_distribution == "Archlinux"
 
-    - role: proxy
+    - role: arch_proxy
       when: ansible_distribution == "Archlinux"
 
     - role: arch_wireless
