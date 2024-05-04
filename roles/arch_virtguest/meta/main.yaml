@@ -1,0 +1,3 @@
+dependencies:
+  - role: arch_proxy
+  - role: arch_virtguest_force

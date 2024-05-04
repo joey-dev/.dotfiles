@@ -1,0 +1,3 @@
+dependencies:
+  - role: arch_passwordless_sudo_user
+  - role: arch_proxy

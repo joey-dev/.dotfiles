@@ -1,5 +1,11 @@
 - name: Update system
   become: true
+  when: ansible_distribution == "Archlinux"
+  command: pacman -Syu --noconfirm
+
+- name: Update system
+  become: true
+  when: ansible_distribution == "Ubuntu"
   ansible.builtin.apt:
     autoclean: true
     autoremove: true
@@ -8,7 +14,7 @@
 
 - name: Install common tools
   become: true
-  apt:
+  ansible.builtin.package:
     name: "{{ item }}"
     state: present
   loop:
@@ -20,7 +26,26 @@
     - brightnessctl
     - rofi
     - fzf
+    - git
+
+- name: Install common ubuntu tools
+  become: true
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  when: ansible_distribution == "Ubuntu"
+  loop:
     - uuid-dev
+
+- name: Remove tmp folder
+  file:
+    path: "{{ ansible_env.HOME }}/tmp"
+    state: absent
+
+- name: Create tmp folder
+  file:
+    path: "{{ ansible_env.HOME }}/tmp"
+    state: directory
 
 - name: Remove scripts folder
   file:
@@ -33,15 +58,22 @@
     state: directory
 
 - name: Download Google Chrome .deb file
+  when: ansible_distribution == "Ubuntu"
   get_url:
     url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
     dest: /tmp/google-chrome-stable_current_amd64.deb
 
 - name: Install Google Chrome from .deb file
+  when: ansible_distribution == "Ubuntu"
   apt:
     deb: /tmp/google-chrome-stable_current_amd64.deb
     state: present
   become: yes
+
+- name: Download and install Google Chrome
+  when: ansible_distribution == "Archlinux"
+  become: true
+  command: "yay -S google-chrome"
 
 - name: Create Downloads folder
   file:
