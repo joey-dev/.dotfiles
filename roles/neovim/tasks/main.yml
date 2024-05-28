@@ -73,6 +73,11 @@
       dest: "{{ phpactor_config_dir }}/phpactor.json"
       state: link
 
+  - name: Make sure lazygit config directory exists
+    file:
+      path: "{{ lazygit_config_dir }}/"
+      state: directory
+
   - name: Remove lazygit config file
     file:
       path: "{{ lazygit_config_dir }}/config.yml"
