@@ -73,6 +73,22 @@
       dest: "{{ phpactor_config_dir }}/phpactor.json"
       state: link
 
+  - name: Make sure lazygit config directory exists
+    file:
+      path: "{{ lazygit_config_dir }}/"
+      state: directory
+
+  - name: Remove lazygit config file
+    file:
+      path: "{{ lazygit_config_dir }}/config.yml"
+      state: absent
+
+  - name: Link lazygit files
+    file:
+      src: "{{ role_path  }}/files/plugin_config/lazygit.yml"
+      dest: "{{ lazygit_config_dir }}/config.yml"
+      state: link
+
 - name: install neovim dependencies
   block:
 
