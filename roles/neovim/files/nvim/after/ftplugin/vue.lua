@@ -18,7 +18,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
     vim.keymap.set('n', '<leader>sd', '<cmd>lua vim.lsp.buf.definition()<cr>', opts)
     vim.keymap.set('n', '<leader>si', '<cmd>lua vim.lsp.buf.references()<cr>', opts)
     vim.keymap.set('n', '<leader>rr', '<cmd>lua vim.lsp.buf.rename()<cr>', opts)
-    vim.keymap.set({'n', 'x'}, '<leader>rf', '<cmd>lua vim.lsp.buf.format({async = true})<cr>', opts)
+    vim.keymap.set('n', '<leader>rf', '<cmd>lua vim.lsp.buf.format({async = true})<cr>', opts)
     vim.keymap.set('n', '<leader>ef', '<cmd>lua vim.lsp.buf.code_action()<cr>', opts)
     vim.keymap.set('n', '<leader>ei', '<cmd>lua vim.diagnostic.open_float()<cr>', opts)
     vim.keymap.set('n', '<leader>en', '<cmd>lua vim.diagnostic.goto_prev()<cr>', opts)
@@ -29,7 +29,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
 
 vim.b.ale_linter_aliases = {'css', 'javascript', 'vue', 'typescript'}
 
-vim.b.ale_linters = {'eslint', 'stylelint'}
+vim.b.ale_linters = {'eslint'}
 
 require('mason').setup({})
 require("mason-lspconfig").setup({
@@ -103,7 +103,7 @@ lspconfig_configs.volar_doc = {
 
     filetypes = { 'vue'},
     -- If you want to use Volar's Take Over Mode (if you know, you know):
-    --filetypes = { 'typescript', 'javascript', 'javascriptreact', 'typescriptreact', 'vue', 'json' },
+    filetypes = { 'typescript', 'javascript', 'javascriptreact', 'typescriptreact', 'vue', 'json' },
     init_options = {
       typescript = {
         tsdk = ''
