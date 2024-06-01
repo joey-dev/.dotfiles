@@ -164,8 +164,11 @@ snippet pubf
 - Word to dash-case: `cr-`
 - Word to dot.case: `cr.`
 
-#### Task Management (tm)
-- Find/Run all tasks in the current project: `<leader>tm`
+#### Tests
+- Find/Run all tests in the current project with a given group: `<leader>tt`
+- Find/Run all tests in the current project with a given group (fail fast): `<leader>tf`
+- Find/Run all tests in the current project with a given group (no rebuild): `<leader>tr`
+- Find/Run all tests in the current project with a given group (fail fast AND no rebuild): `<leader>ta`
 
 #### Markdown Viewing
 - View Markdown: `<leader>vm`
