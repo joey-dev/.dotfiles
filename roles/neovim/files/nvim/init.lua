@@ -228,10 +228,6 @@ vim.api.nvim_set_keymap('n', '<leader>ft', ':TodoTelescope keywords=DOING,HACK<c
 
 -- run tests in directory
 
--- run commands in terminal
--- vim.keymap.set('n', '<Leader>at', ':below 10split<cr>:terminal {command}<cr>')
-
--- run tests
 local telescope = require('telescope')
 local finders = require('telescope.finders')
 local pickers = require('telescope.pickers')
