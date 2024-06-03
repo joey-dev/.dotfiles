@@ -350,7 +350,7 @@ function search_and_display_groups(post_fix)
   }):find()
 end
 
-vim.keymap.set('n', '<Leader>tt',':lua search_and_display_groups("")<CR>', { noremap = true, silent = true })
+vim.keymap.set('n', '<Leader>tt',':lua search_and_display_groups("")<CR>', { noremap = true, silent = true, desc="run/find all test groups" })
 vim.keymap.set('n', '<Leader>tf',':lua search_and_display_groups("--fail-fast")<CR>', { noremap = true, silent = true })
 vim.keymap.set('n', '<Leader>tr',':lua search_and_display_groups("--no-rebuild")<CR>', { noremap = true, silent = true })
 vim.keymap.set('n', '<Leader>ta',':lua search_and_display_groups("--fail-fast --no-rebuild")<CR>', { noremap = true, silent = true })
