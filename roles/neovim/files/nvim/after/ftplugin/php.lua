@@ -130,6 +130,9 @@ vim.api.nvim_set_keymap('n', '<A-C>', ":lua require'dap'.reverse_continue()<CR>"
 vim.api.nvim_set_keymap('n', '<A-E>', ":lua require'dap'.set_exception_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
 vim.api.nvim_set_keymap('n', '<A-l>', ":lua require'dap'.list_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
 vim.api.nvim_set_keymap('n', '<A-r>', ":lua require'dap'.clear_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
+vim.keymap.set('n', '<leader>B', function()
+  require 'dap'.set_breakpoint(vim.fn.input('Breakpoint condition: '))
+end)
 
 function OpenDebugWidget()
   local widgets = require('dap.ui.widgets')

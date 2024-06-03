@@ -153,3 +153,75 @@ lspconfig_configs.volar_html = {
 }
 lspconfig.volar.setup{}
 
+-- debug
+local dap = require('dap')
+
+require("dap-vscode-js").setup({
+  node_path = "node", -- Path of node executable. Defaults to $NODE_PATH, and then "node"
+  debugger_path = vim.fn.stdpath('data') .. "/lazy/vscode-js-debug",
+  -- debugger_cmd = { "extension" }, -- Command to use to launch the debug server. Takes precedence over `node_path` and `debugger_path`.
+  adapters = { 'chrome', 'pwa-node', 'pwa-chrome', 'pwa-msedge', 'node-terminal', 'pwa-extensionHost', 'node', 'chrome' }, -- which adapters to register in nvim-dap
+  -- log_file_path = "(stdpath cache)/dap_vscode_js.log" -- Path for file logging
+  -- log_file_level = false -- Logging level for output to file. Set to false to disable file logging.
+  -- log_console_level = vim.log.levels.ERROR -- Logging level for output to console. Set to false to disable console output.
+})
+
+local js_based_languages = { "typescript", "javascript", "typescriptreact", "vue" }
+
+for _, language in ipairs(js_based_languages) do
+  require("dap").configurations[language] = {
+    {
+      type = "pwa-node",
+      request = "launch",
+      name = "Launch file",
+      program = "${file}",
+      cwd = "${workspaceFolder}",
+    },
+    {
+      type = "pwa-node",
+      request = "attach",
+      name = "Attach",
+      processId = require 'dap.utils'.pick_process,
+      cwd = "${workspaceFolder}",
+    },
+    {
+      type = "pwa-chrome",
+      request = "launch",
+      name = "Start Chrome with \"localhost\"",
+      url = "http://localhost:3000",
+      webRoot = "${workspaceFolder}",
+      userDataDir = "${workspaceFolder}/.vscode/vscode-chrome-debug-userdatadir"
+    }
+  }
+end
+
+vim.api.nvim_set_keymap('n', '<A-b>', ":lua require'dap'.toggle_breakpoint()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-c>', ":lua require'dap'.continue()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-o>', ":lua require'dap'.step_over()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-O>', ":lua require'dap'.step_into()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-s>', ":lua OpenDebugWidget()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-S>', ":lua OpenDebugWidgetInWindow()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-i>', ":lua require'dap.ui.widgets'.hover()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-t>', ":lua require'dap'.repl.open()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-I>', ":lua require'dap'.run_to_cursor()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-p>', ":lua require'dap'.step_back()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-C>', ":lua require'dap'.reverse_continue()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-E>', ":lua require'dap'.set_exception_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-l>', ":lua require'dap'.list_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-r>', ":lua require'dap'.clear_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
+vim.keymap.set('n', '<leader>B', function()
+  require 'dap'.set_breakpoint(vim.fn.input('Breakpoint condition: '))
+end)
+
+
+function OpenDebugWidget()
+  local widgets = require('dap.ui.widgets')
+  widgets.centered_float(widgets.scopes)
+end
+
+function OpenDebugWidgetInWindow()
+  local widgets = require('dap.ui.widgets')
+  local my_sidebar = widgets.sidebar(widgets.scopes)
+  my_sidebar.open()
+end
+
