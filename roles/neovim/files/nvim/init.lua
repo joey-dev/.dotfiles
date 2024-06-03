@@ -28,6 +28,7 @@ vim.api.nvim_set_keymap("n", "<leader>vs", ":source ~/.dotfiles/roles/neovim/fil
 -- copy to clipboard
 vim.api.nvim_set_keymap('v', '<C-M-c>', '"+y', { noremap = true, silent = true })
 
+
 -- nvim settings
 vim.o.completeopt = "menuone,noinsert,noselect"
 vim.o.number = true
@@ -111,17 +112,12 @@ vim.cmd.colorscheme "catppuccin-mocha"
 local harpoon = require("harpoon")
 harpoon:setup()
 
--- global keymap
-vim.keymap.set('n', '<Leader>t', ':FloatermNew<cr>')
 -- projects
 vim.keymap.set('n', '<Leader>pl', ':ProjectList<cr>')
 
 local tbuiltin = require('telescope.builtin')
 vim.keymap.set('n', '<leader>ff', tbuiltin.find_files, {})
 vim.keymap.set('n', '<leader>fif', tbuiltin.live_grep, {})
-
--- task manager
-vim.keymap.set('n', '<Leader>tm', ':ProjectRun<cr>')
 
 -- tree
 vim.keymap.set('n', '<Leader>pf', ':Neotree<cr>')
@@ -229,6 +225,136 @@ vim.api.nvim_set_keymap('n', '<M-w>', ':Bdelete<cr>', { noremap = false })
 vim.api.nvim_set_keymap('n', '<leader>fs', ':TagbarOpenAutoClose<cr>', { noremap = false })
 
 vim.api.nvim_set_keymap('n', '<leader>ft', ':TodoTelescope keywords=DOING,HACK<cr>', { noremap = false })
+
+-- run tests in directory
+
+local telescope = require('telescope')
+local finders = require('telescope.finders')
+local pickers = require('telescope.pickers')
+local sorters = require('telescope.sorters')
+local actions = require('telescope.actions')
+local action_state = require('telescope.actions.state')
+local Path = require('plenary.path')
+
+-- Function to get the git root directory
+local function get_git_root_or_nil()
+  local git_root = vim.fn.systemlist("git rev-parse --show-toplevel")[1]
+  if git_root == "" then
+    return nil
+  end
+  return git_root
+end
+
+local test_groups = {"unit", "integration", "api"}
+
+-- Function to recursively search files in a directory
+local function search_files(dir)
+  local results = {}
+  if Path:new(dir):is_dir() then
+    local p = io.popen('find "'..dir..'" -type f')
+    for file in p:lines() do
+      table.insert(results, file)
+    end
+    p:close()
+  end
+  return results
+end
+
+-- Function to extract @group tags from a file
+local function extract_groups(file)
+  local groups = {}
+  for line in io.lines(file) do
+    local group = line:match("@group%s+(%w+)")
+    if group then
+      groups[group] = true
+    end
+  end
+  return groups
+end
+
+function search_and_display_groups(post_fix)
+  local git_root = get_git_root_or_nil()
+  if not git_root then
+    vim.api.nvim_err_writeln("Error: Not a git repository or unable to find git root.")
+    return
+  end
+
+  local results = {}
+
+  -- Add predefined options
+  table.insert(results, "current file")
+  table.insert(results, "all unit")
+  table.insert(results, "all integration")
+  table.insert(results, "all api")
+
+  for _, group in ipairs(test_groups) do
+    local path = git_root .. "/legacy/tests/" .. group
+    local files = search_files(path)
+    local group_results = {}
+
+    for _, file in ipairs(files) do
+      local groups = extract_groups(file)
+      for word in pairs(groups) do
+        group_results[word] = true
+      end
+    end
+
+    for word in pairs(group_results) do
+      table.insert(results, group .. " " .. word)
+    end
+  end
+
+  if vim.tbl_isempty(results) then
+    vim.api.nvim_err_writeln("Warning: No test groups found. Showing predefined commands.")
+  end
+
+  pickers.new({}, {
+    prompt_title = "Select Test Group",
+    finder = finders.new_table {
+      results = results
+    },
+    sorter = sorters.get_generic_fuzzy_sorter(),
+    attach_mappings = function(prompt_bufnr, map)
+      map('i', '<CR>', function()
+        local selection = action_state.get_selected_entry()
+        actions.close(prompt_bufnr)
+        local selected = selection[1]
+        local test_group, word = selected:match("^(%S+) (%S+)$")
+
+        -- Determine the command to run based on the selection
+        local command
+        if selected == "current file" then
+          command = "./test_runner.sh"
+        elseif selected == "all unit" then
+          command = "./test_runner.sh unit"
+        elseif selected == "all integration" then
+          command = "./test_runner.sh integration"
+        elseif selected == "all api" then
+          command = "./test_runner.sh api"
+        else
+          command = string.format("./test_runner.sh debug %s --group %s", test_group, word)
+        end
+
+
+				local formatted_post_fix
+				if test_group == "unit" then
+					formatted_post_fix = post_fix:gsub("%s*%-%-no%-rebuild%s*", "")
+				else
+					formatted_post_fix = post_fix
+				end
+
+        vim.cmd(string.format(":below 10split | :terminal %s %s", command, formatted_post_fix))
+      end)
+      return true
+    end,
+  }):find()
+end
+
+vim.keymap.set('n', '<Leader>tt',':lua search_and_display_groups("")<CR>', { noremap = true, silent = true })
+vim.keymap.set('n', '<Leader>tf',':lua search_and_display_groups("--fail-fast")<CR>', { noremap = true, silent = true })
+vim.keymap.set('n', '<Leader>tr',':lua search_and_display_groups("--no-rebuild")<CR>', { noremap = true, silent = true })
+vim.keymap.set('n', '<Leader>ta',':lua search_and_display_groups("--fail-fast --no-rebuild")<CR>', { noremap = true, silent = true })
+
 
 -- snippets
 local cmp = require('cmp')
