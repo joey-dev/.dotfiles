@@ -29,8 +29,6 @@
 - name: Install common tools with python
   become: true
   shell: pip3 install {{ item }} --user
-  args:
-    executable: /bin/zsh
   loop:
     - thefuck
 
