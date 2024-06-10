@@ -111,6 +111,8 @@ alias reload="source ~/.zshrc"
 alias vi="nvim"
 alias vim="nvim"
 alias lla="ls -la"
+alias fuck="thefuck"
+alias bat="batcat"
 
 
 # nnn
