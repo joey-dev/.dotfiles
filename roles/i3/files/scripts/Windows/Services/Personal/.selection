@@ -1,3 +1,9 @@
 @Personal
 -cpu
-_xterm -hold -e \"watch \'lscpu | grep MHz\'\"
+_/home/joey/scripts/i3/Windows/Services/Personal/cpu.sh
+
+-htop
+_/home/joey/scripts/i3/Windows/Services/Personal/htop.sh
+
+-ncdu(file_storage)
+_/home/joey/scripts/i3/Windows/Services/Personal/ncdu.sh

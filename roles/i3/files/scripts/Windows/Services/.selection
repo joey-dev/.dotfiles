@@ -1,9 +1,9 @@
 @Services
--Work
-_/home/joey/scripts/i3/Windows/Services/Work/
-
 -Personal
 _/home/joey/scripts/i3/Windows/Services/Personal/
+
+-Work
+_/home/joey/scripts/i3/Windows/Services/Work/
 
 -Recent
 _/home/joey/scripts/i3/Windows/Services/recent
