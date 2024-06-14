@@ -1,4 +1,3 @@
-- add auto save file
 - add new distro (with less bloat, maybe arch)
 - add ai code assistent
 - add syncthing (for task)
