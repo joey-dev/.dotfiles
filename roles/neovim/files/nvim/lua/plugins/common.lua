@@ -129,6 +129,19 @@ return {
 		build = function() vim.fn["mkdp#util#install"]() end,
 	},
 	{
+		"rcarriga/nvim-dap-ui",
+		config = function()
+			require("neodev").setup({
+				library = { plugins = { "nvim-dap-ui" }, types = true },
+			})
+		end,
+		dependencies = {
+			"mfussenegger/nvim-dap",
+			"nvim-neotest/nvim-nio",
+			"folke/neodev.nvim"
+		}
+	},
+	{
 	  "VonHeikemen/lsp-zero.nvim",
 	  dependencies = {
 			-- LSP Support
