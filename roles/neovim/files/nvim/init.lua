@@ -95,7 +95,6 @@ require("catppuccin").setup({
         gitsigns = true,
         nvimtree = true,
         treesitter = true,
-		harpoon = true,
 		dap = true,
 		dap_ui = true,
         notify = false,
@@ -107,10 +106,6 @@ require("catppuccin").setup({
 })
 
 vim.cmd.colorscheme "catppuccin-mocha"
-
--- plugin start
-local harpoon = require("harpoon")
-harpoon:setup()
 
 -- projects
 vim.keymap.set('n', '<Leader>pl', ':ProjectList<cr>')
@@ -138,38 +133,16 @@ vim.keymap.set('n', '<Leader>vM', ':MarkdownPreviewStop<cr>')
 vim.keymap.set("n", "<A-q>", ':bprev<cr>')
 vim.keymap.set("n", "<A-e>", ':bnext<cr>')
 
--- harpoon
-function get_git_root()
-    local git_root = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
-    return git_root
+-- marks
+vim.keymap.set("n", "<Leader>M", ':Telescope marks<cr>')
+vim.keymap.set("n", "<Leader>mC", ':delmarks a-z<cr>')
+
+-- loop through a to z
+local set_keymap = vim.api.nvim_set_keymap
+for i = 97, 122 do
+	local letter = string.char(i)
+    set_keymap("n", "<Leader>m" .. letter, ":ma " .. letter .. "<CR>", { noremap = true, silent = true })
 end
-
-function remove_current_file_from_harpoon()
-    local current_file = vim.fn.expand('%:p') -- Get the full path of the current file
-    local git_root = get_git_root()
-
-    if git_root ~= '' and current_file:match(git_root) then
-        local relative_path = current_file:sub(#git_root + 2) -- +2 to remove the leading '/'
-
-		local names = harpoon:list():display()
-		for i, name in ipairs(names) do
-			if name == relative_path then
-				print (i)
-				harpoon:list():removeAt(i)
-				break
-			end
-		end
-    else
-        print("Not in a Git project or unable to determine Git root.")
-    end
-end
-
-vim.keymap.set("n", "<leader>mf", function() harpoon:list():append() end)
-vim.keymap.set("n", "<leader>mc", function() harpoon:list():clear() end)
-vim.keymap.set("n", "<leader>mr", remove_current_file_from_harpoon)
-vim.keymap.set("n", "<leader>M", function() harpoon.ui:toggle_quick_menu(harpoon:list()) end)
-vim.keymap.set("n", "<leader>mq", function() harpoon:list():prev() end)
-vim.keymap.set("n", "<leader>me", function() harpoon:list():next() end)
 
 require('lualine').setup {
   options = {
