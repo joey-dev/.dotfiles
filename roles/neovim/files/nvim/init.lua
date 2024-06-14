@@ -395,3 +395,8 @@ cmp.setup({
   }),
   formatting = cmp_format
 })
+
+-- spectre
+vim.api.nvim_set_keymap("n", "<leader>fr", '<cmd>lua require("spectre").toggle()<CR>', { noremap = true })
+vim.api.nvim_set_keymap("n", "<leader>fw", '<cmd>lua require("spectre").open_visual({select_word=true})<CR>', { noremap = true })
+

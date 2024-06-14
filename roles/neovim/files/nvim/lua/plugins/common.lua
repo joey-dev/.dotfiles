@@ -129,6 +129,13 @@ return {
 		build = function() vim.fn["mkdp#util#install"]() end,
 	},
 	{
+		"nvim-pack/nvim-spectre",
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+			"nvim-tree/nvim-web-devicons"
+		}
+	},
+	{
 		"rcarriga/nvim-dap-ui",
 		config = function()
 			require("neodev").setup({
