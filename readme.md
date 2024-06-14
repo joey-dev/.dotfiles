@@ -174,13 +174,10 @@ snippet pubf
 - View Markdown: `<leader>vm`
 - Stop viewing Markdown: `<leader>vM`
 
-#### Marked Files
-- Set mark on file: `<leader>mf`
-- Clear mark list: `<leader>mc`
-- Remove mark from file: `<leader>mr`
-- Show all marked files: `<leader>M`
-- Go to next marked file: `<leader>me`
-- Go to previous marked file: `<leader>mq`
+#### Mark lines
+- Set mark on line: `<leader>m{a-z}`
+- Clear mark list: `<leader>mC`
+- Show all marked lines: `<leader>M`
 
 #### Navigation
 - Go back 1 file: `Alt + q`
