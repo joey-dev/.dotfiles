@@ -117,6 +117,13 @@ return {
 		dependencies = { 'nvim-tree/nvim-web-devicons' }
 	},
 	{
+		'linrongbin16/lsp-progress.nvim',
+		config = function()
+			require('lsp-progress').setup()
+		end,
+		dependencies = { 'nvim-lualine/lualine.nvim' }
+	},
+	{
 		'nvim-telescope/telescope.nvim', tag = '0.1.5',
 		dependencies = {
 			'nvim-lua/plenary.nvim',
