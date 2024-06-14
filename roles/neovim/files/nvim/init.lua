@@ -400,3 +400,19 @@ cmp.setup({
 vim.api.nvim_set_keymap("n", "<leader>fr", '<cmd>lua require("spectre").toggle()<CR>', { noremap = true })
 vim.api.nvim_set_keymap("n", "<leader>fw", '<cmd>lua require("spectre").open_visual({select_word=true})<CR>', { noremap = true })
 
+vim.opt.termguicolors = true
+require("bufferline").setup{
+	options = {
+		diagnostics = "nvim_lsp",
+		diagnostics_update_in_insert = false,
+		diagnostics_indicator = function(count, level, diagnostics_dict, context)
+			local s = " "
+			for e, n in pairs(diagnostics_dict) do
+				local sym = e == "error" and " "
+					or (e == "warning" and " " or "" )
+				s = s .. n .. sym
+			end
+			return s
+		end
+	}
+}

@@ -149,6 +149,11 @@ return {
 		}
 	},
 	{
+		'akinsho/bufferline.nvim',
+		version = "*",
+		dependencies = 'nvim-tree/nvim-web-devicons'
+	},
+	{
 	  "VonHeikemen/lsp-zero.nvim",
 	  dependencies = {
 			-- LSP Support
