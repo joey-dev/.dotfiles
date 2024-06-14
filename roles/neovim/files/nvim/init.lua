@@ -343,6 +343,12 @@ vim.keymap.set('n', '<Leader>tr',':lua search_and_display_groups("--no-rebuild")
 vim.keymap.set('n', '<Leader>ta',':lua search_and_display_groups("--fail-fast --no-rebuild")<CR>', { noremap = true, silent = true })
 
 
+-- fixers/formatters
+
+vim.g.ale_fixers = {'trim_whitespace', 'remove_trailing_lines'}
+
+vim.g.ale_fix_on_save = 1
+
 -- snippets
 local cmp = require('cmp')
 local cmp_action = require('lsp-zero').cmp_action()
