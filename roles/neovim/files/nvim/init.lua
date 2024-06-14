@@ -113,7 +113,7 @@ local harpoon = require("harpoon")
 harpoon:setup()
 
 -- projects
-vim.keymap.set('n', '<Leader>pl', ':ProjectList<cr>')
+vim.keymap.set('n', '<Leader>pl', ':Telescope neovim-project discover<cr>')
 
 local tbuiltin = require('telescope.builtin')
 vim.keymap.set('n', '<leader>ff', tbuiltin.find_files, {})
