@@ -1,5 +1,4 @@
 - add auto save file
-- add load progress bar for lsp
 - add new distro (with less bloat, maybe arch)
 - add ai code assistent
 - add syncthing (for task)

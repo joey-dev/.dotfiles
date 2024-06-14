@@ -166,7 +166,11 @@ require('lualine').setup {
   sections = {
     lualine_a = {'mode'},
     lualine_b = { {'filename', path=1} },
-    lualine_c = {},
+    lualine_c = {
+			function()
+        return require('lsp-progress').progress()
+      end,
+		},
     lualine_x = {'location'},
     lualine_y = {'filetype'},
     lualine_z = {'branch', 'diff', 'diagnostics'},
@@ -184,6 +188,16 @@ require('lualine').setup {
   inactive_winbar = {},
   extensions = {}
 }
+
+
+-- LSP progress bar
+
+vim.api.nvim_create_augroup("lualine_augroup", { clear = true })
+vim.api.nvim_create_autocmd("User", {
+  group = "lualine_augroup",
+  pattern = "LspProgressStatusUpdated",
+  callback = require("lualine").refresh,
+})
 
 -- minyank
 vim.api.nvim_set_keymap('n', 'p', '<Plug>(miniyank-autoput)', { noremap = false })
