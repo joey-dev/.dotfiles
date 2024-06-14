@@ -156,6 +156,8 @@ snippet pubf
 - Find structure in current files (ctag's): `<leader>fs`
 - Find all todo's: `<leader>ft`
     - This will find all the keywords: `DOING:` and `HACK:`
+- Find and replace: `<leader>fr`
+- Find word: `<leader>fw`
 
 #### Text manipulation
 - Word to snake_case: `crs`

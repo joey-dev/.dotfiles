@@ -343,6 +343,12 @@ vim.keymap.set('n', '<Leader>tr',':lua search_and_display_groups("--no-rebuild")
 vim.keymap.set('n', '<Leader>ta',':lua search_and_display_groups("--fail-fast --no-rebuild")<CR>', { noremap = true, silent = true })
 
 
+-- fixers/formatters
+
+vim.g.ale_fixers = {'trim_whitespace', 'remove_trailing_lines'}
+
+vim.g.ale_fix_on_save = 1
+
 -- snippets
 local cmp = require('cmp')
 local cmp_action = require('lsp-zero').cmp_action()
@@ -389,3 +395,24 @@ cmp.setup({
   }),
   formatting = cmp_format
 })
+
+-- spectre
+vim.api.nvim_set_keymap("n", "<leader>fr", '<cmd>lua require("spectre").toggle()<CR>', { noremap = true })
+vim.api.nvim_set_keymap("n", "<leader>fw", '<cmd>lua require("spectre").open_visual({select_word=true})<CR>', { noremap = true })
+
+vim.opt.termguicolors = true
+require("bufferline").setup{
+	options = {
+		diagnostics = "nvim_lsp",
+		diagnostics_update_in_insert = false,
+		diagnostics_indicator = function(count, level, diagnostics_dict, context)
+			local s = " "
+			for e, n in pairs(diagnostics_dict) do
+				local sym = e == "error" and " "
+					or (e == "warning" and " " or "" )
+				s = s .. n .. sym
+			end
+			return s
+		end
+	}
+}

@@ -116,6 +116,82 @@ dap.configurations.php = {
   }
 }
 
+require'dapui'.setup(
+	{
+    controls = {
+      element = "repl",
+      enabled = true,
+      icons = {
+        disconnect = "",
+        pause = "",
+        play = "",
+        run_last = "",
+        step_back = "",
+        step_into = "",
+        step_out = "",
+        step_over = "",
+        terminate = ""
+      }
+    },
+    element_mappings = {},
+    expand_lines = true,
+    floating = {
+      border = "single",
+      mappings = {
+        close = { "q", "<Esc>" }
+      }
+    },
+    force_buffers = true,
+    icons = {
+      collapsed = "",
+      current_frame = "",
+      expanded = ""
+    },
+    layouts = {
+			{
+				elements = {
+					{
+						id = "stacks",
+						size = 0.25
+					}, 
+					{
+						id = "scopes",
+						size = 0.5
+					},
+					{
+						id = "breakpoints",
+						size = 0.25
+					},
+				},
+				position = "left",
+				size = 40
+			},
+			{
+				elements = {
+					{
+						id = "watches",
+						size = 1.0
+					},
+				},
+				position = "bottom",
+				size = 10
+			}
+		},
+    mappings = {
+      edit = "e",
+      expand = { "<CR>", "<2-LeftMouse>" },
+      open = "o",
+      remove = "d",
+      repl = "r",
+      toggle = "t"
+    },
+    render = {
+      indent = 1,
+      max_value_lines = 100
+    }
+  }
+)
+
 vim.api.nvim_set_keymap('n', '<A-b>', ":lua require'dap'.toggle_breakpoint()<CR>", { noremap = true, silent = true, nowait = false })
 vim.api.nvim_set_keymap('n', '<A-c>', ":lua require'dap'.continue()<CR>", { noremap = true, silent = true, nowait = false })
 vim.api.nvim_set_keymap('n', '<A-o>', ":lua require'dap'.step_over()<CR>", { noremap = true, silent = true, nowait = false })
@@ -130,6 +206,7 @@ vim.api.nvim_set_keymap('n', '<A-C>', ":lua require'dap'.reverse_continue()<CR>"
 vim.api.nvim_set_keymap('n', '<A-E>', ":lua require'dap'.set_exception_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
 vim.api.nvim_set_keymap('n', '<A-l>', ":lua require'dap'.list_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
 vim.api.nvim_set_keymap('n', '<A-r>', ":lua require'dap'.clear_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
+vim.api.nvim_set_keymap('n', '<A-u>', ":lua require'dapui'.toggle()<CR>", { noremap = true, silent = true, nowait = false })
 
 function OpenDebugWidget()
   local widgets = require('dap.ui.widgets')

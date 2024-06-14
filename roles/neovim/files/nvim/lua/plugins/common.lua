@@ -60,6 +60,16 @@ return {
 		dependencies = { {'nvim-tree/nvim-web-devicons'}}
 	},
 	{
+		"nvim-treesitter/nvim-treesitter",
+		build = ":TSUpdate",
+		config = function()
+			require("nvim-treesitter.configs").setup {
+				ensure_installed = { "javascript", "vue", "lua", "sql", "css", "scss" },
+				highlight = { enable = true, }
+			}
+		end
+	},
+	{
 		"nvim-neo-tree/neo-tree.nvim",
 		branch = "v3.x",
 		dependencies = {
@@ -117,6 +127,31 @@ return {
 		cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
 		ft = { "markdown" },
 		build = function() vim.fn["mkdp#util#install"]() end,
+	},
+	{
+		"nvim-pack/nvim-spectre",
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+			"nvim-tree/nvim-web-devicons"
+		}
+	},
+	{
+		"rcarriga/nvim-dap-ui",
+		config = function()
+			require("neodev").setup({
+				library = { plugins = { "nvim-dap-ui" }, types = true },
+			})
+		end,
+		dependencies = {
+			"mfussenegger/nvim-dap",
+			"nvim-neotest/nvim-nio",
+			"folke/neodev.nvim"
+		}
+	},
+	{
+		'akinsho/bufferline.nvim',
+		version = "*",
+		dependencies = 'nvim-tree/nvim-web-devicons'
 	},
 	{
 	  "VonHeikemen/lsp-zero.nvim",

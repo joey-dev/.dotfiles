@@ -51,6 +51,12 @@
 - Toggle Exception Breakpoints: `Alt + E`
 - List All Breakpoints: `Alt + l`
 - Remove All Breakpoints: `Alt + r`
+- Toggle ui: `Alt + u`
+    - edit: `e`
+    - expand: `Enter`
+    - open: `o`
+    - delete: `d`
+    - toggle: `t`
 
 ### Switch between test file and code, and back
 - Switch to unit test: `<leader>fut`
