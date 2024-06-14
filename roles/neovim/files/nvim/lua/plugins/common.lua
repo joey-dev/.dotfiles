@@ -60,6 +60,16 @@ return {
 		dependencies = { {'nvim-tree/nvim-web-devicons'}}
 	},
 	{
+		"nvim-treesitter/nvim-treesitter",
+		build = ":TSUpdate",
+		config = function()
+			require("nvim-treesitter.configs").setup {
+				ensure_installed = { "javascript", "vue", "lua", "sql", "css", "scss" },
+				highlight = { enable = true, }
+			}
+		end
+	},
+	{
 		"nvim-neo-tree/neo-tree.nvim",
 		branch = "v3.x",
 		dependencies = {
