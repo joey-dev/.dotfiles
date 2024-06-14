@@ -1,5 +1,64 @@
 return {
-	"leafOfTree/vim-project",
+	{
+		"coffebar/neovim-project",
+		opts = {
+			projects = {
+				"~/Code/Work/*",
+				"~/Code/Learning/*",
+				"~/Code/Projects/*",
+				"~/.dotfiles",
+			},
+			dashboard_mode = true,
+		},
+		init = function()
+			-- enable saving the state of plugins in the session
+			vim.opt.sessionoptions:append("globals") -- save global variables that start with an uppercase letter and contain at least one lowercase letter.
+		end,
+		dependencies = {
+			{ "nvim-lua/plenary.nvim" },
+			{ "nvim-telescope/telescope.nvim", tag = "0.1.4" },
+			{ "Shatur/neovim-session-manager" },
+		},
+		lazy = false,
+		priority = 100,
+	},
+	{
+		'nvimdev/dashboard-nvim',
+		event = 'VimEnter',
+		config = function()
+			require('dashboard').setup {
+				theme = 'doom',
+				config = {
+					week_header = {
+						enable = true,
+					},
+					center = {
+						{
+							icon = ' ',
+							icon_hl = 'Title',
+							desc = 'Find Project           ',
+							desc_hl = 'String',
+							key = 'b',
+							keymap = '<leader>pl',
+							key_hl = 'Number',
+							key_format = ' %s', -- remove default surrounding `[]`
+							action = 'Telescope neovim-project discover'
+						},
+						{
+							icon = ' ',
+							desc = 'Find Dotfiles',
+							key = 'f',
+							keymap = 'SPC f d',
+							key_format = ' %s', -- remove default surrounding `[]`
+							action = 'NeovimProjectLoad ~/.dotfiles'
+						},
+					},
+					footer = {}  --your footer
+				}
+			}
+		end,
+		dependencies = { {'nvim-tree/nvim-web-devicons'}}
+	},
 	{
 		"nvim-neo-tree/neo-tree.nvim",
 		branch = "v3.x",
@@ -12,7 +71,7 @@ return {
 		config = function()
 			require("neo-tree").setup({
 			  window = {
-				position = "float",
+				position = "left",
 				width = 40,
 			  },
 			})
@@ -70,6 +129,9 @@ return {
 	},
 	{
 		'f-person/git-blame.nvim',
+		opts = {
+			enabled = false,
+		},
 	},
 	{
 		"catppuccin/nvim", name = "catppuccin", priority = 1000

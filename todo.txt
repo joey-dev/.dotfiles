@@ -1,6 +1,7 @@
+- add auto save file
+- add load progress bar for lsp
 - add new distro (with less bloat, maybe arch)
 - add ai code assistent
-- find alt for project plugin (amiorin/vim-project + startify)
 - add syncthing (for task)
 - remove lsp-zero, and change it to ale if possible
 - see if sqlfluff works with sql written in php (https://github.com/sqlfluff/sqlfluff)
