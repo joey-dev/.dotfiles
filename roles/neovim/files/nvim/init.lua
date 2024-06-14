@@ -168,8 +168,8 @@ require('lualine').setup {
     lualine_b = { {'filename', path=1} },
     lualine_c = {
 			function()
-        return require('lsp-progress').progress()
-      end,
+				return require('lsp-progress').progress()
+			end,
 		},
     lualine_x = {'location'},
     lualine_y = {'filetype'},

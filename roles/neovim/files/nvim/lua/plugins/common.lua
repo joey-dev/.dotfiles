@@ -117,10 +117,10 @@ return {
 		dependencies = { 'nvim-tree/nvim-web-devicons' }
 	},
 	{
-    'linrongbin16/lsp-progress.nvim',
-    config = function()
-      require('lsp-progress').setup()
-    end,
+		'linrongbin16/lsp-progress.nvim',
+		config = function()
+			require('lsp-progress').setup()
+		end,
 		dependencies = { 'nvim-lualine/lualine.nvim' }
 	},
 	{
