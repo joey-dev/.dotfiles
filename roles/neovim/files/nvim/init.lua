@@ -115,14 +115,19 @@ vim.keymap.set('n', '<leader>ff', tbuiltin.find_files, {})
 vim.keymap.set('n', '<leader>fif', tbuiltin.live_grep, {})
 
 -- tree
-vim.keymap.set('n', '<Leader>pf', ':Neotree<cr>')
-vim.keymap.set('n', '<Leader>pcf', ':Neotree reveal<cr>')
-vim.keymap.set('n', '<Leader>pof', ':Neotree buffers<cr>')
+vim.keymap.set('n', '<Leader>pf', ':Neotree toggle left<cr>')
+vim.keymap.set('n', '<Leader>pF', ':Neotree toggle float<cr>')
+vim.keymap.set('n', '<Leader>pcf', ':Neotree reveal left<cr>')
+vim.keymap.set('n', '<Leader>pcF', ':Neotree reveal float<cr>')
+vim.keymap.set('n', '<Leader>pof', ':Neotree buffers left<cr>')
+vim.keymap.set('n', '<Leader>poF', ':Neotree buffers float<cr>')
 
 --- git
+require('gitsigns').setup()
+
 vim.keymap.set('n', '<Leader>gs', ':FloatermNew --height=1.0 --width=1.0 lazygit<cr>')
 vim.keymap.set('n', '<Leader>gb', ':GitBlameToggle<cr>')
-vim.keymap.set('n', '<Leader>go', ':GitBlameOpenCommitURL<cr>')
+vim.keymap.set('n', '<Leader>gd', ":Gitsigns preview_hunk<cr>")
 vim.g.gitblame_date_format = '%a %d-%m-%y'
 
 -- view
@@ -416,3 +421,68 @@ require("bufferline").setup{
 		end
 	}
 }
+
+-- rainbow brackets
+local rainbow_delimiters = require 'rainbow-delimiters'
+
+---@type rainbow_delimiters.config
+vim.g.rainbow_delimiters = {
+    strategy = {
+        [''] = rainbow_delimiters.strategy['global'],
+        vim = rainbow_delimiters.strategy['local'],
+    },
+    query = {
+        [''] = 'rainbow-delimiters',
+        lua = 'rainbow-blocks',
+    },
+    priority = {
+        [''] = 110,
+        lua = 210,
+    },
+    highlight = {
+        'RainbowDelimiterRed',
+        'RainbowDelimiterYellow',
+        'RainbowDelimiterBlue',
+        'RainbowDelimiterOrange',
+        'RainbowDelimiterGreen',
+        'RainbowDelimiterViolet',
+        'RainbowDelimiterCyan',
+    },
+}
+
+-- trouble
+vim.api.nvim_set_keymap(
+	"n",
+	"<leader>ef",
+	'<cmd>lua require("trouble").toggle("diagnostics")<cr><cmd>lua require("trouble").focus("diagnostics")<cr>',
+	{ noremap = true }
+)
+
+-- indent blank line
+local highlight = {
+    "RainbowRed",
+    "RainbowYellow",
+    "RainbowBlue",
+    "RainbowOrange",
+    "RainbowGreen",
+    "RainbowViolet",
+    "RainbowCyan",
+}
+local hooks = require "ibl.hooks"
+-- create the highlight groups in the highlight setup hook, so they are reset
+-- every time the colorscheme changes
+hooks.register(hooks.type.HIGHLIGHT_SETUP, function()
+    vim.api.nvim_set_hl(0, "RainbowRed", { fg = "#E06C75" })
+    vim.api.nvim_set_hl(0, "RainbowYellow", { fg = "#E5C07B" })
+    vim.api.nvim_set_hl(0, "RainbowBlue", { fg = "#61AFEF" })
+    vim.api.nvim_set_hl(0, "RainbowOrange", { fg = "#D19A66" })
+    vim.api.nvim_set_hl(0, "RainbowGreen", { fg = "#98C379" })
+    vim.api.nvim_set_hl(0, "RainbowViolet", { fg = "#C678DD" })
+    vim.api.nvim_set_hl(0, "RainbowCyan", { fg = "#56B6C2" })
+end)
+
+vim.g.rainbow_delimiters = { highlight = highlight }
+require("ibl").setup { scope = { highlight = highlight } }
+
+hooks.register(hooks.type.SCOPE_HIGHLIGHT, hooks.builtin.scope_highlight_from_extmark)
+

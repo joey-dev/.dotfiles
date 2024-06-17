@@ -60,11 +60,15 @@ return {
 		dependencies = { {'nvim-tree/nvim-web-devicons'}}
 	},
 	{
+		"HiPhish/rainbow-delimiters.nvim",
+		dependencies = { { 'nvim-treesitter/nvim-treesitter'}}
+	},
+	{
 		"nvim-treesitter/nvim-treesitter",
 		build = ":TSUpdate",
 		config = function()
 			require("nvim-treesitter.configs").setup {
-				ensure_installed = { "javascript", "vue", "lua", "sql", "css", "scss" },
+				ensure_installed = { "php", "javascript", "vue", "lua", "sql", "css", "scss" },
 				highlight = { enable = true, }
 			}
 		end
@@ -86,6 +90,12 @@ return {
 			  },
 			})
 		end,
+	},
+	{
+		"folke/trouble.nvim"
+	},
+	{
+		"lukas-reineke/indent-blankline.nvim", main = "ibl", opts = {}
 	},
 	{
 		"Pocco81/auto-save.nvim",
@@ -209,6 +219,9 @@ return {
 		opts = {
 			enabled = false,
 		},
+	},
+	{
+		'lewis6991/gitsigns.nvim'
 	},
 	{
 		"catppuccin/nvim", name = "catppuccin", priority = 1000
