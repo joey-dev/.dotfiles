@@ -95,6 +95,9 @@ return {
 		"folke/trouble.nvim"
 	},
 	{
+		"lukas-reineke/indent-blankline.nvim", main = "ibl", opts = {}
+	},
+	{
 		"Pocco81/auto-save.nvim",
 		config = function()
 			require("auto-save").setup {
