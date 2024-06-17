@@ -115,14 +115,19 @@ vim.keymap.set('n', '<leader>ff', tbuiltin.find_files, {})
 vim.keymap.set('n', '<leader>fif', tbuiltin.live_grep, {})
 
 -- tree
-vim.keymap.set('n', '<Leader>pf', ':Neotree<cr>')
-vim.keymap.set('n', '<Leader>pcf', ':Neotree reveal<cr>')
-vim.keymap.set('n', '<Leader>pof', ':Neotree buffers<cr>')
+vim.keymap.set('n', '<Leader>pf', ':Neotree toggle left<cr>')
+vim.keymap.set('n', '<Leader>pF', ':Neotree toggle float<cr>')
+vim.keymap.set('n', '<Leader>pcf', ':Neotree reveal left<cr>')
+vim.keymap.set('n', '<Leader>pcF', ':Neotree reveal float<cr>')
+vim.keymap.set('n', '<Leader>pof', ':Neotree buffers left<cr>')
+vim.keymap.set('n', '<Leader>poF', ':Neotree buffers float<cr>')
 
 --- git
+require('gitsigns').setup()
+
 vim.keymap.set('n', '<Leader>gs', ':FloatermNew --height=1.0 --width=1.0 lazygit<cr>')
 vim.keymap.set('n', '<Leader>gb', ':GitBlameToggle<cr>')
-vim.keymap.set('n', '<Leader>go', ':GitBlameOpenCommitURL<cr>')
+vim.keymap.set('n', '<Leader>gd', ":Gitsigns preview_hunk<cr>")
 vim.g.gitblame_date_format = '%a %d-%m-%y'
 
 -- view

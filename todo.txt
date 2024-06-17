@@ -1,3 +1,9 @@
+- add Which key
+	- need to move ft to folders
+		- move keymaps to new file
+- add HiPhish/rainbow-delimiters.nvim
+- add folke/trouble.nvim for sidebar
+- add lukas-reineke/indent-blankline.nvim
 - add new distro (with less bloat, maybe arch)
 - add ai code assistent
 - add syncthing (for task)

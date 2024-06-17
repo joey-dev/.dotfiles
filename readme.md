@@ -113,12 +113,15 @@ snippet pubf
   - Push: `gp`
   - Commit and Push: `gg`
 - Toggle git blane: `<leader>gb`
-- Open git merge commit in browser: `<leader>go`
+- Open diff: `<leader>gd`
 
 #### Project Tree (pf)
 - Open Tree: `<leader>pf`
+- Open floating Tree: `<leader>pF`
 - Open Tree and focus on the current open file: `<leader>pcf`
+- Open floating Tree and focus on the current open file: `<leader>pcF`
 - Open Tree with only open files: `<leader>pof`
+- Open floating Tree with only open files: `<leader>poF`
 
   - Within Open Files (pof):
     - Delete Buffer: `bd`
