@@ -60,11 +60,15 @@ return {
 		dependencies = { {'nvim-tree/nvim-web-devicons'}}
 	},
 	{
+		"HiPhish/rainbow-delimiters.nvim",
+		dependencies = { { 'nvim-treesitter/nvim-treesitter'}}
+	},
+	{
 		"nvim-treesitter/nvim-treesitter",
 		build = ":TSUpdate",
 		config = function()
 			require("nvim-treesitter.configs").setup {
-				ensure_installed = { "javascript", "vue", "lua", "sql", "css", "scss" },
+				ensure_installed = { "php", "javascript", "vue", "lua", "sql", "css", "scss" },
 				highlight = { enable = true, }
 			}
 		end
