@@ -450,4 +450,11 @@ vim.g.rainbow_delimiters = {
     },
 }
 
+-- trouble
+vim.api.nvim_set_keymap(
+	"n",
+	"<leader>ef",
+	'<cmd>lua require("trouble").toggle("diagnostics")<cr><cmd>lua require("trouble").focus("diagnostics")<cr>',
+	{ noremap = true }
+)
 

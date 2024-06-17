@@ -28,11 +28,10 @@ vim.api.nvim_create_autocmd('LspAttach', {
     vim.keymap.set('n', '<leader>si', '<cmd>lua vim.lsp.buf.references()<cr>', opts)
     vim.keymap.set('n', '<leader>rr', '<cmd>lua vim.lsp.buf.rename()<cr>', opts)
     vim.keymap.set({'n', 'x'}, '<leader>rf', '<cmd>lua vim.lsp.buf.format({async = true})<cr>', opts)
-    vim.keymap.set('n', '<leader>ef', '<cmd>lua vim.lsp.buf.code_action()<cr>', opts)
     vim.keymap.set('n', '<leader>ei', '<cmd>lua vim.diagnostic.open_float()<cr>', opts)
     vim.keymap.set('n', '<leader>en', '<cmd>lua vim.diagnostic.goto_prev()<cr>', opts)
-    vim.keymap.set('n', '<leader>ep', '<cmd>lua vim.diagnostic.goto_next()<cr>', opts) 
-    vim.keymap.set('n', '<leader>sq', ':cclose<CR>', opts) 
+    vim.keymap.set('n', '<leader>ep', '<cmd>lua vim.diagnostic.goto_next()<cr>', opts)
+    vim.keymap.set('n', '<leader>sq', ':cclose<CR>', opts)
   end
 })
 
@@ -80,12 +79,12 @@ require("mason-lspconfig").setup({
 function RunPhpactorRefactorCommand(transform_type)
   local current_file = vim.fn.shellescape(vim.fn.expand('%:p'))
   local command = string.format('phpactor class:transform %s --transform=%s', current_file, transform_type)
-  
+
   local job_id = vim.fn.jobstart(command, {
     on_exit = function(_, code)
       if code == 0 then
         print('PHPactor command executed successfully')
-        
+
         -- Reload the buffer to reflect changes
         vim.cmd('e')
       else
@@ -153,7 +152,7 @@ require'dapui'.setup(
 					{
 						id = "stacks",
 						size = 0.25
-					}, 
+					},
 					{
 						id = "scopes",
 						size = 0.5
