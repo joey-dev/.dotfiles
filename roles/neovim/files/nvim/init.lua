@@ -469,7 +469,7 @@ wk.register(
 					f = {':Neotree reveal left<cr>', 'Files'},
 					F = {':Neotree reveal float<cr>', 'Floating files'},
 				},
-				c = {
+				o = {
 					name = "Open",
 					f = {':Neotree buffers left<cr>', 'Files'},
 					F = {':Neotree buffers float<cr>', 'Floating files'},
@@ -509,13 +509,13 @@ wk.register(
 
 		},
 
-		['<A-q>'] = {':bprev', 'Go to prev tab'},
-		['<A-e>'] = {':bnext', 'Go to next tab'},
+		['<A-q>'] = {':bprev<CR>', 'Go to prev tab'},
+		['<A-e>'] = {':bnext<CR>', 'Go to next tab'},
 
 		['p'] = {'<Plug>(miniyank-autoput)', 'Paste'},
 		['P'] = {'<Plug>(miniyank-autoPut)', 'Paste before'},
 
-		['<N-w>'] = {':Bdelete', 'Close tab'},
+		['<A-w>'] = {':Bdelete<CR>', 'Close tab'},
 	}
 )
 
