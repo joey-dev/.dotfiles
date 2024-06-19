@@ -7,6 +7,7 @@ return {
 				"~/Code/Learning/*",
 				"~/Code/Projects/*",
 				"~/.dotfiles",
+				"~/notes",
 			},
 			dashboard_mode = true,
 		},
@@ -51,6 +52,14 @@ return {
 							keymap = 'SPC f d',
 							key_format = ' %s', -- remove default surrounding `[]`
 							action = 'NeovimProjectLoad ~/.dotfiles'
+						},
+						{
+							icon = ' ',
+							desc = 'Find Notes',
+							key = 'n',
+							keymap = 'SPC f d',
+							key_format = ' %s', -- remove default surrounding `[]`
+							action = 'NeovimProjectLoad ~/notes'
 						},
 					},
 					footer = {}  --your footer
