@@ -78,7 +78,10 @@ return {
 		config = function()
 			require("nvim-treesitter.configs").setup {
 				ensure_installed = { "php", "javascript", "vue", "lua", "sql", "css", "scss" },
-				highlight = { enable = true, }
+				highlight = {
+					enable = true,
+					additional_vim_regex_highlighting = true,
+				},
 			}
 		end
 	},
