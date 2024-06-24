@@ -23,12 +23,6 @@ vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup("plugins")
 
-vim.api.nvim_set_keymap("n", "<leader>vi", ":e ~/.dotfiles/roles/neovim/files/nvim/init.lua<cr>", { noremap = true })
-vim.api.nvim_set_keymap("n", "<leader>vs", ":source ~/.dotfiles/roles/neovim/files/nvim/init.lua<cr>", { noremap = true })
--- copy to clipboard
-vim.api.nvim_set_keymap('v', '<C-M-c>', '"+y', { noremap = true, silent = true })
-
-
 -- nvim settings
 vim.o.completeopt = "menuone,noinsert,noselect"
 vim.o.number = true
@@ -108,45 +102,20 @@ require("catppuccin").setup({
 vim.cmd.colorscheme "catppuccin-mocha"
 
 -- projects
-vim.keymap.set('n', '<Leader>pl', ':Telescope neovim-project discover<cr>')
 
 local tbuiltin = require('telescope.builtin')
-vim.keymap.set('n', '<leader>ff', tbuiltin.find_files, {})
-vim.keymap.set('n', '<leader>fif', tbuiltin.live_grep, {})
-
--- tree
-vim.keymap.set('n', '<Leader>pf', ':Neotree toggle left<cr>')
-vim.keymap.set('n', '<Leader>pF', ':Neotree toggle float<cr>')
-vim.keymap.set('n', '<Leader>pcf', ':Neotree reveal left<cr>')
-vim.keymap.set('n', '<Leader>pcF', ':Neotree reveal float<cr>')
-vim.keymap.set('n', '<Leader>pof', ':Neotree buffers left<cr>')
-vim.keymap.set('n', '<Leader>poF', ':Neotree buffers float<cr>')
 
 --- git
 require('gitsigns').setup()
 
-vim.keymap.set('n', '<Leader>gs', ':FloatermNew --height=1.0 --width=1.0 lazygit<cr>')
-vim.keymap.set('n', '<Leader>gb', ':GitBlameToggle<cr>')
-vim.keymap.set('n', '<Leader>gd', ":Gitsigns preview_hunk<cr>")
 vim.g.gitblame_date_format = '%a %d-%m-%y'
 
--- view
-vim.keymap.set('n', '<Leader>vm', ':MarkdownPreview<cr>')
-vim.keymap.set('n', '<Leader>vM', ':MarkdownPreviewStop<cr>')
-
--- buffer
-vim.keymap.set("n", "<A-q>", ':bprev<cr>')
-vim.keymap.set("n", "<A-e>", ':bnext<cr>')
-
--- marks
-vim.keymap.set("n", "<Leader>M", ':Telescope marks<cr>')
-vim.keymap.set("n", "<Leader>mC", ':delmarks a-z<cr>')
 
 -- loop through a to z
 local set_keymap = vim.api.nvim_set_keymap
 for i = 97, 122 do
 	local letter = string.char(i)
-    set_keymap("n", "<Leader>m" .. letter, ":ma " .. letter .. "<CR>", { noremap = true, silent = true })
+    set_keymap("n", "<Leader>m" .. letter, ":ma " .. letter .. "<CR>", { noremap = true, silent = true, desc = "Create mark for: " .. letter })
 end
 
 require('lualine').setup {
@@ -204,19 +173,6 @@ vim.api.nvim_create_autocmd("User", {
   callback = require("lualine").refresh,
 })
 
--- minyank
-vim.api.nvim_set_keymap('n', 'p', '<Plug>(miniyank-autoput)', { noremap = false })
-vim.api.nvim_set_keymap('n', 'P', '<Plug>(miniyank-autoPut)', { noremap = false })
-vim.api.nvim_set_keymap('n', '<leader>n', '<Plug>(miniyank-cycle)', { noremap = false })
-vim.api.nvim_set_keymap('n', '<leader>N', '<Plug>(miniyank-cycleback)', { noremap = false })
-
--- bbye
-vim.api.nvim_set_keymap('n', '<M-w>', ':Bdelete<cr>', { noremap = false })
-
--- tagbar
-vim.api.nvim_set_keymap('n', '<leader>fs', ':TagbarOpenAutoClose<cr>', { noremap = false })
-
-vim.api.nvim_set_keymap('n', '<leader>ft', ':TodoTelescope keywords=DOING,HACK<cr>', { noremap = false })
 
 -- run tests in directory
 
@@ -342,11 +298,6 @@ function search_and_display_groups(post_fix)
   }):find()
 end
 
-vim.keymap.set('n', '<Leader>tt',':lua search_and_display_groups("")<CR>', { noremap = true, silent = true })
-vim.keymap.set('n', '<Leader>tf',':lua search_and_display_groups("--fail-fast")<CR>', { noremap = true, silent = true })
-vim.keymap.set('n', '<Leader>tr',':lua search_and_display_groups("--no-rebuild")<CR>', { noremap = true, silent = true })
-vim.keymap.set('n', '<Leader>ta',':lua search_and_display_groups("--fail-fast --no-rebuild")<CR>', { noremap = true, silent = true })
-
 
 -- fixers/formatters
 
@@ -402,8 +353,6 @@ cmp.setup({
 })
 
 -- spectre
-vim.api.nvim_set_keymap("n", "<leader>fr", '<cmd>lua require("spectre").toggle()<CR>', { noremap = true })
-vim.api.nvim_set_keymap("n", "<leader>fw", '<cmd>lua require("spectre").open_visual({select_word=true})<CR>', { noremap = true })
 
 vim.opt.termguicolors = true
 require("bufferline").setup{
@@ -450,14 +399,6 @@ vim.g.rainbow_delimiters = {
     },
 }
 
--- trouble
-vim.api.nvim_set_keymap(
-	"n",
-	"<leader>ef",
-	'<cmd>lua require("trouble").toggle("diagnostics")<cr><cmd>lua require("trouble").focus("diagnostics")<cr>',
-	{ noremap = true }
-)
-
 -- indent blank line
 local highlight = {
     "RainbowRed",
@@ -485,4 +426,105 @@ vim.g.rainbow_delimiters = { highlight = highlight }
 require("ibl").setup { scope = { highlight = highlight } }
 
 hooks.register(hooks.type.SCOPE_HIGHLIGHT, hooks.builtin.scope_highlight_from_extmark)
+
+-- keybinds
+local wk = require("which-key")
+
+wk.register(
+	{
+
+		["<leader>"] = {
+
+			v = {
+				name = "Version",
+				i = {':e ~/.dotfiles/roles/neovim/files/nvim/init.lua<cr>', 'Open init.lua'},
+				s = {':source ~/.dotfiles/roles/neovim/files/nvim/init.lua<cr>', 'Reload init.lua'},
+			},
+
+			e = {
+				name = "Error",
+				f = {'<cmd>lua require("trouble").toggle("diagnostics")<cr><cmd>lua require("trouble").focus("diagnostics")<cr>', 'Open error window'},
+			},
+
+			f = {
+				name = "Find",
+				f = {tbuiltin.find_files, 'File'},
+				i = {
+					name = "In",
+					f = {tbuiltin.live_grep, 'File'},
+				},
+				s = {':TagbarOpenAutoClose<cr>', 'Symbols'},
+				t = {':TodoTelescope keywords=DOING,HACK<cr>', 'Todos'},
+				r = {'<cmd>lua require("spectre").toggle()<CR>', 'Replace'},
+				w = {'<cmd>lua require("spectre").open_visual({select_word=true})<CR>', 'Word under cursor'},
+			},
+
+			p = {
+				name = "Project",
+				l = {':Telescope neovim-project discover<cr>', 'List'},
+				f = {':Neotree toggle left<cr>', 'Files'},
+				F = {':Neotree toggle float<cr>', 'Floating files'},
+				c = {
+					name = "Current",
+					f = {':Neotree reveal left<cr>', 'Files'},
+					F = {':Neotree reveal float<cr>', 'Floating files'},
+				},
+				o = {
+					name = "Open",
+					f = {':Neotree buffers left<cr>', 'Files'},
+					F = {':Neotree buffers float<cr>', 'Floating files'},
+				},
+			},
+
+			g = {
+				name = "Git",
+				s = {':FloatermNew --height=1.0 --width=1.0 lazygit<cr>', 'Status'},
+				b = {':GitBlameToggle<cr>', 'Blame'},
+				d = {':Gitsigns preview_hunk<cr>', 'Diff'},
+			},
+
+			v = {
+				name = "View",
+				m = {':MarkdownPreview<cr>', 'Markdown'},
+				M = {':MarkdownPreviewStop<cr>', 'Close markdown'},
+			},
+
+			M = {':Telescope marks<cr>', 'Show all marks'},
+
+			m = {
+				name = "Mark",
+				C = {':delmarks a-z<cr>', 'Delete all'},
+			},
+
+			n = {'<Plug>(miniyank-cycle)', 'Miniyank: next'},
+			N = {'<Plug>(miniyank-cycleback)', 'Miniyank: prev'},
+
+			t = {
+				name = "Test",
+				t = {':lua search_and_display_groups("")<CR>', 'All'},
+				f = {':lua search_and_display_groups("--fail-fast")<CR>', 'Fail fast'},
+				r = {':lua search_and_display_groups("--no-rebuild")<CR>', 'No rebuild'},
+				a = {':lua search_and_display_groups("--fail-fast --no-rebuild")<CR>', 'Fail fast & No rebuild'},
+			}
+
+		},
+
+		['<A-q>'] = {':bprev<CR>', 'Go to prev tab'},
+		['<A-e>'] = {':bnext<CR>', 'Go to next tab'},
+
+		['p'] = {'<Plug>(miniyank-autoput)', 'Paste'},
+		['P'] = {'<Plug>(miniyank-autoPut)', 'Paste before'},
+
+		['<A-w>'] = {':Bdelete<CR>', 'Close tab'},
+	}
+)
+
+wk.register(
+	{
+		['<C-M-c>'] = {'"+y', "Copy to clipboard"}
+	},
+	{
+		mode = "v"
+	}
+)
 

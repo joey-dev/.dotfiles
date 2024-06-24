@@ -7,6 +7,7 @@ return {
 				"~/Code/Learning/*",
 				"~/Code/Projects/*",
 				"~/.dotfiles",
+				"~/notes",
 			},
 			dashboard_mode = true,
 		},
@@ -52,6 +53,14 @@ return {
 							key_format = ' %s', -- remove default surrounding `[]`
 							action = 'NeovimProjectLoad ~/.dotfiles'
 						},
+						{
+							icon = ' ',
+							desc = 'Find Notes',
+							key = 'n',
+							keymap = 'SPC f d',
+							key_format = ' %s', -- remove default surrounding `[]`
+							action = 'NeovimProjectLoad ~/notes'
+						},
 					},
 					footer = {}  --your footer
 				}
@@ -69,7 +78,10 @@ return {
 		config = function()
 			require("nvim-treesitter.configs").setup {
 				ensure_installed = { "php", "javascript", "vue", "lua", "sql", "css", "scss" },
-				highlight = { enable = true, }
+				highlight = {
+					enable = true,
+					additional_vim_regex_highlighting = true,
+				},
 			}
 		end
 	},
@@ -96,6 +108,26 @@ return {
 	},
 	{
 		"lukas-reineke/indent-blankline.nvim", main = "ibl", opts = {}
+	},
+	{
+		"folke/which-key.nvim",
+		event = "VeryLazy",
+		init = function()
+			vim.o.timeout = true
+			vim.o.timeoutlen = 500
+		end,
+		opts = {
+			plugins = {
+				presets = {
+					operators = false,
+					motions = false,
+					text_objects = false,
+					nav = false,
+					z = false,
+					g = false
+				}
+			}
+		}
 	},
 	{
 		"Pocco81/auto-save.nvim",

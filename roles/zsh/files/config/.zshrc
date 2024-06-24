@@ -108,9 +108,7 @@ fi
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 alias reload="source ~/.zshrc"
-alias vi="nvim"
-alias vim="nvim"
-alias lla="ls -la"
+alias lla="ls -lah"
 alias fuck="thefuck"
 alias bat="batcat"
 

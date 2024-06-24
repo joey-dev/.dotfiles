@@ -7,17 +7,7 @@ local execute = vim.api.nvim_command
 local fn = vim.fn
 local lsp = require("lsp-zero")
 
--- keybinds
-vim.api.nvim_set_keymap('n', '<leader>rn', ':lua RunPhpactorRefactorCommand("fix_namespace_class_name")<CR>', { noremap = true, silent = true, nowait = false }) -- needs testing
-vim.api.nvim_set_keymap('n', '<leader>gf', ':lua RunPhpactorRefactorCommand("complete_constructor")<CR>', { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<leader>gm', ':lua RunPhpactorRefactorCommand("implement_contracts")<CR>', { noremap = true, silent = true, nowait = false }) -- needs testing
-vim.api.nvim_set_keymap('n', '<leader>rm', ":lua require('phpactor').rpc('context_menu', {})<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('v', '<leader>rm', ":lua require('phpactor').rpc('context_menu', {})<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<leader>gi', ":lua require('phpactor').rpc('import_missing_classes', {})<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<leader>gc', ":lua require('phpactor').rpc('copy_class', {})<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<leader>gn', ":lua require('phpactor').rpc('new_class', {})<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<leader>rc', ":lua require('phpactor').rpc('move_class', {})<CR>", { noremap = true, silent = true, nowait = false })
-
+-- phpactor
 vim.api.nvim_create_autocmd('LspAttach', {
   desc = 'LSP actions',
   callback = function(event)
@@ -191,33 +181,6 @@ require'dapui'.setup(
   }
 )
 
-vim.api.nvim_set_keymap('n', '<A-b>', ":lua require'dap'.toggle_breakpoint()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-c>', ":lua require'dap'.continue()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-o>', ":lua require'dap'.step_over()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-O>', ":lua require'dap'.step_into()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-s>', ":lua OpenDebugWidget()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-S>', ":lua OpenDebugWidgetInWindow()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-i>', ":lua require'dap.ui.widgets'.hover()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-t>', ":lua require'dap'.repl.open()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-I>', ":lua require'dap'.run_to_cursor()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-p>', ":lua require'dap'.step_back()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-C>', ":lua require'dap'.reverse_continue()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-E>', ":lua require'dap'.set_exception_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-l>', ":lua require'dap'.list_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-r>', ":lua require'dap'.clear_breakpoints()<CR>", { noremap = true, silent = true, nowait = false })
-vim.api.nvim_set_keymap('n', '<A-u>', ":lua require'dapui'.toggle()<CR>", { noremap = true, silent = true, nowait = false })
-
-function OpenDebugWidget()
-  local widgets = require('dap.ui.widgets')
-  widgets.centered_float(widgets.scopes)
-end
-
-function OpenDebugWidgetInWindow()
-  local widgets = require('dap.ui.widgets')
-  local my_sidebar = widgets.sidebar(widgets.scopes)
-  my_sidebar.open()
-end
-
 -- Switch between test file
 function switch_between_file_and_test(test_type)
     local current_file_path = vim.fn.expand("%:p")
@@ -235,8 +198,4 @@ function switch_between_file_and_test(test_type)
         vim.cmd("edit " .. test_file_path)
     end
 end
-
-vim.api.nvim_set_keymap('n', '<leader>fut', '<cmd>lua switch_between_file_and_test("unit")<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>fit', '<cmd>lua switch_between_file_and_test("integration")<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>fat', '<cmd>lua switch_between_file_and_test("api")<CR>', { noremap = true, silent = true })
 
