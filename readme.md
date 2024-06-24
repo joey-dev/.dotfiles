@@ -11,7 +11,6 @@ These are all my settings and program's I use. Written in Ansible for easy insta
 - [Keybinds](#keybinds)
 - [Language specific Documentation/Keybinds](#language)
 - [Testing](#testing)
-- [Extra's](#extras)
 
 
 ## Getting Started <a name = "getting_started"></a>
@@ -47,9 +46,6 @@ To open the questions, run `make configure`
 ```
 
 ## Create a new project <a name = "project"></a>
-run `nvim`.
-within neovin run: `:Project {root}` (example: Project ~/Code/ProjectName)
-
 For some language's, you might need to do more. Please go to [Language specific Documentation/Keybinds](#language)
 
 ## Configuration <a name = "configuration"></a>
@@ -103,115 +99,7 @@ snippet pubf
 - Switch workspace from monitor: `Win+shift+d`
 
 ### Nvim <a name = "keybinds_nvim"> </a>
-#### Git
-- Open Git Status: `<leader>gs`
-  - Add all files: `A`
-  - Unstage file: `gu`
-  - Add file: `ga`
-  - Revert file: `gr`
-  - Commit: `gc`
-  - Push: `gp`
-  - Commit and Push: `gg`
-- Toggle git blane: `<leader>gb`
-- Open diff: `<leader>gd`
-
-#### Project Tree (pf)
-- Open Tree: `<leader>pf`
-- Open floating Tree: `<leader>pF`
-- Open Tree and focus on the current open file: `<leader>pcf`
-- Open floating Tree and focus on the current open file: `<leader>pcF`
-- Open Tree with only open files: `<leader>pof`
-- Open floating Tree with only open files: `<leader>poF`
-
-  - Within Open Files (pof):
-    - Delete Buffer: `bd`
-
-  - Within Project Tree (pf):
-    - Fuzzy Finder: `/`
-    - Fuzzy Finder for Directories: `D`
-    - Navigate Up: `<bs>`
-    - Open Split: `S`
-    - Open Vertical Split: `s`
-    - Close Node: `C`
-    - Close All Nodes: `z`
-    - Add File or Directory: `a`
-    - Add Directory: `A` (also accepts optional config.show_path option like "add")
-    - Delete: `d`
-    - Rename: `r`
-    - Copy to Clipboard: `y`
-    - Cut to Clipboard: `x`
-    - Paste from Clipboard: `p`
-    - Copy (text input for destination): `c` (also accepts optional config.show_path option like "add")
-    - Move (text input for destination): `m` (also accepts optional config.show_path option like "add")
-
-#### Project Management (pl)
-- List all projects: `<leader>pl`
-
-#### File Search
-- Find text in all files in the current project: `<leader>fif`
-- Find a file in the current project: `<leader>ff`
-    - Within File Search (ff/fif):
-        - prev item `ctrl + p`
-        - next item `ctrl + n`
-        - enter file `enter`
-- Find and replace: `:%Subvert/find/replace/g`
-    - example: `:%Subvert/facilit{y,ies}/building{,s}/g`
-- Find structure in current files (ctag's): `<leader>fs`
-- Find all todo's: `<leader>ft`
-    - This will find all the keywords: `DOING:` and `HACK:`
-- Find and replace: `<leader>fr`
-- Find word: `<leader>fw`
-
-#### Text manipulation
-- Word to snake_case: `crs`
-- Word to camelCase: `crc`
-- Word to UPPER_CASE: `cru`
-- Word to dash-case: `cr-`
-- Word to dot.case: `cr.`
-
-#### Tests
-- Find/Run all tests in the current project with a given group: `<leader>tt`
-- Find/Run all tests in the current project with a given group (fail fast): `<leader>tf`
-- Find/Run all tests in the current project with a given group (no rebuild): `<leader>tr`
-- Find/Run all tests in the current project with a given group (fail fast AND no rebuild): `<leader>ta`
-
-#### Markdown Viewing
-- View Markdown: `<leader>vm`
-- Stop viewing Markdown: `<leader>vM`
-
-#### Mark lines
-- Set mark on line: `<leader>m{a-z}`
-- Clear mark list: `<leader>mC`
-- Show all marked lines: `<leader>M`
-
-#### Navigation
-- Go back 1 file: `Alt + q`
-- Go to next file: `Alt + e`
-- Close currentl file: `Alt + w`
-
-#### Split-screen
-- Split window: `ctrl+w,ctrl+v`
-- Split window horizantally: `ctrl+w,ctrl+s`
-- Go to left window: `ctrl+w,ctrl+h`
-- Go to right window: `ctrl+w,ctrl+l`
-
-#### Pasting
-- Past current yanked: `p`
-- Past current yanked before carret: `P`
-- Sycle through pasted: `<leader>n`
-- Sycle through pasted back: `<leader>N`
-- copy to clipboard: `ctrl + alt + c`
-- paste from clipboard: `ctrl + shift + v`
-
-#### Comments
-- Toggle comment line: `gcc`
-- Toggle comment line in visual mode: `gc`
-
-#### Snippets
-- Next snippet: `ctrl + n`
-- Previous snippet: `ctrl + p`
-- Select snippet: `enter`
-- Go to next selection of current snippet: `tab`
+- All commands are within nvim itself: `<space>h`
 
 ### DBeaver <a name = "keybinds_dbeaver"> </a>
 
@@ -232,7 +120,6 @@ snippet pubf
 
 ## Language specific Documentation/Keybinds <a name = "language"></a>
 - [PHP](documentation/PHP.md)
-- [VUE](documentation/Vue.md)
 
 ## Testing <a name = "testing"></a>
 To test the new features/improvements in ansible, there are 2 things:
@@ -253,7 +140,3 @@ to run it clean again:
 -   ssh-copy-id -p 2222 vagrant@127.0.0.1
 -   make test-reload
 
-
-## Extra's <a name = "extras"></a>
-### remove need to for passphrase this boot sycle
--   ssh-add ~/.ssh/id_rsa

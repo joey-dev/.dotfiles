@@ -448,16 +448,29 @@ wk.register(
 
 			f = {
 				name = "Find",
-				f = {tbuiltin.find_files, 'File'},
-				i = {
-					name = "In",
-					f = {tbuiltin.live_grep, 'File'},
+				f = {
+					name = "File",
+					n = {tbuiltin.find_files, 'Name'},
+					i = {tbuiltin.live_grep, 'In files'},
+					s = {tbuiltin.grep_string, 'Selected String'},
+					o = {tbuiltin.buffers, 'Open files'},
 				},
+				g = {
+					name = "Grep",
+					r = {'<cmd>lua require("spectre").toggle()<CR>', 'Replace'},
+					w = {'<cmd>lua require("spectre").open_visual({select_word=true})<CR>', 'Word under cursor'},
+				},
+				r = {tbuiltin.registers, 'Register'},
 				s = {':TagbarOpenAutoClose<cr>', 'Symbols'},
 				t = {':TodoTelescope keywords=DOING,HACK<cr>', 'Todos'},
-				r = {'<cmd>lua require("spectre").toggle()<CR>', 'Replace'},
-				w = {'<cmd>lua require("spectre").open_visual({select_word=true})<CR>', 'Word under cursor'},
 			},
+
+			s = {
+				name = "Symbol",
+				c = {tbuiltin.spell_suggest, 'Check'},
+			},
+
+			h = {':WhichKey<cr>', 'Help'},
 
 			p = {
 				name = "Project",
@@ -521,7 +534,17 @@ wk.register(
 
 wk.register(
 	{
-		['<C-M-c>'] = {'"+y', "Copy to clipboard"}
+		['<C-M-c>'] = {'"+y', "Copy to clipboard"},
+		["<leader>"] = {
+
+			f = {
+				name = "Find",
+				f = {
+					name = "File",
+					s = {tbuiltin.grep_string, 'Selected String'},
+				},
+			},
+		},
 	},
 	{
 		mode = "v"
