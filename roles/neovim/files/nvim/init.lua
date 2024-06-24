@@ -529,6 +529,8 @@ wk.register(
 		['P'] = {'<Plug>(miniyank-autoPut)', 'Paste before'},
 
 		['<A-w>'] = {':Bdelete<CR>', 'Close tab'},
+		['<A-W>'] = {':Bdelete!<CR>', 'Close all tab'},
+		['<C-A-w>'] = {':bufdo bd<CR>:Bdelete<CR>', 'Close all tab'},
 	}
 )
 
