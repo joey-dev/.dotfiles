@@ -40,18 +40,13 @@ wk.register(
 
 			f = {
 				name = "Find",
-				u = {
-					name = "Unit",
-					t = {"<cmd>lua switch_between_file_and_test('unit')<CR>", "Test"}
+				t = {
+					name = "Test",
+					u = {"<cmd>lua switch_between_file_and_test('unit')<CR>", "Test"},
+					i = {"<cmd>lua switch_between_file_and_test('integration')<CR>", "Test"},
+					a = {"<cmd>lua switch_between_file_and_test('api')<CR>", "Test"},
 				},
-				i = {
-					name = "Integration",
-					t = {"<cmd>lua switch_between_file_and_test('integration')<CR>", "Test"}
-				},
-				a = {
-					name = "Api",
-					t = {"<cmd>lua switch_between_file_and_test('api')<CR>", "Test"}
-				},
+				r = {"<cmd>lua switch_between_interface_and_repository()<CR>", "Repository"},
 			}
 		},
 

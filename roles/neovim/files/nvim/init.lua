@@ -185,7 +185,7 @@ local action_state = require('telescope.actions.state')
 local Path = require('plenary.path')
 
 -- Function to get the git root directory
-local function get_git_root_or_nil()
+function get_git_root_or_nil()
   local git_root = vim.fn.systemlist("git rev-parse --show-toplevel")[1]
   if git_root == "" then
     return nil

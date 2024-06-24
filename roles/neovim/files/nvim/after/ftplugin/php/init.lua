@@ -6,6 +6,7 @@ local vim = vim
 local execute = vim.api.nvim_command
 local fn = vim.fn
 local lsp = require("lsp-zero")
+local api = vim.api
 
 -- phpactor
 vim.api.nvim_create_autocmd('LspAttach', {
@@ -197,5 +198,57 @@ function switch_between_file_and_test(test_type)
 
         vim.cmd("edit " .. test_file_path)
     end
+end
+
+
+local function file_exists(path)
+  local f = io.open(path, 'r')
+  if f ~= nil then io.close(f) return true else return false end
+end
+
+function switch_between_interface_and_repository()
+  local current_file = api.nvim_buf_get_name(0)
+  local current_dir = vim.fn.fnamemodify(current_file, ':h')
+  local current_name = vim.fn.fnamemodify(current_file, ':t')
+  local git_root = get_git_root_or_nil()
+
+  local target_name
+  local search_paths = {}
+
+  if current_name:sub(1, 4) == 'Dbal' then
+    target_name = current_name:sub(5)
+    table.insert(search_paths, current_dir .. '/' .. target_name)
+    table.insert(search_paths, current_dir .. '/../../Application/*/' .. target_name)
+    table.insert(search_paths, current_dir .. '/../../Domain/*/' .. target_name)
+    table.insert(search_paths, current_dir .. '/../' .. target_name)
+  else
+    target_name = 'Dbal' .. current_name
+    table.insert(search_paths, current_dir .. '/' .. target_name)
+    table.insert(search_paths, current_dir .. '/../../Infrastructure/*/' .. target_name)
+    table.insert(search_paths, current_dir .. '/../' .. target_name)
+  end
+
+  if git_root then
+    table.insert(search_paths, git_root .. '/' .. target_name)
+    table.insert(search_paths, git_root .. '/*' .. target_name)
+  end
+
+	for _, path in ipairs(search_paths) do
+    -- Using vim's glob function to expand wildcards
+    local expanded_paths = vim.fn.glob(path, false, true)
+    if type(expanded_paths) == 'table' then
+      for _, expanded_path in ipairs(expanded_paths) do
+        if file_exists(expanded_path) then
+          vim.cmd('edit ' .. expanded_path)
+          return
+        end
+      end
+    elseif file_exists(expanded_paths) then
+      vim.cmd('edit ' .. expanded_paths)
+      return
+    end
+  end
+
+  print('No related file found.' .. current_dir .. '/../../Infrastructure/' .. target_name)
 end
 
