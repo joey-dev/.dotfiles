@@ -249,6 +249,6 @@ function switch_between_interface_and_repository()
     end
   end
 
-  print('No related file found.' .. current_dir .. '/../../Infrastructure/' .. target_name)
+  print('No related file found.')
 end
 
