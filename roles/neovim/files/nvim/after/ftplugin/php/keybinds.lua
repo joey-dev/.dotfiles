@@ -66,6 +66,8 @@ wk.register(
 		['<A-I>'] = {":lua require'dap'.run_to_cursor()<CR>", "Debug: To cursor"},
 		['<A-u>'] = {":lua require'dapui'.toggle()<CR>", "Debug: Open UI"}
 
+	}, {
+		buffer = vim.api.nvim_get_current_buf(),
 	}
 )
 
