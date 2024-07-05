@@ -5,7 +5,7 @@
     become: yes
     package:
       state: present
-      name: 
+      name:
         - luajit
         - ripgrep
         - fd-find
@@ -127,10 +127,10 @@
     become: yes
     package:
       state: present
-      name: 
+      name:
         - gcc
         - make
-        - pkg-config 
+        - pkg-config
         - autoconf
         - automake
         - python3-docutils
@@ -164,4 +164,63 @@
     become: true
     args:
       chdir: "/tmp/ctags"
+
+- name: install luarocks
+  block:
+
+  - name: luarocks - install required packages
+    become: yes
+    package:
+      state: present
+      name:
+        - build-essential
+        - libreadline-dev
+        - unzip
+
+  - name: luarocks - Download lua tar
+    get_url:
+      url: "http://www.lua.org/ftp/lua-{{ lua_version }}.tar.gz"
+      dest: "/tmp/lua-{{ lua_version }}.tar.gz"
+
+  - name: luarocks - Unpack lua
+    command: "tar -zxf lua-{{ lua_version }}.tar.gz"
+    args:
+      chdir: "/tmp"
+
+  - name: luarocks - install lua installer
+    command: "make linux test"
+    args:
+      chdir: "/tmp/lua-{{ lua_version }}"
+
+  - name: luarocks - install lua
+    command: "make install"
+    become: true
+    args:
+      chdir: "/tmp/lua-{{ lua_version }}"
+
+  - name: luarocks - Download tar
+    command: "curl -R -O https://luarocks.github.io/luarocks/releases/luarocks-{{ luarocks_version }}.tar.gz"
+    args:
+      chdir: "/tmp"
+
+  - name: luarocks - Unpack
+    command: "tar -zxf luarocks-{{ luarocks_version }}.tar.gz"
+    args:
+      chdir: "/tmp"
+
+  - name: luarocks - configure installer
+    command: "./configure --with-lua-include=/usr/local/include"
+    args:
+      chdir: "/tmp/luarocks-{{ luarocks_version }}"
+
+  - name: luarocks - configure installer 2
+    command: "make"
+    args:
+      chdir: "/tmp/luarocks-{{ luarocks_version }}"
+
+  - name: luarocks - install
+    command: "make install"
+    become: true
+    args:
+      chdir: "/tmp/luarocks-{{ luarocks_version }}"
 

@@ -435,6 +435,7 @@ wk.register(
 
 		["<leader>"] = {
 
+			q = {':Neotree close<cr>:cclose<CR>', 'Close all other tabs'},
 			v = {
 				name = "Version",
 				i = {':e ~/.dotfiles/roles/neovim/files/nvim/init.lua<cr>', 'Open init.lua'},
@@ -460,7 +461,7 @@ wk.register(
 					r = {'<cmd>lua require("spectre").toggle()<CR>', 'Replace'},
 					w = {'<cmd>lua require("spectre").open_visual({select_word=true})<CR>', 'Word under cursor'},
 				},
-				r = {tbuiltin.registers, 'Register'},
+				c = {tbuiltin.registers, 'Clipboard'},
 				s = {':TagbarOpenAutoClose<cr>', 'Symbols'},
 				t = {':TodoTelescope keywords=DOING,HACK<cr>', 'Todos'},
 			},

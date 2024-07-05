@@ -4,3 +4,5 @@ config_dir: "{{ ansible_env.XDG_CONFIG_HOME | default(default_xdg_config_home) }
 php_version: "8.3"
 task_master_version: "2.6.2"
 mysql_workbench_version: "8.0.29"
+lua_version: "5.1"
+luarocks_version: "3.11.1"
