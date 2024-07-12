@@ -114,8 +114,10 @@ vim.g.gitblame_date_format = '%a %d-%m-%y'
 -- loop through a to z
 local set_keymap = vim.api.nvim_set_keymap
 for i = 97, 122 do
-	local letter = string.char(i)
-    set_keymap("n", "<Leader>m" .. letter, ":ma " .. letter .. "<CR>", { noremap = true, silent = true, desc = "Create mark for: " .. letter })
+	local letter_normal = string.char(i)
+	local letter = string.upper(letter_normal)
+  set_keymap("n", "<Leader>m" .. letter_normal, ":ma " .. letter .. "<CR>", { noremap = true, silent = true, desc = "Create mark for: " .. letter })
+  set_keymap("n", "<Leader>fm" .. letter_normal, "`" .. letter, { noremap = true, silent = true, desc = "Go to mark for: " .. letter })
 end
 
 require('lualine').setup {
@@ -461,9 +463,12 @@ wk.register(
 					r = {'<cmd>lua require("spectre").toggle()<CR>', 'Replace'},
 					w = {'<cmd>lua require("spectre").open_visual({select_word=true})<CR>', 'Word under cursor'},
 				},
+				m = {
+					name = "mark",
+				},
 				c = {tbuiltin.registers, 'Clipboard'},
 				s = {':TagbarOpenAutoClose<cr>', 'Symbols'},
-				t = {':TodoTelescope keywords=DOING,HACK<cr>', 'Todos'},
+				d = {':TodoTelescope keywords=DOING,HACK<cr>', 'Todos'},
 			},
 
 			s = {
