@@ -468,7 +468,7 @@ wk.register(
 				},
 				c = {tbuiltin.registers, 'Clipboard'},
 				s = {':TagbarOpenAutoClose<cr>', 'Symbols'},
-				t = {':TodoTelescope keywords=DOING,HACK<cr>', 'Todos'},
+				d = {':TodoTelescope keywords=DOING,HACK<cr>', 'Todos'},
 			},
 
 			s = {
