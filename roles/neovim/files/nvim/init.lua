@@ -303,6 +303,7 @@ end
 
 -- fixers/formatters
 
+--vim.g.ale_linters = {'cspell'}
 vim.g.ale_fixers = {'trim_whitespace', 'remove_trailing_lines'}
 
 vim.g.ale_fix_on_save = 1

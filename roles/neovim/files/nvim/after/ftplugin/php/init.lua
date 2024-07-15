@@ -26,7 +26,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
   end
 })
 
-vim.g.ale_linters = {php = {'phpmd', 'phpstan'}}
+vim.b.ale_linters = {php = {'phpmd', 'phpstan', 'cspell'}}
 
 -- phpmd
 vim.g.ale_php_phpmd_executable = os.getenv("HOME") .. '/.config/composer/vendor/bin/phpmd'
