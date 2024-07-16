@@ -430,7 +430,7 @@ require("ibl").setup { scope = { highlight = highlight } }
 
 hooks.register(hooks.type.SCOPE_HIGHLIGHT, hooks.builtin.scope_highlight_from_extmark)
 
--- keybinds
+-- key-binds
 local wk = require("which-key")
 
 wk.register(
@@ -498,7 +498,7 @@ wk.register(
 
 			g = {
 				name = "Git",
-				s = {':FloatermNew --height=1.0 --width=1.0 lazygit<cr>', 'Status'},
+				s = {':terminal lazygit<cr>:startinsert<cr>', 'Status'},
 				b = {':GitBlameToggle<cr>', 'Blame'},
 				d = {':Gitsigns preview_hunk<cr>', 'Diff'},
 			},
