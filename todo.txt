@@ -1,3 +1,5 @@
+- extract code-base specific nvim code
+- make ansible not re-install software that is already on the desired version
 - add new distro (with less bloat, maybe arch)
 - add ai code assistent
 - add syncthing (for task)
