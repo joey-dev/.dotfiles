@@ -224,3 +224,7 @@
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
 
+  - name: luarocks - install lua files system
+    command: "luarocks install luafilesystem"
+    become: true
+

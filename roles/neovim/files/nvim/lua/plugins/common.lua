@@ -127,7 +127,11 @@ return {
 					g = false
 				}
 			}
-		}
+		},
+		dependencies = {
+			"echasnovski/mini.nvim",
+			"nvim-tree/nvim-web-devicons",
+		},
 	},
 	{
 		"okuuva/auto-save.nvim",

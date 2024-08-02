@@ -58,6 +58,8 @@ local project_root = find_project_root()
 vim.g.ale_php_phpstan_executable = os.getenv("HOME") .. '/.config/composer/vendor/bin/phpstan'
 vim.g.ale_php_phpstan_configuration = find_phpstan_neon(project_root)
 vim.g.ale_php_phpstan_autoload = project_root .. '/vendor/autoload.php'
+vim.g.ale_php_phpstan_use_global = 1
+
 
 -- mason
 
