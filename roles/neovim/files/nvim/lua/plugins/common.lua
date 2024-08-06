@@ -291,5 +291,10 @@ return {
 				HACK = { icon = " ", color = "warning" },
 			}
 		}
-  }
+  },
+  {
+		"https://gitlab.com/schrieveslaach/sonarlint.nvim.git",
+		filetypes = { "java", "typescript", "javascript" },
+		dependencies = { "neovim/nvim-lspconfig" },
+  },
 }
