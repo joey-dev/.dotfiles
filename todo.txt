@@ -10,5 +10,3 @@
 	- phan
 	- tlint
 	- php
-- add phpcs
-- open php manual with keybind: alvan/vim-php-manual

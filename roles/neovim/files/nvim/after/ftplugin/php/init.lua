@@ -616,3 +616,6 @@ function switch_between_interface_and_repository()
   print('No related file found.')
 end
 
+-- php manual
+vim.g.php_manual_online_search_shortcut = '<leader>fo'
+
