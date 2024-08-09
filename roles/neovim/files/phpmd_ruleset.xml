@@ -5,7 +5,9 @@
          xsi:noNamespaceSchemaLocation="http://pmd.sf.net/ruleset_xml_schema.xsd">
     <description>Default Custom rules for my projects</description>
 
-    <rule ref="rulesets/cleancode.xml"></rule>
+	<rule ref="rulesets/cleancode.xml">
+        <exclude name="StaticAccess"/>
+	</rule>
     <rule ref="rulesets/codesize.xml"></rule>
     <rule ref="rulesets/controversial.xml"></rule>
     <rule ref="rulesets/design.xml"></rule>
@@ -14,5 +16,5 @@
         <exclude name="LongVariable"/>
 	</rule>
 	<rule ref="rulesets/unusedcode.xml"></rule>
-    
+
 </ruleset>

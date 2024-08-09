@@ -1,2 +1,0 @@
-cd ~/Code/Work/dyflexis-monorepo/ && docker-compose up -d
-

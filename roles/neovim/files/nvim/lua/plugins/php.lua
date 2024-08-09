@@ -22,4 +22,7 @@ return {
 		  'neovim/nvim-lspconfig',
 		},
 	},
+	{
+		"alvan/vim-php-manual",
+	}
 }

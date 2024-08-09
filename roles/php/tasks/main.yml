@@ -56,3 +56,6 @@
   - name: Install phpStan phpunit
     command: composer global require phpstan/phpstan-phpunit
 
+  - name: Install phpStan shipmonk phpstan-rules
+    command: composer global require shipmonk/phpstan-rules
+
