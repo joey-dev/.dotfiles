@@ -27,10 +27,17 @@ vim.api.nvim_create_autocmd('LspAttach', {
 })
 
 vim.b.ale_linters = {php = {'phpmd', 'phpstan', 'cspell'}}
+vim.b.ale_fixers = {php = {'php_cs_fixer'}}
+vim.g.ale_fix_on_save = 1
+
 
 -- phpmd
 vim.g.ale_php_phpmd_executable = os.getenv("HOME") .. '/.config/composer/vendor/bin/phpmd'
 vim.g.ale_php_phpmd_ruleset = os.getenv("HOME") .. '/.dotfiles/roles/neovim/files/phpmd_ruleset.xml'
+
+-- phpcs
+vim.g.ale_php_cs_fixer_executable = os.getenv("HOME") .. '/Code/Work/dyflexis-monorepo/tools/vendor/bin/php-cs-fixer'
+vim.g.ale_php_cs_fixer_options= "--config='/home/joey/Code/Work/dyflexis-monorepo/tools/.php-cs-fixer.php'"
 
 -- phpstan
 local function find_project_root()
