@@ -1,14 +1,12 @@
+- extract code-base specific nvim code
+- make ansible not re-install software that is already on the desired version
 - add new distro (with less bloat, maybe arch)
 - add ai code assistent
 - add syncthing (for task)
 - see if sqlfluff works with sql written in php (https://github.com/sqlfluff/sqlfluff)
 - look into the following for nvim integrations with ale and ?php:
-	- cspell
 	- intelephense
 	- langserver
 	- phan
-	- psalm
 	- tlint
 	- php
-- add phpcs
-- open php manual with keybind: alvan/vim-php-manual

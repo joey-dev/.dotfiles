@@ -185,6 +185,7 @@ local sorters = require('telescope.sorters')
 local actions = require('telescope.actions')
 local action_state = require('telescope.actions.state')
 local Path = require('plenary.path')
+local conf = require('telescope.config').values
 
 -- Function to get the git root directory
 function get_git_root_or_nil()
@@ -220,6 +221,103 @@ local function extract_groups(file)
     end
   end
   return groups
+end
+
+function run_phpstan()
+  vim.cmd(":below 10split | :terminal cd legacy && vendor/bin/phpstan analyze Core Common Component app src --memory-limit=-1 -c phpstan.neon.dist")
+end
+
+function run_csfix()
+  vim.cmd(":below 10split | :terminal bin/cs.php fix")
+end
+
+function run_database_import()
+	vim.ui.input({ prompt = 'Enter database name: ' }, function(input)
+		vim.cmd("!bin/db i " .. input)
+	end)
+end
+
+local function get_customers_list()
+  local output = vim.fn.systemlist("bin/db customers | tail -n +2 | awk -F'|' '{print $2}' | sed 's/^ *//; s/ *$//' | grep -v '^$' | grep -v '^Name$'")
+  return output
+end
+
+local function get_customer_databases_list()
+  local output = vim.fn.systemlist("bin/db customers | tail -n +2 | awk -F'|' '{print $3}' | sed 's/^ *//; s/ *$//' | grep -v '^$' | grep -v '^Database$'")
+  return output
+end
+
+local function get_customers_url_list()
+  local output = vim.fn.systemlist("bin/db customers | tail -n +2 | awk -F'|' '{print $4}' | sed 's/^ *//; s/ *$//' | grep -v '^$' | grep -v '^Url$'")
+  return output
+end
+
+function run_database_migration()
+  local opts = {}
+  local customers = get_customers_list()
+
+  pickers.new(opts, {
+    prompt_title = "Customers",
+    finder = finders.new_table {
+      results = customers
+    },
+    sorter = conf.generic_sorter(opts),
+    attach_mappings = function(prompt_bufnr, map)
+      actions.select_default:replace(function()
+        actions.close(prompt_bufnr)
+        local selection = action_state.get_selected_entry()
+        local name = selection[1]
+        vim.cmd('!bin/db m ' .. name)
+      end)
+      return true
+    end,
+  }):find()
+end
+
+function run_database_delete()
+  local opts = {}
+  local customers = get_customer_databases_list()
+
+  pickers.new(opts, {
+    prompt_title = "Customers",
+    finder = finders.new_table {
+      results = customers
+    },
+    sorter = conf.generic_sorter(opts),
+    attach_mappings = function(prompt_bufnr, map)
+      actions.select_default:replace(function()
+        actions.close(prompt_bufnr)
+        local selection = action_state.get_selected_entry()
+        local name = selection[1]
+        vim.cmd('!bin/db db:drop ' .. name)
+      end)
+      return true
+    end,
+  }):find()
+end
+
+function run_database_customer_url()
+  local opts = {}
+  local customers = get_customers_list()
+
+  pickers.new(opts, {
+    prompt_title = "Customers",
+    finder = finders.new_table {
+      results = customers
+    },
+    sorter = conf.generic_sorter(opts),
+    attach_mappings = function(prompt_bufnr, map)
+      actions.select_default:replace(function()
+        actions.close(prompt_bufnr)
+        local selection = action_state.get_selected_entry()
+        local name = selection[1]
+				local url = "https://dyflexis.dev.wodanbrothers.com/" .. name;
+				os.execute("xdg-open " .. url)
+
+      end)
+      return true
+    end,
+  }):find()
 end
 
 function search_and_display_groups(post_fix)
@@ -274,7 +372,7 @@ function search_and_display_groups(post_fix)
         -- Determine the command to run based on the selection
         local command
         if selected == "current file" then
-          command = "./test_runner.sh"
+          command = find_test_command_from_current_file()
         elseif selected == "all unit" then
           command = "./test_runner.sh unit"
         elseif selected == "all integration" then
@@ -300,9 +398,49 @@ function search_and_display_groups(post_fix)
   }):find()
 end
 
+function find_test_command_from_current_file()
+    -- Get the current file path
+    local current_file = vim.fn.expand('%:p')
+    local current_file_name = vim.fn.expand('%:t')
+
+    -- Define the test groups to look for
+    local test_groups = { 'unit', 'integration', 'api' }
+
+    -- Function to find the test group in the path
+    local function find_test_group(path, groups)
+        for _, group in ipairs(groups) do
+            if path:find(group) then
+                return group
+            end
+        end
+        return nil
+    end
+
+    -- Find the test group
+    local test_group = find_test_group(current_file, test_groups)
+
+    if not test_group then
+        print('No test group found in the current path')
+        return
+    end
+
+    -- Get the path from test group to the current file
+    local test_path = current_file:match(test_group .. '/(.*)')
+
+    if test_group == 'integration' or test_group == 'api' then
+        if test_path and test_path:sub(1, 1) == '/' then
+            test_path = test_path:sub(2)
+        end
+        return string.format('./test_runner.sh %s %s', test_group, test_path)
+    elseif test_group == 'unit' then
+        return string.format('./test_runner.sh unit --filter %s', current_file_name)
+    end
+end
+
 
 -- fixers/formatters
 
+--vim.g.ale_linters = {'cspell'}
 vim.g.ale_fixers = {'trim_whitespace', 'remove_trailing_lines'}
 
 vim.g.ale_fix_on_save = 1
@@ -429,7 +567,7 @@ require("ibl").setup { scope = { highlight = highlight } }
 
 hooks.register(hooks.type.SCOPE_HIGHLIGHT, hooks.builtin.scope_highlight_from_extmark)
 
--- keybinds
+-- key-binds
 local wk = require("which-key")
 
 wk.register(
@@ -497,7 +635,7 @@ wk.register(
 
 			g = {
 				name = "Git",
-				s = {':FloatermNew --height=1.0 --width=1.0 lazygit<cr>', 'Status'},
+				s = {':terminal lazygit<cr>:startinsert<cr>', 'Status'},
 				b = {':GitBlameToggle<cr>', 'Blame'},
 				d = {':Gitsigns preview_hunk<cr>', 'Diff'},
 			},
@@ -519,11 +657,23 @@ wk.register(
 			N = {'<Plug>(miniyank-cycleback)', 'Miniyank: prev'},
 
 			t = {
-				name = "Test",
-				t = {':lua search_and_display_groups("")<CR>', 'All'},
-				f = {':lua search_and_display_groups("--fail-fast")<CR>', 'Fail fast'},
-				r = {':lua search_and_display_groups("--no-rebuild")<CR>', 'No rebuild'},
-				a = {':lua search_and_display_groups("--fail-fast --no-rebuild")<CR>', 'Fail fast & No rebuild'},
+				name = "Task",
+				t = {
+					name = "Test",
+					t = {':lua search_and_display_groups("")<CR>', 'All'},
+					f = {':lua search_and_display_groups("--fail-fast")<CR>', 'Fail fast'},
+					r = {':lua search_and_display_groups("--no-rebuild")<CR>', 'No rebuild'},
+					a = {':lua search_and_display_groups("--fail-fast --no-rebuild")<CR>', 'Fail fast & No rebuild'},
+				},
+				d = {
+					name = "Database",
+					i = {':lua run_database_import()<CR>', 'Import'},
+					m = {':lua run_database_migration()<CR>', 'Migrate'},
+					d = {':lua run_database_delete()<CR>', 'Delete'},
+					o = {':lua run_database_customer_url()<CR>', 'Open'},
+				},
+				p = {':lua run_phpstan()<CR>', 'phpstan'},
+				c = {':lua run_csfix()<CR>', 'cs-fix'},
 			}
 
 		},
@@ -535,7 +685,7 @@ wk.register(
 		['P'] = {'<Plug>(miniyank-autoPut)', 'Paste before'},
 
 		['<A-w>'] = {':Bdelete<CR>', 'Close tab'},
-		['<A-W>'] = {':Bdelete!<CR>', 'Close all tab'},
+		['<A-W>'] = {':Bdelete!<CR>', 'Force close tab'},
 		['<C-A-w>'] = {':bufdo bd<CR>:Bdelete<CR>', 'Close all tab'},
 	}
 )
