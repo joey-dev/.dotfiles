@@ -9,7 +9,6 @@ return {
 			"neovim/nvim-lspconfig"
 		},
 		opts = {
-		-- you're options coes here
 		},
 	},
 	{
