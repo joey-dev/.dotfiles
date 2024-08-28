@@ -59,3 +59,6 @@
   - name: Install phpStan shipmonk phpstan-rules
     command: composer global require shipmonk/phpstan-rules
 
+  - name: Install phpStan jangregor phpstan-prophecy
+    command: composer global require jangregor/phpstan-prophecy
+
