@@ -101,4 +101,5 @@ includes:
 	- /home/joey/.config/composer/vendor/phpstan/phpstan-strict-rules/rules.neon
 	- /home/joey/.config/composer/vendor/phpstan/phpstan-phpunit/extension.neon
 	- /home/joey/.config/composer/vendor/shipmonk/phpstan-rules/rules.neon
+	- /home/joey/.config/composer/vendor/jangregor/phpstan-prophecy/extension.neon
 
