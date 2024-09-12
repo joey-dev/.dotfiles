@@ -1,6 +1,39 @@
 ---
 - hosts: localhost
   roles:
+    #- role: arch_hostname
+    #  when: ansible_distribution == "Archlinux"
+
+    - role: arch_custom_repos
+      when: ansible_distribution == "Archlinux"
+
+    - role: arch_users # will add a root password, HOWEVER it is required for yay. So just do this one, and ask for change
+      when: ansible_distribution == "Archlinux"
+
+    - role: arch_locale # change timezone in defaults
+      when: ansible_distribution == "Archlinux"
+
+    - role: arch_proxy
+      when: ansible_distribution == "Archlinux"
+
+    - role: arch_wireless
+      when: ansible_distribution == "Archlinux"
+
+    - role: arch_virtguest
+      when: virtguest_enabled | default(True) | bool && ansible_distribution == "Archlinux"
+
+    - role: arch_yay_user_customizations
+      when: yay_user_customizations_enabled | default(True) | bool && ansible_distribution == "Archlinux"
+
+    - role: arch_ttf_fonts
+      when: ttf_fonts_enabled | default(True) | bool && ansible_distribution == "Archlinux"
+
+    - role: arch_utils
+      when: utils_enabled | default(True) | bool && ansible_distribution == "Archlinux"
+
+    - role: arch_bluetooth
+      when: bluetooth_enabled | default(True) | bool && ansible_distribution == "Archlinux"
+
     - common
     - i3
     - alacritty

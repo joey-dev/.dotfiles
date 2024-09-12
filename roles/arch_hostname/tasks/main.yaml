@@ -1,0 +1,11 @@
+- name: Set hostname in /etc/hostname
+  copy:
+    content: "{{ hostname_hostname }}\n"
+    dest: "{{ chroot | default('') }}/etc/hostname"
+
+- name: Set hostname in /etc/hosts
+  lineinfile:
+    regexp: "^127\\.0\\.1\\.1\\b"
+    line: "127.0.1.1 {{ hostname_hostname }}.localdomain {{ hostname_hostname }}"
+    state: present
+    path: "{{ chroot | default('') }}/etc/hosts"

@@ -5,15 +5,34 @@ on:
     branches:
     - master
 jobs:
-  Ubuntu:
-    runs-on: ubuntu-20.04
-    steps:
-      - name: checkout branch
-        uses: actions/checkout@v4
-      - name: Run playbook check script
-        run: ./checkPlaybook.sh
-      - name: ansible-playbook
-        uses: dawidd6/action-ansible-playbook@v2.8.0
-        with:
-          playbook: playbook.yml
-          directory: ./
+ ArchLinux:
+  runs-on: ubuntu-latest
+  container:
+    image: archlinux:latest
+  steps:
+    - name: Update package repositories
+      run: pacman -Syu --noconfirm
+    - name: Install dependencies
+      run: pacman -S --noconfirm ansible
+    - name: Checkout branch
+      uses: actions/checkout@v4
+    # - name: Run playbook check script
+    #   run: ./checkPlaybook.sh
+    - name: ansible-playbook
+      uses: dawidd6/action-ansible-playbook@v2.8.0
+      with:
+        playbook: playbook.yml
+        directory: ./
+
+  # Ubuntu:
+  #   runs-on: ubuntu-20.04
+  #   steps:
+  #     - name: checkout branch
+  #       uses: actions/checkout@v4
+  #     - name: Run playbook check script
+  #       run: ./checkPlaybook.sh
+  #     - name: ansible-playbook
+  #       uses: dawidd6/action-ansible-playbook@v2.8.0
+  #       with:
+  #         playbook: playbook.yml
+  #         directory: ./

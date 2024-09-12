@@ -1,3 +1,7 @@
+# TODO, remove before mering. do place in docs:
+- change root password:  echo root:{{ users_root_info.password | quote }} | chpasswd
+
+
 # My .Dotfiles
 
 These are all my settings and program's I use. Written in Ansible for easy installation, and synchronization between different computers.

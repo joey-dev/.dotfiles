@@ -1,0 +1,12 @@
+- name: Install git for yay to use
+  pacman:
+    name: git
+    state: present
+
+- name: Install yay
+  import_role:
+    name: arch_makepkg
+  vars:
+    packages:
+      - yay-bin
+    build_user: "{{ passwordless_sudo_user_name }}"
