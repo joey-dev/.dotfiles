@@ -274,6 +274,10 @@ function run_database_migration()
   }):find()
 end
 
+function php_clear_cache()
+	vim.cdm('cd legacy && bin/console cache:clear');
+end
+
 function run_database_delete()
   local opts = {}
   local customers = get_customer_databases_list()
@@ -567,6 +571,19 @@ require("ibl").setup { scope = { highlight = highlight } }
 
 hooks.register(hooks.type.SCOPE_HIGHLIGHT, hooks.builtin.scope_highlight_from_extmark)
 
+-- Tabnine
+
+require('tabnine').setup({
+  disable_auto_comment=true,
+  accept_keymap="<Tab>",
+  dismiss_keymap = "<C-]>",
+  debounce_ms = 800,
+  suggestion_color = {gui = "#808080", cterm = 244},
+  exclude_filetypes = {"TelescopePrompt", "NvimTree"},
+  log_file_path = nil, -- absolute path to Tabnine log file
+  ignore_certificate_errors = false,
+})
+
 -- key-binds
 local wk = require("which-key")
 
@@ -671,6 +688,10 @@ wk.register(
 					m = {':lua run_database_migration()<CR>', 'Migrate'},
 					d = {':lua run_database_delete()<CR>', 'Delete'},
 					o = {':lua run_database_customer_url()<CR>', 'Open'},
+				},
+				p = {
+					name = "PHP",
+					c = {':lua php_clear_cache()<CR>', 'Clear Cache'},
 				},
 				p = {':lua run_phpstan()<CR>', 'phpstan'},
 				c = {':lua run_csfix()<CR>', 'cs-fix'},
