@@ -292,7 +292,11 @@ return {
   },
   {
 		"https://gitlab.com/schrieveslaach/sonarlint.nvim.git",
-		filetypes = { "java", "typescript", "javascript" },
+		filetypes = { "php", "typescript", "javascript" },
 		dependencies = { "neovim/nvim-lspconfig" },
   },
+	{
+		'codota/tabnine-nvim',
+		build = "./dl_binaries.sh"
+	},
 }

@@ -102,7 +102,7 @@ class Connection implements DriverConnection
      * of the first row of the result.
      *
      * @param string                                                               $query  SQL query
-     * @param array<int, string>|array<string, string>                               $params Query parameters
+     * @param array<string|int, string|int>                               $params Query parameters
      * @param array<int, int|string|Type|null>|array<string, int|string|Type|null> $types  Parameter types
      *
      * @return string|false False is returned if no rows are found.
@@ -362,7 +362,7 @@ class Connection implements DriverConnection
      * If an SQLLogger is configured, the execution is logged.
      *
      * @param string                                                               $sql    SQL query
-     * @param array<int, string>|array<string, string>                               $params Query parameters
+     * @param array<string|int, string|int>                               $params Query parameters
      * @param array<int, int|string|Type|null>|array<string, int|string|Type|null> $types  Parameter types
      *
      * @return ForwardCompatibility\DriverStatement|ForwardCompatibility\DriverResultStatement
@@ -564,4 +564,3 @@ class Connection implements DriverConnection
     {
     }
 }
-
