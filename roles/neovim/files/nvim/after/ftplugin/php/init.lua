@@ -271,7 +271,7 @@ require('sonarlint').setup({
 							["php:S2830"] = { level = "on" },
 							["php:S3772"] = { level = "on" },
 							["php:S5899"] = { level = "on" },
-							["php:S2037"] = { level = "on" },
+							["php:S2037"] = { level = "off" }, -- disabled use static instead of self
 							["php:S1192"] = { level = "on", parameters = { threshold = 3 } },
 							["php:S3923"] = { level = "on" },
 							["php:S6001"] = { level = "on" },
@@ -568,6 +568,25 @@ end
 local function file_exists(path)
   local f = io.open(path, 'r')
   if f ~= nil then io.close(f) return true else return false end
+end
+
+function switch_between_command_and_command_handler()
+  local current_file = api.nvim_buf_get_name(0)
+  local current_dir = vim.fn.fnamemodify(current_file, ':h')
+  local current_name = vim.fn.fnamemodify(current_file, ':t')
+  local git_root = get_git_root_or_nil()
+
+  local target_name
+  local search_paths = {}
+
+	if current_name:sub(-11) == 'Handler.php' then
+		target_name = current_name:sub(1, -12)
+    vim.cmd('edit ' .. current_dir .. '/' .. target_name .. '.php')
+  else
+		target_name = current_name:sub(1, -5)
+    target_name = target_name .. 'Handler'
+    vim.cmd('edit ' .. current_dir .. '/' .. target_name .. '.php')
+  end
 end
 
 function switch_between_interface_and_repository()
