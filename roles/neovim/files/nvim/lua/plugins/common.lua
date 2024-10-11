@@ -216,6 +216,7 @@ return {
 			{"L3MON4D3/LuaSnip", event = "InsertEnter"},
 			{"honza/vim-snippets"},
 	  },
+		lazy = true,
 	},
 	{
 		'windwp/nvim-autopairs',
@@ -257,7 +258,8 @@ return {
 		'lewis6991/gitsigns.nvim'
 	},
 	{
-		"catppuccin/nvim", name = "catppuccin", priority = 1000
+		"catppuccin/nvim", name = "catppuccin", priority = 1000,
+		lazy = false,
 	},
 	{
 		"dense-analysis/ale"
@@ -288,12 +290,14 @@ return {
 				DOING = { icon = " ", color = "warning" },
 				HACK = { icon = " ", color = "warning" },
 			}
-		}
+		},
+		lazy = true,
   },
   {
 		"https://gitlab.com/schrieveslaach/sonarlint.nvim.git",
 		filetypes = { "php", "typescript", "javascript" },
 		dependencies = { "neovim/nvim-lspconfig" },
+		lazy = true,
   },
 	{
 		'codota/tabnine-nvim',

@@ -78,8 +78,6 @@ require("mason-lspconfig").setup({
 })
 
 
-vim.lsp.set_log_level("debug")
-
 local configs = require('lspconfig.configs')
 local nvim_lsp = require('lspconfig')
 
