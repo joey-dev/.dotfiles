@@ -2,7 +2,6 @@ local vim = vim
 local execute = vim.api.nvim_command
 local fn = vim.fn
 
-
 vim.g.mapleader = " "
 
 vim.cmd("language en_US.utf8")
@@ -101,9 +100,22 @@ require("catppuccin").setup({
 
 vim.cmd.colorscheme "catppuccin-mocha"
 
--- projects
+-- imports
+local previewers = require('telescope.previewers')
 
 local tbuiltin = require('telescope.builtin')
+local telescope = require('telescope')
+local finders = require('telescope.finders')
+local pickers = require('telescope.pickers')
+local sorters = require('telescope.sorters')
+local actions = require('telescope.actions')
+local action_state = require('telescope.actions.state')
+local conf = require('telescope.config').values
+
+local Path = require('plenary.path')
+
+-- projects
+
 
 --- git
 require('gitsigns').setup()
@@ -175,17 +187,6 @@ vim.api.nvim_create_autocmd("User", {
   callback = require("lualine").refresh,
 })
 
-
--- run tests in directory
-
-local telescope = require('telescope')
-local finders = require('telescope.finders')
-local pickers = require('telescope.pickers')
-local sorters = require('telescope.sorters')
-local actions = require('telescope.actions')
-local action_state = require('telescope.actions.state')
-local Path = require('plenary.path')
-local conf = require('telescope.config').values
 
 -- Function to get the git root directory
 function get_git_root_or_nil()
@@ -583,6 +584,32 @@ require('tabnine').setup({
   log_file_path = nil, -- absolute path to Tabnine log file
   ignore_certificate_errors = false,
 })
+
+-- dashboard
+
+function delete_session()
+  local sessions_dir = vim.fn.expand('~/.local/share/nvim/neovim-sessions/')
+
+  local session_files = vim.fn.globpath(sessions_dir, '*', false, true)
+
+  pickers.new({}, {
+    prompt_title = 'Neovim Sessions',
+    finder = finders.new_table({
+      results = session_files,
+    }),
+    sorter = conf.generic_sorter({}),
+    previewer = previewers.cat.new({}),
+    attach_mappings = function(prompt_bufnr, map)
+      map('i', '<CR>', function()
+        local selection = action_state.get_selected_entry()
+        actions.close(prompt_bufnr)
+
+        vim.fn.system({'rm', '-rf', selection[1]})
+      end)
+      return true
+    end,
+  }):find()
+end
 
 -- key-binds
 local wk = require("which-key")

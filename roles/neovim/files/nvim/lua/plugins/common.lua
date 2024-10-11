@@ -61,6 +61,14 @@ return {
 							key_format = ' %s', -- remove default surrounding `[]`
 							action = 'NeovimProjectLoad ~/notes'
 						},
+						{
+							icon = ' ',
+							desc = 'Remove session',
+							key = 'r',
+							keymap = 'SPC f d',
+							key_format = ' %s', -- remove default surrounding `[]`
+							action = 'lua delete_session()'
+						},
 					},
 					footer = {}  --your footer
 				}
