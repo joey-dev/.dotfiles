@@ -10,6 +10,7 @@ return {
 		},
 		opts = {
 		},
+		ft = "php",
 	},
 	{
 		"alvan/vim-php-manual",
