@@ -47,6 +47,7 @@ wk.register(
 					a = {"<cmd>lua switch_between_file_and_test('api')<CR>", "Test"},
 				},
 				r = {"<cmd>lua switch_between_interface_and_repository()<CR>", "Repository"},
+				h = {"<cmd>lua switch_between_command_and_command_handler()<CR>", 'Find Command (Handler)'},
 				o = {name = "Online"}
 			}
 		},
