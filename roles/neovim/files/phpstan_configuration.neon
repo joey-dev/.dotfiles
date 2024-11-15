@@ -1,12 +1,14 @@
 parameters:
 	level: 8
 	strictRules:
-	  booleansInConditions: false
+	  booleansInConditions: true
     ignoreErrors:
       - '#Construct empty\(\) is not allowed. Use more strict comparison.#'
     stubFiles:
       - ../../../../.dotfiles/roles/neovim/files/phpstan_stubs/doctrine_dbal_connection.stub.php
       - ../../../../.dotfiles/roles/neovim/files/phpstan_stubs/json.stub.php
+	symfony:
+        containerXmlPath: var/cache/dev/srcApp_KernelDevDebugContainer.xml
 	shipmonkRules:
       allowComparingOnlyComparableTypes:
         enabled: true
@@ -100,6 +102,12 @@ includes:
 	- phar://phpstan.phar/conf/bleedingEdge.neon
 	- /home/joey/.config/composer/vendor/phpstan/phpstan-strict-rules/rules.neon
 	- /home/joey/.config/composer/vendor/phpstan/phpstan-phpunit/extension.neon
+	- /home/joey/.config/composer/vendor/phpstan/phpstan-symfony/extension.neon
 	- /home/joey/.config/composer/vendor/shipmonk/phpstan-rules/rules.neon
-	- /home/joey/.config/composer/vendor/jangregor/phpstan-prophecy/extension.neon
+	- /home/joey/.config/composer/vendor/shipmonk/dead-code-detector/rules.neon
+	- /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/extension.neon
+	- /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/disallowed-dangerous-calls.neon
+	- /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/disallowed-execution-calls.neon
+	- /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/disallowed-insecure-calls.neon
+	- /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/disallowed-loose-calls.neon
 

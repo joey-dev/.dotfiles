@@ -716,7 +716,7 @@ wk.register(
 					d = {':lua run_database_delete()<CR>', 'Delete'},
 					o = {':lua run_database_customer_url()<CR>', 'Open'},
 				},
-				p = {
+				P = {
 					name = "PHP",
 					c = {':lua php_clear_cache()<CR>', 'Clear Cache'},
 				},
