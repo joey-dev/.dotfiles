@@ -104,6 +104,7 @@ includes:
 	- /home/joey/.config/composer/vendor/phpstan/phpstan-phpunit/extension.neon
 	- /home/joey/.config/composer/vendor/phpstan/phpstan-symfony/extension.neon
 	- /home/joey/.config/composer/vendor/shipmonk/phpstan-rules/rules.neon
+	- /home/joey/.config/composer/vendor/jangregor/phpstan-prophecy/extension.neon
 	- /home/joey/.config/composer/vendor/shipmonk/dead-code-detector/rules.neon
 	- /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/extension.neon
 	- /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/disallowed-dangerous-calls.neon
