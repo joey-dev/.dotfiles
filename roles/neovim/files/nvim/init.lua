@@ -259,6 +259,10 @@ local function get_customers_url_list()
   return output
 end
 
+function create_new_migration()
+  vim.cmd(string.format(":below 10split | :terminal bin/console db:migration:init"))
+end
+
 function run_database_migration()
   local opts = {}
   local customers = get_customers_list()
@@ -721,6 +725,7 @@ wk.register(
 					m = {':lua run_database_migration()<CR>', 'Migrate'},
 					d = {':lua run_database_delete()<CR>', 'Delete'},
 					o = {':lua run_database_customer_url()<CR>', 'Open'},
+					n = {':lua create_new_migration()<CR>', 'Create new migration'},
 				},
 				P = {
 					name = "PHP",
