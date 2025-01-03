@@ -247,6 +247,8 @@ client.background       #F8F8F2
 
 exec --no-startup-id xterm -e ~/.dotfiles/roles/i3/files/scripts/Startup/main.sh
 
+exec --no-startup-id ~/.dotfiles/roles/i3/files/scripts/Auto/lock.sh
+
 
 # ------------------------------------------
 # CUSTOM KEYS START
@@ -267,7 +269,7 @@ bindsym $mod+u exec --no-startup-id ~/scripts/i3/Windows/window ~/scripts/i3/Win
 # services
 bindsym $mod+s exec --no-startup-id ~/scripts/i3/Windows/window ~/scripts/i3/Windows/Services/
 
-# Screenshot 
+# Screenshot
 bindsym Print exec flameshot gui
 
 bindsym $mod+i exec --no-startup-id xterm -e ~/.dotfiles/roles/i3/files/scripts/Startup/main.sh
@@ -275,12 +277,12 @@ bindsym $mod+i exec --no-startup-id xterm -e ~/.dotfiles/roles/i3/files/scripts/
 # Brightness
 # bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +5%
 # bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 5%-
-bindsym XF86MonBrightnessUp exec light -A 10 
-bindsym XF86MonBrightnessDown exec light -S 10 
+bindsym XF86MonBrightnessUp exec light -A 10
+bindsym XF86MonBrightnessDown exec light -S 10
 
 # Workspace Monitor swapping
-bindsym $mod+Shift+s exec ~/.config/i3/i3-swap-display.sh 
-bindsym $mod+Shift+d exec ~/.config/i3/i3-move-display.sh 
+bindsym $mod+Shift+s exec ~/.config/i3/i3-swap-display.sh
+bindsym $mod+Shift+d exec ~/.config/i3/i3-move-display.sh
 
 # Audio
 bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +2%; exec pactl set-sink-mute @DEFAULT_SINK@ 0
