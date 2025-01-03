@@ -74,3 +74,6 @@ vim.b.ale_linter_aliases = {'css', 'javascript', 'vue', 'typescript'}
 vim.b.ale_linters = {'eslint'}
 vim.g.ale_root = '/home/joey/Code/Work/dyflexis-monorepo/frontend'
 
+vim.b.ale_fixers = {'eslint', 'prettier'}
+vim.b.ale_fix_on_save = 1
+
