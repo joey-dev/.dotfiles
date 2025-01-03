@@ -228,8 +228,14 @@ function run_phpstan()
   vim.cmd(":below 10split | :terminal cd legacy && vendor/bin/phpstan analyze Core Common Component app src --memory-limit=-1 -c phpstan.neon.dist")
 end
 
-function run_csfix()
-  vim.cmd(":below 10split | :terminal bin/cs.php fix")
+function run_csfix(type)
+	if type == "master" then
+		vim.cmd(":below 10split | :terminal bin/console cs:fix master..HEAD")
+	end
+
+	if type == "current" then
+		vim.cmd(":below 10split | :terminal bin/cs.php fix")
+	end
 end
 
 function run_database_import()
@@ -721,7 +727,11 @@ wk.register(
 					c = {':lua php_clear_cache()<CR>', 'Clear Cache'},
 				},
 				p = {':lua run_phpstan()<CR>', 'phpstan'},
-				c = {':lua run_csfix()<CR>', 'cs-fix'},
+				c = {
+					name = "cs-fix",
+					c = {':lua run_csfix("current")<CR>', 'current changes'},
+					a = {':lua run_csfix("master")<CR>', 'all changes'},
+				}
 			}
 
 		},
