@@ -119,6 +119,10 @@
     become: yes
     command: npm install -g fixjson
 
+  - name: install yamp language server
+    become: yes
+    command: npm install -g yaml-language-server
+
 
 - name: install universal-ctags
   block:
