@@ -308,7 +308,6 @@ return {
 		lazy = true,
   },
 	{
-		'codota/tabnine-nvim',
-		build = "./dl_binaries.sh"
+		'github/copilot.vim',
 	},
 }
