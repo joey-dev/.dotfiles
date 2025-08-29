@@ -23,6 +23,12 @@
     with_fileglob:
     - i3/*
 
+  - name: Install deps for scripts
+    become: yes
+    package: name={{ item }} state=latest
+    with_items:
+    - pyperclip
+
   - name: Link i3 scripts
     file:
       src: "{{ playbook_dir }}/roles/i3/files/scripts"

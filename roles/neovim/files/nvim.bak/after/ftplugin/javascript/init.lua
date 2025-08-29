@@ -14,7 +14,7 @@ lsp.preset('recommended')
 -- Mason setup
 require('mason').setup()
 require('mason-lspconfig').setup({
-    ensure_installed = { 'tsserver' },
+    ensure_installed = { 'ts_ls' },
 })
 
 -- nvim-cmp setup
@@ -38,7 +38,7 @@ cmp.setup({
 -- Setup LSP
 lsp.on_attach(function(client, bufnr)
   local opts = { buffer = bufnr, remap = false }
-  
+
   vim.keymap.set("n", "<leader>sd", vim.lsp.buf.definition, opts)
   vim.keymap.set("n", "<leader>ss", vim.lsp.buf.hover, opts)
   vim.keymap.set("n", "<leader>sf", vim.lsp.buf.workspace_symbol, opts) -- rename
@@ -49,7 +49,7 @@ lsp.on_attach(function(client, bufnr)
   vim.keymap.set("n", "<leader>si", vim.lsp.buf.references, opts)
   vim.keymap.set("n", "<leader>rr", vim.lsp.buf.rename, opts)
   vim.keymap.set("n", "<leader>ra", vim.lsp.buf.signature_help, opts)
-  vim.keymap.set('n', '<leader>sq', ':cclose<CR>', opts) 
+  vim.keymap.set('n', '<leader>sq', ':cclose<CR>', opts)
 end)
 
 lsp.setup()
@@ -66,11 +66,14 @@ vim.diagnostic.config({
 
 -- Additional LSP configurations
 local lspconfig = require('lspconfig')
-lspconfig.tsserver.setup{}
+lspconfig.ts_ls.setup{}
 
 -------
 
 vim.b.ale_linter_aliases = {'css', 'javascript', 'vue', 'typescript'}
 vim.b.ale_linters = {'eslint'}
 vim.g.ale_root = '/home/joey/Code/Work/dyflexis-monorepo/frontend'
+
+vim.b.ale_fixers = {'eslint', 'prettier'}
+vim.b.ale_fix_on_save = 1
 

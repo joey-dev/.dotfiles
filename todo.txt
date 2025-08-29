@@ -1,3 +1,4 @@
+- phpstan, add https://github.com/staabm/phpstan-dba
 - extract code-base specific nvim code
 - make ansible not re-install software that is already on the desired version
 - add new distro (with less bloat, maybe arch)

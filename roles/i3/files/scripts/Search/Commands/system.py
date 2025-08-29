@@ -1,0 +1,45 @@
+from command import Command
+import subprocess
+
+class System(Command):
+    @property
+    def letter(self):
+        return "s"
+
+    @property
+    def name(self):
+        return "system"
+
+    @property
+    def is_optional(self):
+        return False
+
+    @property
+    def must_be_first_character(self):
+        return True
+
+    @property
+    def is_depended_on(self):
+        return None
+
+    @property
+    def can_be_executed(self):
+        return False
+
+    @property
+    def can_be_copied(self):
+        return False
+
+    @property
+    def can_type(self):
+        return False
+
+    @property
+    def is_last_command(self):
+        return False
+
+    def execute(self, text):
+        return False
+
+    def copy(self, text):
+        return False

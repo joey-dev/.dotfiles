@@ -112,6 +112,7 @@ alias reload="source ~/.zshrc"
 alias lla="ls -lah"
 alias fuck="thefuck"
 alias bat="batcat"
+alias whereami="pwd"
 
 
 # nnn
