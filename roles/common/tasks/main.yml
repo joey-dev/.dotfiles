@@ -5,13 +5,6 @@
     autoremove: true
     update_cache: true
     upgrade: true
-  when: not (ansible_env.CI | default(false))
-
-- name: Update package cache (CI mode)
-  become: true
-  ansible.builtin.apt:
-    update_cache: true
-  when: ansible_env.CI | default(false)
 
 - name: Install common tools
   become: true
@@ -55,14 +48,12 @@
   get_url:
     url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
     dest: /tmp/google-chrome-stable_current_amd64.deb
-  when: not (ansible_env.CI | default(false))
 
 - name: Install Google Chrome from .deb file
   apt:
     deb: /tmp/google-chrome-stable_current_amd64.deb
     state: present
   become: yes
-  when: not (ansible_env.CI | default(false))
 
 - name: Create Downloads folder
   file:
