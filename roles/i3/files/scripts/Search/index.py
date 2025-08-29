@@ -5,7 +5,7 @@ import os
 import subprocess
 import importlib.util
 from command import Command
-import pyperclip # todo add to ansible
+import pyperclip
 
 class SuggestionWindow(Gtk.Window):
     def __init__(self):

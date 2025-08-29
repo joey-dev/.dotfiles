@@ -53,7 +53,7 @@ class Command(ABC):
 
     @abstractmethod
     def input_fields(self):
-        pass
+        return None
 
     @abstractmethod
     def execute(self, text):

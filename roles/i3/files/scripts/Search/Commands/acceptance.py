@@ -49,6 +49,6 @@ class Acceptance(Command):
 
     def copy(self, text):
         if not text:
-            text = "acceptance"
-        return "https://app.dyflexis.com/" + text
+            text = "dyflexis"
+        return "https://acceptance.dyflexis.com/" + text
 
