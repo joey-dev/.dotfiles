@@ -27,7 +27,8 @@
     become: yes
     package: name={{ item }} state=latest
     with_items:
-    - pyperclip
+    - python3-pyperclip
+    ignore_errors: true
 
   - name: Link i3 scripts
     file:

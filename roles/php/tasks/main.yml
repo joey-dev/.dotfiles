@@ -5,12 +5,15 @@
     apt_repository:
       repo: ppa:ondrej/php
       state: present
+    ignore_errors: true
+    register: php_ppa
 
   - name: Update apt package cache
     become: true
     ignore_errors: yes
     apt:
       update_cache: yes
+    when: php_ppa is succeeded
 
   - name: Install PHP and related packages
     become: true
@@ -30,35 +33,54 @@
       - php{{ php_version }}-pdo
       - php{{ php_version }}-simplexml
       - php{{ php_version }}-zip
+    when: php_ppa is succeeded
 
   - name: Download Composer installer
     command: php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');"
+    ignore_errors: true
+    register: composer_download
+    when: php_ppa is succeeded
 
   - name: Run Composer installer
     command: php /tmp/composer-setup.php
+    when: php_ppa is succeeded and composer_download is succeeded
 
   - name: Remove Composer installer
     command: php -r "unlink('/tmp/composer-setup.php');"
+    when: php_ppa is succeeded and composer_download is succeeded
 
   - name: Make composer global
     command: mv {{ playbook_dir }}/composer.phar /usr/local/bin/composer
     become: true
+    when: php_ppa is succeeded and composer_download is succeeded
 
   - name: Install phpMD
     command: composer global require phpmd/phpmd
+    ignore_errors: true
+    when: php_ppa is succeeded and composer_download is succeeded
 
   - name: Install phpStan
     command: composer global require phpstan/phpstan
+    ignore_errors: true
+    when: php_ppa is succeeded and composer_download is succeeded
 
   - name: Install phpStan strict rules
     command: composer global require phpstan/phpstan-strict-rules
+    ignore_errors: true
+    when: php_ppa is succeeded and composer_download is succeeded
 
   - name: Install phpStan phpunit
     command: composer global require phpstan/phpstan-phpunit
+    ignore_errors: true
+    when: php_ppa is succeeded and composer_download is succeeded
 
   - name: Install phpStan shipmonk phpstan-rules
     command: composer global require shipmonk/phpstan-rules
+    ignore_errors: true
+    when: php_ppa is succeeded and composer_download is succeeded
 
   - name: Install phpStan jangregor phpstan-prophecy
     command: composer global require jangregor/phpstan-prophecy
+    ignore_errors: true
+    when: php_ppa is succeeded and composer_download is succeeded
 

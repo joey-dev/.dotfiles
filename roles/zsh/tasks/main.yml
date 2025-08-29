@@ -18,21 +18,29 @@
 
     - name: Oh-My-Zsh
       shell: "sh -c \"$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
+      ignore_errors: true
+      register: ohmyzsh_install
 
     - name: Install zsh-autosuggestions
       ansible.builtin.git:
         repo: 'https://github.com/zsh-users/zsh-autosuggestions.git'
         dest: "~/.oh-my-zsh/plugins/zsh-autosuggestions"
+      ignore_errors: true
+      when: ohmyzsh_install is succeeded
 
     - name: Install zsh-auto-notify
       ansible.builtin.git:
         repo: 'https://github.com/MichaelAquilina/zsh-auto-notify.git'
         dest: "~/.oh-my-zsh/plugins/auto-notify"
+      ignore_errors: true
+      when: ohmyzsh_install is succeeded
 
     - name: Install zsh-syntax-highlighting
       ansible.builtin.git:
         repo: 'https://github.com/zsh-users/zsh-syntax-highlighting.git'
         dest: "~/.oh-my-zsh/plugins/zsh-syntax-highlighting"
+      ignore_errors: true
+      when: ohmyzsh_install is succeeded
 
     - name: Remove existing zsh config file
       file:

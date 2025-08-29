@@ -48,12 +48,15 @@
   get_url:
     url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
     dest: /tmp/google-chrome-stable_current_amd64.deb
+  ignore_errors: true
+  register: chrome_download
 
 - name: Install Google Chrome from .deb file
   apt:
     deb: /tmp/google-chrome-stable_current_amd64.deb
     state: present
   become: yes
+  when: chrome_download is succeeded
 
 - name: Create Downloads folder
   file:

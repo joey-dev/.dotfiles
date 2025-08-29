@@ -24,4 +24,4 @@ jobs:
         env:
           CI: true
         run: |
-          ansible-playbook -i inventory playbook-ci.yml --connection local --limit localhost
+          ansible-playbook -i inventory playbook.yml --connection local --limit localhost
