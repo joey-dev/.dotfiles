@@ -25,12 +25,14 @@
     file:
       path: "{{ bash_config_file }}"
       state: absent
+    when: not (ansible_env.CI | default(false))
 
   - name: Link bash config file
     file:
       src: "{{ playbook_dir }}/roles/tmux/files/config/.bashrc"
       dest: "{{ bash_config_file }}"
       state: link
+    when: not (ansible_env.CI | default(false))
 
   - name: Create code directory
     file:

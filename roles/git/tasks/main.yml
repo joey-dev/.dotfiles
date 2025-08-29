@@ -11,22 +11,27 @@
     url: "https://api.github.com/repos/jesseduffield/lazygit/releases/latest"
     return_content: yes
   register: lazygit_release
+  when: not (ansible_env.CI | default(false))
 
 - name: Extract LazyGit version
   set_fact:
     lazygit_version: "{{ lazygit_release.json.tag_name | regex_replace('^v', '') }}"
+  when: not (ansible_env.CI | default(false))
 
 - name: Download LazyGit
   command: "curl -Lo /tmp/lazygit.tar.gz https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_{{ lazygit_version }}_Linux_x86_64.tar.gz"
+  when: not (ansible_env.CI | default(false))
 
 - name: Extract LazyGit
   command: "tar xf /tmp/lazygit.tar.gz lazygit"
   args:
     chdir: /tmp
+  when: not (ansible_env.CI | default(false))
 
 - name: Move LazyGit to /usr/local/bin
   command: "install lazygit /usr/local/bin"
   become: true
   args:
     chdir: /tmp
+  when: not (ansible_env.CI | default(false))
 

@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  vars:
+    ci_mode: "{{ ansible_env.CI | default(false) }}"
+  roles:
+    - common
+    - zsh
+    - javascript
+    - tmux
+    - git
