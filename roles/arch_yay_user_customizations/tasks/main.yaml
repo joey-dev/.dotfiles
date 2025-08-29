@@ -1,0 +1,8 @@
+- name: Copy yay's config to user home
+  become: yes
+  become_user: "{{ item }}"
+  copy:
+    src: config.json
+    dest: "{{ users_created | user_home(item) }}/.config/yay/"
+    mode: "0644"
+  loop: "{{ users_names }}"

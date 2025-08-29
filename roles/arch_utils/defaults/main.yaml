@@ -1,0 +1,22 @@
+# A list of non-GUI packages to install. Both AUR and regular packages can be
+# supplied here.
+utils_packages:
+  - ntfs-3g
+  - p7zip
+  - rsync
+  - hexer
+  - net-tools
+  - iotop
+  - pulseaudio-alsa
+  - gvfs
+  - udisks2
+  - file-roller
+  - evince
+  - gnome-calculator
+  - gnome-keyring
+  - gvim
+  - network-manager-applet
+  - nm-connection-editor
+  - filezilla
+  - x11-ssh-askpass
+  - pavucontrol

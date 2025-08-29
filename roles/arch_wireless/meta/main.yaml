@@ -1,0 +1,6 @@
+dependencies:
+  - role: arch_locale
+  - role: arch_packages
+    vars:
+      packages:
+        - crda
