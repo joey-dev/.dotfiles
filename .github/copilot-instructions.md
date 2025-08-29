@@ -12,7 +12,7 @@ Always reference these instructions first and fallback to search or bash command
 # Install Ansible (takes ~30 seconds)
 make install
 
-# Full system provision (takes 15-45 minutes total, NEVER CANCEL)
+# Full system provision (takes 25-50 minutes total, NEVER CANCEL)
 # You will be prompted for sudo password
 make provision
 ```
@@ -51,7 +51,7 @@ ansible-playbook -i ./hosts playbook.yml -e ansible_python_interpreter=/usr/bin/
 
 ### Known Build Times and Timeouts
 - **make install**: 30 seconds (use 2-minute timeout)
-- **make provision**: 15-45 minutes (use 60+ minute timeout, NEVER CANCEL)
+- **make provision**: 25-50 minutes (use 60+ minute timeout, NEVER CANCEL)
 - **Neovim build**: 1.5-3 minutes (part of provision)
 - **System update**: Variable 2-10 minutes (part of provision)  
 - **Individual role validation**: 1-5 minutes each
@@ -185,7 +185,7 @@ For specific language projects, see [Language-specific Documentation](documentat
 ## Common Issues and Troubleshooting
 
 ### Known Issues:
-1. **python3.8-venv package not found**: The playbook references Python 3.8 specifically, but newer Ubuntu versions have Python 3.12. This will cause a failure but is non-critical.
+1. **python3.8-venv package not found**: The playbook references Python 3.8 specifically for virtual environment support. On some Ubuntu 20.04 installations, the python3.8-venv package may not be available in the default repositories. This will cause a failure but is non-critical to the overall setup.
 
 2. **Vagrant architecture mismatch**: The Makefile downloads i686 Vagrant package instead of amd64. Testing with Vagrant requires manual fix:
    ```bash
@@ -231,7 +231,7 @@ ansible-playbook -i ./hosts playbook.yml -e ansible_python_interpreter=/usr/bin/
 
 ## Important Reminders
 
-- **NEVER CANCEL**: Always wait for builds and provision to complete, even if they take 45+ minutes
+- **NEVER CANCEL**: Always wait for builds and provision to complete, even if they take 50+ minutes
 - **Ubuntu 20.04 only**: Do not attempt to run on other Ubuntu versions or distributions
 - **Sudo required**: The provision step requires administrative privileges
 - **Backup first**: This modifies system configurations extensively
