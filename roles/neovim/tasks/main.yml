@@ -9,35 +9,33 @@
         - luajit
         - ripgrep
         - fd-find
+        - ninja-build
+        - gettext
+        - cmake
+        - unzip
+        - curl
 
-  - name: Download Neovim
-    get_url:
-      url: https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
-      dest: "{{ ansible_env.HOME }}/Downloads/nvim.appimage"
-
-  - name: Make nvim download a executable
-    become: true
-    shell: cd {{ ansible_env.HOME}}/Downloads && chmod u+x nvim.appimage
-
-  - name: Extract Neomvim
-    become: true
-    shell: cd {{ ansible_env.HOME}}/Downloads && ./nvim.appimage --appimage-extract
-
-  - name: Remove Neovim directory if exists
+  - name: Remove previous neovim clone to ensure a fresh start
     ansible.builtin.file:
-      path: /squashfs-root
+      path: /tmp/neovim
       state: absent
-    become: yes
 
-  - name: Move Neovim directory
-    become: true
-    command: mv "{{ ansible_env.HOME }}/Downloads/squashfs-root" /
+  - name: Clone Neovim repository to a specific stable tag
+    ansible.builtin.git:
+      repo: https://github.com/neovim/neovim.git
+      dest: /tmp/neovim
+      version: master
 
-  - name: Create symlink for nvim if it does not exist
-    become: true
-    command: ln -s /squashfs-root/AppRun /usr/bin/nvim
+  - name: Build Neovim from source
+    command: make CMAKE_BUILD_TYPE=RelWithDebInfo
     args:
-      creates: /usr/bin/nvim
+      chdir: /tmp/neovim
+
+  - name: Install Neovim from source
+    become: yes
+    command: make install
+    args:
+      chdir: /tmp/neovim
 
   - name: Ensure ~/.config/nvim directory exists
     file:
@@ -213,7 +211,7 @@
       chdir: "/tmp"
 
   - name: luarocks - configure installer
-    command: "./configure --with-lua-include=/usr/local/include"
+    command: "./configure --with-lua=/usr/local"
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
 

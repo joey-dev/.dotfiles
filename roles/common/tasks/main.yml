@@ -34,14 +34,6 @@
   loop:
     - thefuck
 
-- name: Install Nix
-  become: true
-  shell: sh <(curl -L https://nixos.org/nix/install)
-
-- name: Install IdleHook
-  become: true
-  shell: nix-env -iA nixpkgs.xidlehook
-
 - name: Remove scripts folder
   file:
     path: "{{ ansible_env.HOME }}/scripts"

@@ -5,10 +5,10 @@
 local vim = vim
 local execute = vim.api.nvim_command
 local fn = vim.fn
-local lsp = require("lsp-zero")
 local api = vim.api
 
 -- phpactor
+--[[
 vim.api.nvim_create_autocmd('LspAttach', {
   desc = 'LSP actions',
   callback = function(event)
@@ -25,6 +25,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
     vim.keymap.set('n', '<leader>sq', ':cclose<CR>', opts)
   end
 })
+--]]
 
 vim.b.ale_linters = {php = {'phpmd', 'phpstan', 'cspell'}}
 vim.b.ale_fixers = {php = {'php_cs_fixer'}}
@@ -73,9 +74,9 @@ vim.g.ale_php_phpstan_use_global = 1
 local lspconfig = require('lspconfig')
 require('mason').setup({})
 require'lspconfig'.phpactor.setup{}
-require("mason-lspconfig").setup({
-    ensure_installed = {"phpactor"},
-})
+--require("mason-lspconfig").setup({
+    --ensure_installed = {"phpactor"},
+--})
 
 
 local configs = require('lspconfig.configs')
