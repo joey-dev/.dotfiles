@@ -36,7 +36,7 @@ make provision
 
 ### Validation (Run these before and after changes)
 ```bash
-# Validate playbook structure (takes <1 second)
+# Validate playbook structure (takes less than 1 second)
 ./checkPlaybook.sh
 
 # Create hosts file if missing
@@ -45,7 +45,7 @@ echo "localhost ansible_connection=local" > hosts
 # Dry-run playbook to see what would change (takes 2-5 minutes)
 ansible-playbook -i ./hosts playbook.yml -e ansible_python_interpreter=/usr/bin/python3 --check --diff
 
-# List all tasks in playbook (takes <1 second)  
+# List all tasks in playbook (takes less than 1 second)  
 ansible-playbook -i ./hosts playbook.yml -e ansible_python_interpreter=/usr/bin/python3 --list-tasks
 ```
 
@@ -114,7 +114,7 @@ task 1 done             # Should complete the task
 - **JavaScript/Node.js**: 3-5 minutes
 - **Tmux**: 1 minute
 - **Neovim build**: 2-3 minutes
-- **Git configuration**: <1 minute
+- **Git configuration**: less than 1 minute
 - **GTK themes**: 1-2 minutes
 - **Taskwarrior build**: 2-3 minutes
 - **PHP installation**: 3-5 minutes  
@@ -209,7 +209,7 @@ make provision
 make update
 
 # Reset specific configurations
-ansible-playbook -i ./hosts playbook.yml -e ansible_python_interpreter=/usr/bin/python3 --connection=local --tags=<role_name>
+ansible-playbook -i ./hosts playbook.yml -e ansible_python_interpreter=/usr/bin/python3 --connection=local --tags={role_name}
 ```
 
 ## Frequently Accessed Files and Locations
