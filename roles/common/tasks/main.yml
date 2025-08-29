@@ -5,6 +5,13 @@
     autoremove: true
     update_cache: true
     upgrade: true
+  when: not (ansible_env.CI | default(false))
+
+- name: Update package cache (CI mode)
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: ansible_env.CI | default(false)
 
 - name: Install common tools
   become: true
