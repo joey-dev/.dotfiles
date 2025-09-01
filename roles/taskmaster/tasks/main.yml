@@ -22,6 +22,8 @@
   args:
     chdir: "/tmp/task-{{ task_master_version }}"
   when: taskmaster_download is succeeded
+  async: 1800
+  poll: 10
 
 - name: Install Taskwarrior
   command: "sudo make install"

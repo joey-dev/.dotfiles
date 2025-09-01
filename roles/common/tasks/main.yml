@@ -5,6 +5,8 @@
     autoremove: true
     update_cache: true
     upgrade: true
+  async: 1800
+  poll: 30
 
 - name: Install common tools
   become: true

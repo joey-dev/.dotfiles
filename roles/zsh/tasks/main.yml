@@ -20,6 +20,8 @@
       shell: "sh -c \"$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
       ignore_errors: true
       register: ohmyzsh_install
+      async: 600
+      poll: 5
 
     - name: Install zsh-autosuggestions
       ansible.builtin.git:
