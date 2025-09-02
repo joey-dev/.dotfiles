@@ -27,6 +27,7 @@
     - python3-setuptools
     - python3-venv
     - ncdu
+    - git
 
 - name: Install common tools with python (Ubuntu)
   become: true
