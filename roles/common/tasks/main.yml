@@ -1,4 +1,4 @@
-- name: Update system
+- name: Update system (non-CI)
   become: true
   ansible.builtin.apt:
     autoclean: true
@@ -7,6 +7,14 @@
     upgrade: true
   async: 1800
   poll: 30
+  when: ansible_env.CI is not defined
+
+- name: Update system (CI)
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    upgrade: false
+  when: ansible_env.CI is defined
 
 - name: Install common tools
   become: true
