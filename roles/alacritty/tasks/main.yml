@@ -4,19 +4,27 @@
   - name: Create alacritty config directory
     file: path={{ alacritty_config_dir }} state=directory
 
-  - name: Install aslatter ppa
+  - name: Install aslatter ppa (Ubuntu only)
     become: yes
     environment:
       DEBIAN_FRONTEND: noninteractive
     shell: add-apt-repository -y ppa:aslatter/ppa
     register: alacritty_ppa
+    when: ansible_distribution == "Ubuntu"
 
-  - name: Install alacritty and deps
+  - name: Install alacritty from Ubuntu PPA
     become: yes
     package: name={{ item }} state=latest
     with_items:
         - alacritty
-    when: alacritty_ppa is succeeded
+    when: ansible_distribution == "Ubuntu" and alacritty_ppa is succeeded
+
+  - name: Install alacritty from Debian repositories
+    become: yes
+    package: name={{ item }} state=latest
+    with_items:
+        - alacritty
+    when: ansible_distribution == "Debian"
 
   - name: Link alacritty files
     file: src={{item}} dest={{ i3_config_dir }}/{{ item | basename }} state=link
