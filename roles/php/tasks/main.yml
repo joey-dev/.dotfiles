@@ -1,5 +1,12 @@
 - name: install php
   block:
+  - name: Install dependencies for modern repository management
+    become: true
+    apt:
+      name: python3-debian
+      state: present
+    when: ansible_distribution == "Debian"
+
   - name: Add PPA for PHP (Ubuntu only)
     become: true
     apt_repository:
