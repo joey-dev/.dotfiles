@@ -25,7 +25,6 @@
       repo: https://github.com/neovim/neovim.git
       dest: /tmp/neovim
       version: master
-    ignore_errors: true
     register: neovim_clone
 
   - name: Build Neovim from source
@@ -100,7 +99,6 @@
     ansible.builtin.git:
       repo: https://github.com/xdebug/vscode-php-debug.git
       dest: ~/vscode-php-debug
-    ignore_errors: true
     register: php_debug_clone
 
   - name: Install dependencies
@@ -159,7 +157,6 @@
     ansible.builtin.git:
       repo: https://github.com/universal-ctags/ctags.git
       dest: /tmp/ctags
-    ignore_errors: true
     register: ctags_clone
 
   - name: universal-ctags - Run autogen
@@ -205,7 +202,6 @@
     get_url:
       url: "http://www.lua.org/ftp/lua-{{ lua_version }}.tar.gz"
       dest: "/tmp/lua-{{ lua_version }}.tar.gz"
-    ignore_errors: true
     register: lua_download
 
   - name: luarocks - Unpack lua
@@ -233,7 +229,6 @@
     command: "curl -R -O https://luarocks.github.io/luarocks/releases/luarocks-{{ luarocks_version }}.tar.gz"
     args:
       chdir: "/tmp"
-    ignore_errors: true
     register: luarocks_download
     when: lua_download is succeeded
 
@@ -267,6 +262,5 @@
   - name: luarocks - install lua files system
     command: "luarocks install luafilesystem"
     become: true
-    ignore_errors: true
     when: lua_download is succeeded and luarocks_download is succeeded
 

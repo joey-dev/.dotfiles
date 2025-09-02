@@ -1,6 +1,5 @@
 - name: check to see if i3 is already installed
   command: "i3 --version"
-  ignore_errors: true
   register: i3_is_installed
   changed_when: false
 
@@ -28,7 +27,6 @@
     package: name={{ item }} state=latest
     with_items:
     - python3-pyperclip
-    ignore_errors: true
 
   - name: Link i3 scripts
     file:

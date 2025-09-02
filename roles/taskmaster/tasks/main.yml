@@ -2,7 +2,6 @@
   get_url:
     url: "https://github.com/GothenburgBitFactory/taskwarrior/releases/download/v{{ task_master_version }}/task-{{ task_master_version }}.tar.gz"
     dest: "/tmp/task-{{ task_master_version }}.tar.gz"
-  ignore_errors: true
   register: taskmaster_download
 
 - name: Extract Taskwarrior tarball

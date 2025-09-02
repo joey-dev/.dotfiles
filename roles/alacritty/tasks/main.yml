@@ -9,7 +9,6 @@
     environment:
       DEBIAN_FRONTEND: noninteractive
     shell: add-apt-repository -y ppa:aslatter/ppa
-    ignore_errors: true
     register: alacritty_ppa
 
   - name: Install alacritty and deps
