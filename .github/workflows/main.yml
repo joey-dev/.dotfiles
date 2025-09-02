@@ -5,8 +5,20 @@ on:
     branches:
     - master
 jobs:
-  Ubuntu:
-    runs-on: ubuntu-22.04
+  test:
+    strategy:
+      matrix:
+        os: 
+          - ubuntu-22.04
+          - debian:trixie
+        include:
+          - os: ubuntu-22.04
+            container: false
+          - os: debian:trixie
+            container: true
+    runs-on: ${{ matrix.container && 'ubuntu-latest' || matrix.os }}
+    container: ${{ matrix.container && matrix.os || null }}
+    name: Test on ${{ matrix.os }}
     steps:
       - name: checkout branch
         uses: actions/checkout@v4

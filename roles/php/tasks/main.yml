@@ -1,17 +1,35 @@
 - name: install php
   block:
-  - name: Add PPA for PHP
+  - name: Add PPA for PHP (Ubuntu only)
     become: true
     apt_repository:
       repo: ppa:ondrej/php
       state: present
     register: php_ppa
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Add Sury PHP repository for Debian
+    become: true
+    apt_key:
+      url: https://packages.sury.org/php/apt.gpg
+      state: present
+      keyring: /usr/share/keyrings/sury-php-keyring.gpg
+    when: ansible_distribution == "Debian"
+    register: php_debian_key
+
+  - name: Add Sury PHP repository source (Debian)
+    become: true
+    apt_repository:
+      repo: "deb [signed-by=/usr/share/keyrings/sury-php-keyring.gpg] https://packages.sury.org/php/ {{ ansible_distribution_release }} main"
+      state: present
+    when: ansible_distribution == "Debian" and php_debian_key is succeeded
+    register: php_debian_repo
 
   - name: Update apt package cache
     become: true
     apt:
       update_cache: yes
-    when: php_ppa is succeeded
+    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_debian_repo is succeeded)
 
   - name: Install PHP and related packages
     become: true
@@ -31,49 +49,49 @@
       - php{{ php_version }}-pdo
       - php{{ php_version }}-simplexml
       - php{{ php_version }}-zip
-    when: php_ppa is succeeded
+    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_debian_repo is succeeded)
 
   - name: Download Composer installer
     command: php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');"
     register: composer_download
-    when: php_ppa is succeeded
+    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_debian_repo is succeeded)
     async: 300
     poll: 5
 
   - name: Run Composer installer
     command: php /tmp/composer-setup.php
-    when: php_ppa is succeeded and composer_download is succeeded
+    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded and composer_download is succeeded) or (ansible_distribution == "Debian" and php_debian_repo is succeeded and composer_download is succeeded)
 
   - name: Remove Composer installer
     command: php -r "unlink('/tmp/composer-setup.php');"
-    when: php_ppa is succeeded and composer_download is succeeded
+    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded and composer_download is succeeded) or (ansible_distribution == "Debian" and php_debian_repo is succeeded and composer_download is succeeded)
 
   - name: Make composer global
     command: mv {{ playbook_dir }}/composer.phar /usr/local/bin/composer
     become: true
-    when: php_ppa is succeeded and composer_download is succeeded
+    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded and composer_download is succeeded) or (ansible_distribution == "Debian" and php_debian_repo is succeeded and composer_download is succeeded)
 
   - name: Install phpMD
     command: composer global require phpmd/phpmd
-    when: php_ppa is succeeded and composer_download is succeeded
+    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded and composer_download is succeeded) or (ansible_distribution == "Debian" and php_debian_repo is succeeded and composer_download is succeeded)
 
   - name: Install phpStan
     command: composer global require phpstan/phpstan
-    when: php_ppa is succeeded and composer_download is succeeded
+    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded and composer_download is succeeded) or (ansible_distribution == "Debian" and php_debian_repo is succeeded and composer_download is succeeded)
 
   - name: Install phpStan strict rules
     command: composer global require phpstan/phpstan-strict-rules
-    when: php_ppa is succeeded and composer_download is succeeded
+    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded and composer_download is succeeded) or (ansible_distribution == "Debian" and php_debian_repo is succeeded and composer_download is succeeded)
 
   - name: Install phpStan phpunit
     command: composer global require phpstan/phpstan-phpunit
-    when: php_ppa is succeeded and composer_download is succeeded
+    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded and composer_download is succeeded) or (ansible_distribution == "Debian" and php_debian_repo is succeeded and composer_download is succeeded)
 
   - name: Install phpStan shipmonk phpstan-rules
     command: composer global require shipmonk/phpstan-rules
-    when: php_ppa is succeeded and composer_download is succeeded
+    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded and composer_download is succeeded) or (ansible_distribution == "Debian" and php_debian_repo is succeeded and composer_download is succeeded)
 
   - name: Install phpStan jangregor phpstan-prophecy
     command: composer global require jangregor/phpstan-prophecy
-    when: php_ppa is succeeded and composer_download is succeeded
+    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded and composer_download is succeeded) or (ansible_distribution == "Debian" and php_debian_repo is succeeded and composer_download is succeeded)
 

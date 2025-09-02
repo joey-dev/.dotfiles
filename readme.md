@@ -14,7 +14,7 @@ These are all my settings and program's I use. Written in Ansible for easy insta
 
 
 ## Getting Started <a name = "getting_started"></a>
-Currently only Ubuntu 20.04 is supporterd.
+Currently Ubuntu 22.04 and Debian Trixie are supported.
 
 Run the following 2 commands in your terminal:
 -   make install
