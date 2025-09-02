@@ -38,11 +38,21 @@
     - python3-venv
     - ncdu
 
-- name: Install common tools with python
+- name: Install common tools with python (Ubuntu)
   become: true
   shell: pip3 install {{ item }} --user
   loop:
     - thefuck
+  when: ansible_distribution == "Ubuntu"
+
+- name: Install common tools with apt (Debian)
+  become: true
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - thefuck
+  when: ansible_distribution == "Debian"
 
 - name: Remove scripts folder
   file:
