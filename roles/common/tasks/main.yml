@@ -43,6 +43,7 @@
     state: present
   loop:
     - thefuck
+    - python3-debian
   when: ansible_distribution == "Debian"
 
 - name: Remove scripts folder
