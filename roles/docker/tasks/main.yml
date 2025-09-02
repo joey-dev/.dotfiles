@@ -3,7 +3,7 @@
   tags: env
   changed_when: false
   command: whoami
-  failed_when: "'root' in host_local_user.stdout"
+  failed_when: "'root' in host_local_user.stdout and not (ansible_env.CI | default(false) | bool)"
   register: host_local_user
 
 - name: Retrieve group of user invoking the playbook
@@ -11,7 +11,7 @@
   tags: env
   changed_when: false
   command: id -gn
-  failed_when: "'root' in host_local_user.stdout"
+  failed_when: "'root' in host_local_user.stdout and not (ansible_env.CI | default(false) | bool)"
   register: host_local_group
 
 - name: Set a fact with the retrieved user name
@@ -86,6 +86,7 @@
   ansible.builtin.file:
     owner: "{{ host_local_user }}"
     path: /var/run/docker.sock
+  when: not (ansible_env.CI | default(false) | bool)
 
 - name: Eliminate the need for sudo when issuing docker commands (1/2)
   become: true
@@ -94,10 +95,12 @@
     append: true
     groups:
       - docker
+  when: not (ansible_env.CI | default(false) | bool)
 
 - name: Eliminate the need for sudo when issuing docker commands (2/2)
   become: false
   ansible.builtin.shell: newgrp docker
+  when: not (ansible_env.CI | default(false) | bool)
 
 - name: Ensure Ansible is able to manage Docker (1/2)
   become: true
