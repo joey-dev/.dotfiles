@@ -43,12 +43,11 @@
     state: absent
     update_cache: false
 
-- name: Download Docker GPG key
+- name: Download and dearmor Docker GPG key
   become: true
-  get_url:
-    url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
-    dest: /usr/share/keyrings/docker-archive-keyring.gpg
-    mode: '0644'
+  shell: |
+    curl -fsSL "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg" | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    chmod 644 /usr/share/keyrings/docker-archive-keyring.gpg
   register: docker_key
 
 - name: Add Docker deb repository

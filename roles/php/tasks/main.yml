@@ -8,12 +8,11 @@
     register: php_ppa
     when: ansible_distribution == "Ubuntu"
 
-  - name: Download Sury PHP repository GPG key for Debian
+  - name: Download and dearmor Sury PHP repository GPG key for Debian
     become: true
-    get_url:
-      url: https://packages.sury.org/php/apt.gpg
-      dest: /usr/share/keyrings/sury-php-keyring.gpg
-      mode: '0644'
+    shell: |
+      curl -fsSL "https://packages.sury.org/php/apt.gpg" | gpg --dearmor -o /usr/share/keyrings/sury-php-keyring.gpg
+      chmod 644 /usr/share/keyrings/sury-php-keyring.gpg
     when: ansible_distribution == "Debian"
     register: php_debian_key
 
