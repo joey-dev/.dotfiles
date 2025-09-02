@@ -55,8 +55,6 @@
     command: php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');"
     register: composer_download
     when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_debian_repo is succeeded)
-    async: 300
-    poll: 5
 
   - name: Run Composer installer
     command: php /tmp/composer-setup.php

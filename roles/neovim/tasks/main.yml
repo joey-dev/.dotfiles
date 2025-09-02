@@ -32,8 +32,6 @@
     args:
       chdir: /tmp/neovim
     when: neovim_clone is succeeded
-    async: 3600
-    poll: 10
 
   - name: Install Neovim from source
     become: yes
@@ -104,14 +102,10 @@
   - name: Install dependencies
     shell: cd {{ ansible_env.HOME}}/vscode-php-debug && npm install 2>&1 || true
     when: php_debug_clone is succeeded
-    async: 1800
-    poll: 10
 
   - name: Build dependencies
     shell: cd {{ ansible_env.HOME}}/vscode-php-debug && npm run build
     when: php_debug_clone is succeeded
-    async: 1800
-    poll: 10
 
   - name: Install Vue Language Server globally
     become: yes
@@ -176,8 +170,6 @@
     args:
       chdir: "/tmp/ctags"
     when: ctags_clone is succeeded
-    async: 1800
-    poll: 10
 
   - name: universal-ctags - Run make install
     command: "make install"
@@ -215,8 +207,6 @@
     args:
       chdir: "/tmp/lua-{{ lua_version }}"
     when: lua_download is succeeded
-    async: 1800
-    poll: 10
 
   - name: luarocks - install lua
     command: "make install"
@@ -249,8 +239,6 @@
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
     when: lua_download is succeeded and luarocks_download is succeeded
-    async: 1800
-    poll: 10
 
   - name: luarocks - install
     command: "make install"
