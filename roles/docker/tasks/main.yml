@@ -110,10 +110,18 @@
     state: present
     update_cache: false
 
-- name: Ensure Ansible is able to manage Docker (2/2)
+- name: Ensure Ansible is able to manage Docker (2/2) - Ubuntu
   become: true
   ansible.builtin.pip:
     name: docker
+  when: ansible_distribution == "Ubuntu"
+
+- name: Ensure Ansible is able to manage Docker (2/2) - Debian
+  become: true
+  ansible.builtin.apt:
+    name: python3-docker
+    state: present
+  when: ansible_distribution == "Debian"
 
 - name: Verify that Docker CE is installed correctly (1/2)
   community.docker.docker_container:
