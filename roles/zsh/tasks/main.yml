@@ -16,11 +16,17 @@
         path: "{{ ansible_env.HOME }}/.oh-my-zsh"
         state: absent
 
-    - name: Oh-My-Zsh
+    - name: Oh-My-Zsh (non-CI)
       shell: "sh -c \"$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
       register: ohmyzsh_install
       async: 600
       poll: 5
+      when: ansible_env.CI is not defined
+
+    - name: Oh-My-Zsh (CI)
+      shell: "sh -c \"$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
+      register: ohmyzsh_install
+      when: ansible_env.CI is defined
 
     - name: Install zsh-autosuggestions
       ansible.builtin.git:
