@@ -1,19 +1,27 @@
 name: GitHub Action
-run-name: Test ansbile playbook
+run-name: Test ansible playbook
 on:
   pull_request:
     branches:
     - master
 jobs:
   Ubuntu:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: checkout branch
         uses: actions/checkout@v4
       - name: Run playbook check script
         run: ./checkPlaybook.sh
-      - name: ansible-playbook
-        uses: dawidd6/action-ansible-playbook@v2.8.0
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          playbook: playbook.yml
-          directory: ./
+          python-version: '3.x'
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+      - name: Run ansible-playbook
+        env:
+          CI: true
+        run: |
+          ansible-playbook -i inventory playbook.yml

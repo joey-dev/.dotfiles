@@ -9,12 +9,14 @@
     environment:
       DEBIAN_FRONTEND: noninteractive
     shell: add-apt-repository -y ppa:aslatter/ppa
+    register: alacritty_ppa
 
   - name: Install alacritty and deps
     become: yes
     package: name={{ item }} state=latest
     with_items:
         - alacritty
+    when: alacritty_ppa is succeeded
 
   - name: Link alacritty files
     file: src={{item}} dest={{ i3_config_dir }}/{{ item | basename }} state=link

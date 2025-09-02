@@ -5,6 +5,8 @@
     autoremove: true
     update_cache: true
     upgrade: true
+  async: 1800
+  poll: 30
 
 - name: Install common tools
   become: true
@@ -25,7 +27,7 @@
     - python3-dev
     - python3-pip
     - python3-setuptools
-    - python3.8-venv
+    - python3-venv
     - ncdu
 
 - name: Install common tools with python
@@ -48,12 +50,14 @@
   get_url:
     url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
     dest: /tmp/google-chrome-stable_current_amd64.deb
+  register: chrome_download
 
 - name: Install Google Chrome from .deb file
   apt:
     deb: /tmp/google-chrome-stable_current_amd64.deb
     state: present
   become: yes
+  when: chrome_download is succeeded
 
 - name: Create Downloads folder
   file:

@@ -2,26 +2,33 @@
   get_url:
     url: "https://github.com/GothenburgBitFactory/taskwarrior/releases/download/v{{ task_master_version }}/task-{{ task_master_version }}.tar.gz"
     dest: "/tmp/task-{{ task_master_version }}.tar.gz"
+  register: taskmaster_download
 
 - name: Extract Taskwarrior tarball
   command: "tar xzvf /tmp/task-{{ task_master_version }}.tar.gz"
   args:
     chdir: "/tmp"
+  when: taskmaster_download is succeeded
 
 - name: Run cmake for Taskwarrior
   command: "cmake -DCMAKE_BUILD_TYPE=release -DENABLE_SYNC=OFF ."
   args:
     chdir: "/tmp/task-{{ task_master_version }}"
+  when: taskmaster_download is succeeded
 
 - name: Make Taskwarrior
   command: "make"
   args:
     chdir: "/tmp/task-{{ task_master_version }}"
+  when: taskmaster_download is succeeded
+  async: 1800
+  poll: 10
 
 - name: Install Taskwarrior
   command: "sudo make install"
   args:
     chdir: "/tmp/task-{{ task_master_version }}"
+  when: taskmaster_download is succeeded
 
 - name: Remove .taskrc file if exists
   ansible.builtin.file:

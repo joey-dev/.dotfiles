@@ -14,7 +14,7 @@ sshtoken:
 	echo 'hi'
 
 provision:
-	ansible-playbook -i ./hosts playbook.yml -e ansible_python_interpreter=/usr/bin/python3 --ask-become-pass
+	ansible-playbook -i inventory playbook.yml -e ansible_python_interpreter=/usr/bin/python3 --ask-become-pass
 	echo "please logout, select i3 at the bottom right, then login"
 
 install-test:

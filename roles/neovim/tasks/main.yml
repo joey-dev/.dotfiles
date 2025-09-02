@@ -25,17 +25,22 @@
       repo: https://github.com/neovim/neovim.git
       dest: /tmp/neovim
       version: master
+    register: neovim_clone
 
   - name: Build Neovim from source
     command: make CMAKE_BUILD_TYPE=RelWithDebInfo
     args:
       chdir: /tmp/neovim
+    when: neovim_clone is succeeded
+    async: 3600
+    poll: 10
 
   - name: Install Neovim from source
     become: yes
     command: make install
     args:
       chdir: /tmp/neovim
+    when: neovim_clone is succeeded
 
   - name: Ensure ~/.config/nvim directory exists
     file:
@@ -94,12 +99,19 @@
     ansible.builtin.git:
       repo: https://github.com/xdebug/vscode-php-debug.git
       dest: ~/vscode-php-debug
+    register: php_debug_clone
 
   - name: Install dependencies
     shell: cd {{ ansible_env.HOME}}/vscode-php-debug && npm install 2>&1 || true
+    when: php_debug_clone is succeeded
+    async: 1800
+    poll: 10
 
   - name: Build dependencies
     shell: cd {{ ansible_env.HOME}}/vscode-php-debug && npm run build
+    when: php_debug_clone is succeeded
+    async: 1800
+    poll: 10
 
   - name: Install Vue Language Server globally
     become: yes
@@ -145,27 +157,34 @@
     ansible.builtin.git:
       repo: https://github.com/universal-ctags/ctags.git
       dest: /tmp/ctags
+    register: ctags_clone
 
   - name: universal-ctags - Run autogen
     command: "./autogen.sh"
     args:
       chdir: "/tmp/ctags"
+    when: ctags_clone is succeeded
 
   - name: universal-ctags - Run configure
     command: "./configure"
     args:
       chdir: "/tmp/ctags"
+    when: ctags_clone is succeeded
 
   - name: universal-ctags - Run make
     command: "make"
     args:
       chdir: "/tmp/ctags"
+    when: ctags_clone is succeeded
+    async: 1800
+    poll: 10
 
   - name: universal-ctags - Run make install
     command: "make install"
     become: true
     args:
       chdir: "/tmp/ctags"
+    when: ctags_clone is succeeded
 
 - name: install luarocks
   block:
@@ -183,50 +202,65 @@
     get_url:
       url: "http://www.lua.org/ftp/lua-{{ lua_version }}.tar.gz"
       dest: "/tmp/lua-{{ lua_version }}.tar.gz"
+    register: lua_download
 
   - name: luarocks - Unpack lua
     command: "tar -zxf lua-{{ lua_version }}.tar.gz"
     args:
       chdir: "/tmp"
+    when: lua_download is succeeded
 
   - name: luarocks - install lua installer
     command: "make linux test"
     args:
       chdir: "/tmp/lua-{{ lua_version }}"
+    when: lua_download is succeeded
+    async: 1800
+    poll: 10
 
   - name: luarocks - install lua
     command: "make install"
     become: true
     args:
       chdir: "/tmp/lua-{{ lua_version }}"
+    when: lua_download is succeeded
 
   - name: luarocks - Download tar
     command: "curl -R -O https://luarocks.github.io/luarocks/releases/luarocks-{{ luarocks_version }}.tar.gz"
     args:
       chdir: "/tmp"
+    register: luarocks_download
+    when: lua_download is succeeded
 
   - name: luarocks - Unpack
     command: "tar -zxf luarocks-{{ luarocks_version }}.tar.gz"
     args:
       chdir: "/tmp"
+    when: lua_download is succeeded and luarocks_download is succeeded
 
   - name: luarocks - configure installer
     command: "./configure --with-lua=/usr/local"
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
+    when: lua_download is succeeded and luarocks_download is succeeded
 
   - name: luarocks - configure installer 2
     command: "make"
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
+    when: lua_download is succeeded and luarocks_download is succeeded
+    async: 1800
+    poll: 10
 
   - name: luarocks - install
     command: "make install"
     become: true
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
+    when: lua_download is succeeded and luarocks_download is succeeded
 
   - name: luarocks - install lua files system
     command: "luarocks install luafilesystem"
     become: true
+    when: lua_download is succeeded and luarocks_download is succeeded
 
