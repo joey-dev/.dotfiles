@@ -100,32 +100,46 @@
     register: php_debug_clone
 
   - name: Install dependencies
-    shell: cd {{ ansible_env.HOME}}/vscode-php-debug && npm install 2>&1 || true
+    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && cd {{ ansible_env.HOME}}/vscode-php-debug && npm install 2>&1 || true
+    args:
+      executable: /bin/zsh
     when: php_debug_clone is succeeded
 
   - name: Build dependencies
-    shell: cd {{ ansible_env.HOME}}/vscode-php-debug && npm run build
+    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && cd {{ ansible_env.HOME}}/vscode-php-debug && npm run build
+    args:
+      executable: /bin/zsh
     when: php_debug_clone is succeeded
 
   - name: Install Vue Language Server globally
     become: yes
-    command: npm install -g @vue/language-server
+    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g @vue/language-server
+    args:
+      executable: /bin/zsh
 
   - name: Install Typescript globally
     become: yes
-    command: npm install -g typescript
+    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g typescript
+    args:
+      executable: /bin/zsh
 
   - name: Install Stylelint globally
     become: yes
-    command: npm install -g stylelint postcss-html stylelint-config-recommended-vue
+    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g stylelint postcss-html stylelint-config-recommended-vue
+    args:
+      executable: /bin/zsh
 
   - name: Install FixJson globally
     become: yes
-    command: npm install -g fixjson
+    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g fixjson
+    args:
+      executable: /bin/zsh
 
   - name: install yamp language server
     become: yes
-    command: npm install -g yaml-language-server
+    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g yaml-language-server
+    args:
+      executable: /bin/zsh
 
 
 - name: install universal-ctags
