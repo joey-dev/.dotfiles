@@ -34,6 +34,8 @@
       components: [main]
       signed_by: /usr/share/keyrings/sury-php-keyring.gpg
       state: present
+    vars:
+      ansible_python_interpreter: /usr/bin/python3
     when: ansible_distribution == "Debian" and php_debian_key is succeeded
     register: php_debian_repo
 

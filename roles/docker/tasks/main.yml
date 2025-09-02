@@ -62,6 +62,8 @@
     architectures: [amd64]
     signed_by: /usr/share/keyrings/docker-archive-keyring.gpg
     state: present
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
   when: docker_key is succeeded
   register: docker_repo
 
