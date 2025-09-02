@@ -52,12 +52,23 @@
 
 - name: Add Docker deb repository
   become: true
-  ansible.builtin.apt_repository:
-    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_facts.lsb.codename }} stable"
+  deb822_repository:
+    name: docker
+    types: [deb]
+    uris: "https://download.docker.com/linux/{{ ansible_distribution | lower }}"
+    suites: ["{{ ansible_facts.lsb.codename }}"]
+    components: [stable]
+    architectures: [amd64]
+    signed_by: /usr/share/keyrings/docker-archive-keyring.gpg
     state: present
-    update_cache: true
-    validate_certs: true
   when: docker_key is succeeded
+  register: docker_repo
+
+- name: Update apt cache after adding Docker repository
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: docker_key is succeeded and docker_repo is succeeded
 
 - name: Install the latest version of Docker CE, Docker Compose, and containerd
   become: true

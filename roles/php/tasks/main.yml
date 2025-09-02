@@ -19,8 +19,13 @@
 
   - name: Add Sury PHP repository source (Debian)
     become: true
-    apt_repository:
-      repo: "deb [signed-by=/usr/share/keyrings/sury-php-keyring.gpg] https://packages.sury.org/php/ {{ ansible_distribution_release }} main"
+    deb822_repository:
+      name: sury-php
+      types: [deb]
+      uris: https://packages.sury.org/php/
+      suites: ["{{ ansible_distribution_release }}"]
+      components: [main]
+      signed_by: /usr/share/keyrings/sury-php-keyring.gpg
       state: present
     when: ansible_distribution == "Debian" and php_debian_key is succeeded
     register: php_debian_repo
