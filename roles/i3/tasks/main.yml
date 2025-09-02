@@ -2,6 +2,7 @@
   command: "i3 --version"
   register: i3_is_installed
   changed_when: false
+  failed_when: false
 
 - name: install i3
   block:
