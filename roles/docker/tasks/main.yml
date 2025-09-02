@@ -42,14 +42,13 @@
     state: absent
     update_cache: false
 
-- name: Verify and add the Docker package signing key
+- name: Download Docker GPG key
   become: true
-  ansible.builtin.apt_key:
-    id: 8D81803C0EBFCD88
-    keyring: /usr/share/keyrings/docker-archive-keyring.gpg
-    state: present
+  get_url:
     url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
-    validate_certs: true
+    dest: /usr/share/keyrings/docker-archive-keyring.gpg
+    mode: '0644'
+  register: docker_key
 
 - name: Add Docker deb repository
   become: true
@@ -58,6 +57,7 @@
     state: present
     update_cache: true
     validate_certs: true
+  when: docker_key is succeeded
 
 - name: Install the latest version of Docker CE, Docker Compose, and containerd
   become: true
