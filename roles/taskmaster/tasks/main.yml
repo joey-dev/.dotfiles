@@ -23,10 +23,11 @@
   when: taskmaster_download is succeeded
 
 - name: Install Taskwarrior
-  command: "sudo make install"
+  command: "make install"
   args:
     chdir: "/tmp/task-{{ task_master_version }}"
   when: taskmaster_download is succeeded
+  become: true
 
 - name: Remove .taskrc file if exists
   ansible.builtin.file:
