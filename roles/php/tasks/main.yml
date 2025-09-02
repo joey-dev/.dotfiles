@@ -8,6 +8,14 @@
     register: php_ppa
     when: ansible_distribution == "Ubuntu"
 
+  - name: Ensure GPG tools are available for Debian
+    become: true
+    apt:
+      name: gnupg
+      state: present
+      update_cache: false
+    when: ansible_distribution == "Debian"
+
   - name: Download and dearmor Sury PHP repository GPG key for Debian
     become: true
     shell: |
