@@ -19,6 +19,12 @@
   set_fact:
     host_local_user: "{{ host_local_user.stdout }}"
 
+- name: Check if Docker is already installed
+  command: docker --version
+  register: docker_version_check
+  failed_when: false
+  changed_when: false
+
 - name: Ensure apt uses https
   become: true
   ansible.builtin.apt:
@@ -30,6 +36,7 @@
       - lsb-release
     state: present
     update_cache: false
+  when: docker_version_check.rc != 0
 
 - name: Remove old Docker versions
   ansible.builtin.apt:
@@ -41,6 +48,7 @@
       - runc
     state: absent
     update_cache: false
+  when: docker_version_check.rc != 0
 
 - name: Download and dearmor Docker GPG key
   become: true
@@ -48,6 +56,7 @@
     curl -fsSL "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg" | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
     chmod 644 /usr/share/keyrings/docker-archive-keyring.gpg
   register: docker_key
+  when: docker_version_check.rc != 0
 
 - name: Add Docker deb repository
   become: true
@@ -62,14 +71,14 @@
     state: present
   vars:
     ansible_python_interpreter: /usr/bin/python3
-  when: docker_key is succeeded
+  when: docker_key is succeeded and docker_version_check.rc != 0
   register: docker_repo
 
 - name: Update apt cache after adding Docker repository
   become: true
   ansible.builtin.apt:
     update_cache: true
-  when: docker_key is succeeded and docker_repo is succeeded
+  when: docker_key is succeeded and docker_repo is succeeded and docker_version_check.rc != 0
 
 - name: Install the latest version of Docker CE, Docker Compose, and containerd
   become: true
@@ -81,6 +90,7 @@
       - docker-compose-plugin
     state: present
     update_cache: false
+  when: docker_version_check.rc != 0
 
 - name: Pass docker.sock ownership to the user so they can pull from the docker image repository
   become: true

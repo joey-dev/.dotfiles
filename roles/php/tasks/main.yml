@@ -1,12 +1,18 @@
 - name: install php
   block:
+  - name: Check if PHP is already installed with correct version
+    command: php --version
+    register: php_version_check
+    failed_when: false
+    changed_when: false
+
   - name: Add PPA for PHP (Ubuntu only)
     become: true
     apt_repository:
       repo: ppa:ondrej/php
       state: present
     register: php_ppa
-    when: ansible_distribution == "Ubuntu"
+    when: ansible_distribution == "Ubuntu" and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
 
   - name: Ensure GPG tools and python3-debian are available (Debian only)
     become: true
@@ -16,7 +22,7 @@
         - python3-debian
       state: present
       update_cache: false
-    when: ansible_distribution == "Debian"
+    when: ansible_distribution == "Debian" and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
 
   - name: Download and dearmor Sury PHP repository GPG key (Debian only)
     become: true
@@ -24,7 +30,7 @@
       curl -fsSL "https://packages.sury.org/php/apt.gpg" | gpg --dearmor -o /usr/share/keyrings/sury-php-keyring.gpg
       chmod 644 /usr/share/keyrings/sury-php-keyring.gpg
     register: php_key
-    when: ansible_distribution == "Debian"
+    when: ansible_distribution == "Debian" and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
 
   - name: Add Sury PHP repository source (Debian only)
     become: true
@@ -38,14 +44,14 @@
       state: present
     vars:
       ansible_python_interpreter: /usr/bin/python3
-    when: ansible_distribution == "Debian" and php_key is succeeded
+    when: ansible_distribution == "Debian" and php_key is succeeded and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
     register: php_repo
 
   - name: Update apt package cache
     become: true
     apt:
       update_cache: yes
-    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)
+    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
 
   - name: Install PHP and related packages
     become: true
@@ -65,25 +71,31 @@
       - php{{ php_version }}-pdo
       - php{{ php_version }}-simplexml
       - php{{ php_version }}-zip
-    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)
+    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
+
+  - name: Check if Composer is already installed
+    command: composer --version
+    register: composer_version_check
+    failed_when: false
+    changed_when: false
 
   - name: Download Composer installer
     command: php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');"
     register: composer_download
-    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)
+    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_version_check.rc != 0
 
   - name: Run Composer installer
     command: php /tmp/composer-setup.php
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded
+    when: (((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded) and composer_version_check.rc != 0
 
   - name: Remove Composer installer
     command: php -r "unlink('/tmp/composer-setup.php');"
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded
+    when: (((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded) and composer_version_check.rc != 0
 
   - name: Make composer global
     command: mv {{ playbook_dir }}/composer.phar /usr/local/bin/composer
     become: true
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded
+    when: (((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded) and composer_version_check.rc != 0
 
   - name: Install phpMD
     command: composer global require phpmd/phpmd

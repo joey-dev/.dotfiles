@@ -44,8 +44,15 @@ jobs:
         if: matrix.os == 'debian:trixie'
         run: |
           apt-get install -y ansible
-      - name: Run ansible-playbook
+      - name: Run ansible-playbook (first run)
         env:
           CI: true
         run: |
-          ansible-playbook -i inventory playbook.yml
+          echo "=== First ansible-playbook run ==="
+          time ansible-playbook -i inventory playbook.yml
+      - name: Run ansible-playbook (second run - should be faster)
+        env:
+          CI: true
+        run: |
+          echo "=== Second ansible-playbook run (should be faster) ==="
+          time ansible-playbook -i inventory playbook.yml

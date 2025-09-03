@@ -1,6 +1,12 @@
 - name: install neovim
   block:
 
+  - name: Check if neovim is already installed and get version
+    command: nvim --version
+    register: neovim_version_check
+    failed_when: false
+    changed_when: false
+
   - name: install required packages
     become: yes
     package:
@@ -19,6 +25,7 @@
     ansible.builtin.file:
       path: /tmp/neovim
       state: absent
+    when: neovim_version_check.rc != 0 or 'NVIM v0.10' not in neovim_version_check.stdout
 
   - name: Clone Neovim repository to a specific stable tag
     ansible.builtin.git:
@@ -26,19 +33,20 @@
       dest: /tmp/neovim
       version: master
     register: neovim_clone
+    when: neovim_version_check.rc != 0 or 'NVIM v0.10' not in neovim_version_check.stdout
 
   - name: Build Neovim from source
     command: make CMAKE_BUILD_TYPE=RelWithDebInfo
     args:
       chdir: /tmp/neovim
-    when: neovim_clone is succeeded
+    when: neovim_clone is succeeded and (neovim_version_check.rc != 0 or 'NVIM v0.10' not in neovim_version_check.stdout)
 
   - name: Install Neovim from source
     become: yes
     command: make install
     args:
       chdir: /tmp/neovim
-    when: neovim_clone is succeeded
+    when: neovim_clone is succeeded and (neovim_version_check.rc != 0 or 'NVIM v0.10' not in neovim_version_check.stdout)
 
   - name: Ensure ~/.config/nvim directory exists
     file:
@@ -145,6 +153,12 @@
 - name: install universal-ctags
   block:
 
+  - name: Check if universal-ctags is already installed
+    command: ctags --version
+    register: ctags_version_check
+    failed_when: false
+    changed_when: false
+
   - name: universal-ctags - install required packages
     become: yes
     package:
@@ -160,40 +174,48 @@
         - libjansson-dev
         - libyaml-dev
         - libxml2-dev
+    when: ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout
 
   - name: universal-ctags - Clone repo
     ansible.builtin.git:
       repo: https://github.com/universal-ctags/ctags.git
       dest: /tmp/ctags
     register: ctags_clone
+    when: ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout
 
   - name: universal-ctags - Run autogen
     command: "./autogen.sh"
     args:
       chdir: "/tmp/ctags"
-    when: ctags_clone is succeeded
+    when: ctags_clone is succeeded and (ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout)
 
   - name: universal-ctags - Run configure
     command: "./configure"
     args:
       chdir: "/tmp/ctags"
-    when: ctags_clone is succeeded
+    when: ctags_clone is succeeded and (ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout)
 
   - name: universal-ctags - Run make
     command: "make"
     args:
       chdir: "/tmp/ctags"
-    when: ctags_clone is succeeded
+    when: ctags_clone is succeeded and (ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout)
 
   - name: universal-ctags - Run make install
     command: "make install"
     become: true
     args:
       chdir: "/tmp/ctags"
-    when: ctags_clone is succeeded
+    when: ctags_clone is succeeded and (ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout)
 
 - name: install luarocks
   block:
+
+  - name: Check if luarocks is already installed
+    command: luarocks --version
+    register: luarocks_version_check
+    failed_when: false
+    changed_when: false
 
   - name: luarocks - install required packages
     become: yes
@@ -203,66 +225,68 @@
         - build-essential
         - libreadline-dev
         - unzip
+    when: luarocks_version_check.rc != 0
 
   - name: luarocks - Download lua tar
     get_url:
       url: "http://www.lua.org/ftp/lua-{{ lua_version }}.tar.gz"
       dest: "/tmp/lua-{{ lua_version }}.tar.gz"
     register: lua_download
+    when: luarocks_version_check.rc != 0
 
   - name: luarocks - Unpack lua
     command: "tar -zxf lua-{{ lua_version }}.tar.gz"
     args:
       chdir: "/tmp"
-    when: lua_download is succeeded
+    when: lua_download is succeeded and luarocks_version_check.rc != 0
 
   - name: luarocks - install lua installer
     command: "make linux test"
     args:
       chdir: "/tmp/lua-{{ lua_version }}"
-    when: lua_download is succeeded
+    when: lua_download is succeeded and luarocks_version_check.rc != 0
 
   - name: luarocks - install lua
     command: "make install"
     become: true
     args:
       chdir: "/tmp/lua-{{ lua_version }}"
-    when: lua_download is succeeded
+    when: lua_download is succeeded and luarocks_version_check.rc != 0
 
   - name: luarocks - Download tar
     command: "curl -R -O https://luarocks.github.io/luarocks/releases/luarocks-{{ luarocks_version }}.tar.gz"
     args:
       chdir: "/tmp"
     register: luarocks_download
-    when: lua_download is succeeded
+    when: lua_download is succeeded and luarocks_version_check.rc != 0
 
   - name: luarocks - Unpack
     command: "tar -zxf luarocks-{{ luarocks_version }}.tar.gz"
     args:
       chdir: "/tmp"
-    when: lua_download is succeeded and luarocks_download is succeeded
+    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_version_check.rc != 0
 
   - name: luarocks - configure installer
     command: "./configure --with-lua=/usr/local"
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
-    when: lua_download is succeeded and luarocks_download is succeeded
+    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_version_check.rc != 0
 
   - name: luarocks - configure installer 2
     command: "make"
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
-    when: lua_download is succeeded and luarocks_download is succeeded
+    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_version_check.rc != 0
 
   - name: luarocks - install
     command: "make install"
     become: true
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
-    when: lua_download is succeeded and luarocks_download is succeeded
+    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_version_check.rc != 0
 
   - name: luarocks - install lua files system
     command: "luarocks install luafilesystem"
     become: true
-    when: lua_download is succeeded and luarocks_download is succeeded
+    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_version_check.rc != 0
 
