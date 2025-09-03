@@ -25,12 +25,12 @@
 - name: Install node
   become: no
   shell: >
-    . {{ ansible_env.HOME }}/.nvm/nvm.sh && nvm install {{ item }}
+    . {{ ansible_env.HOME }}/.nvm/nvm.sh && nvm install {{ node_version }}
   args:
     executable: /bin/zsh
     chdir: "{{ ansible_env.HOME }}"
-    creates: "{{ ansible_env.HOME }}/.nvm/versions/{{ item }}"
+    creates: "{{ ansible_env.HOME }}/.nvm/versions/{{ node_version }}"
   loop:
     - node
-  when: current_node_version.stdout == "none" or not ('v' + node_version) in current_node_version.stdout
+  when: node_needs_update | default(true)
 

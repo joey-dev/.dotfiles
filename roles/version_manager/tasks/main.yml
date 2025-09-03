@@ -1,5 +1,5 @@
 ---
-- name: Intelligent version management
+- name: Smart version management - always fetch latest and compare with installed
   block:
 
   - name: Check if Neovim is installed and get version
@@ -7,6 +7,16 @@
     register: neovim_installed_check
     failed_when: false
     changed_when: false
+
+  - name: Extract installed Neovim version  
+    set_fact:
+      neovim_installed_version: "{{ neovim_installed_check.stdout | regex_search('NVIM v([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first | default('0.0.0') }}"
+    when: neovim_installed_check.rc == 0
+
+  - name: Set Neovim installed version to 0.0.0 if not installed
+    set_fact:
+      neovim_installed_version: "0.0.0"
+    when: neovim_installed_check.rc != 0
 
   - name: Check if Node.js is installed and get version  
     shell: >
@@ -17,11 +27,31 @@
     failed_when: false
     changed_when: false
 
+  - name: Extract installed Node.js version
+    set_fact:
+      node_installed_version: "{{ node_installed_check.stdout | regex_replace('^v', '') | default('0.0.0') }}"
+    when: node_installed_check.stdout != "none"
+
+  - name: Set Node.js installed version to 0.0.0 if not installed
+    set_fact:
+      node_installed_version: "0.0.0"
+    when: node_installed_check.stdout == "none"
+
   - name: Check if Docker is installed and get version
     command: docker --version
     register: docker_installed_check
     failed_when: false
     changed_when: false
+
+  - name: Extract installed Docker version
+    set_fact:
+      docker_installed_version: "{{ docker_installed_check.stdout | regex_search('Docker version ([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first | default('0.0.0') }}"
+    when: docker_installed_check.rc == 0
+
+  - name: Set Docker installed version to 0.0.0 if not installed
+    set_fact:
+      docker_installed_version: "0.0.0"
+    when: docker_installed_check.rc != 0
 
   - name: Check if Chrome is installed and get version
     command: google-chrome --version
@@ -29,40 +59,33 @@
     failed_when: false
     changed_when: false
 
-  - name: Determine if we need to fetch latest versions
+  - name: Extract installed Chrome version
     set_fact:
-      need_neovim_latest: "{{ auto_update_neovim | bool or neovim_installed_check.rc != 0 or neovim_version == 'latest' }}"
-      need_node_latest: "{{ auto_update_node | bool or node_installed_check.stdout == 'none' or node_version == 'latest' }}"
-      need_docker_latest: "{{ auto_update_docker | bool or docker_installed_check.rc != 0 or docker_version == 'latest' }}"
-      need_chrome_latest: "{{ auto_update_chrome | bool or chrome_installed_check.rc != 0 or chrome_min_version == 'latest' }}"
+      chrome_installed_version: "{{ chrome_installed_check.stdout | regex_search('Google Chrome ([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first | default('0.0.0') }}"
+    when: chrome_installed_check.rc == 0
 
+  - name: Set Chrome installed version to 0.0.0 if not installed
+    set_fact:
+      chrome_installed_version: "0.0.0"
+    when: chrome_installed_check.rc != 0
+
+  # Always fetch latest versions from APIs
   - name: Get latest Neovim version from GitHub releases
     uri:
       url: https://api.github.com/repos/neovim/neovim/releases/latest
       method: GET
       return_content: yes
     register: neovim_latest_response
-    when: need_neovim_latest | bool
     failed_when: false
 
-  - name: Set Neovim version (latest from API)
+  - name: Set Neovim latest version (from API or fallback)
     set_fact:
-      neovim_version: "{{ neovim_latest_response.json.tag_name | regex_replace('^v', '') }}"
-    when: 
-      - need_neovim_latest | bool
-      - neovim_latest_response is defined 
-      - neovim_latest_response.status is defined
-      - neovim_latest_response.status == 200
-      - neovim_latest_response.json is defined
-      - neovim_latest_response.json.tag_name is defined
-
-  - name: Set fallback Neovim version if API failed
-    set_fact:
-      neovim_version: "0.10"  # Fallback to known stable version
-    when: 
-      - need_neovim_latest | bool
-      - neovim_version == "latest"
-      - (neovim_latest_response is not defined or neovim_latest_response.status is not defined or neovim_latest_response.status != 200)
+      neovim_latest_version: >-
+        {%- if neovim_latest_response is defined and neovim_latest_response.status is defined and neovim_latest_response.status == 200 and neovim_latest_response.json is defined and neovim_latest_response.json.tag_name is defined -%}
+        {{ neovim_latest_response.json.tag_name | regex_replace('^v', '') }}
+        {%- else -%}
+        0.10.2
+        {%- endif -%}
 
   - name: Get latest stable Node.js LTS version
     uri:
@@ -70,26 +93,16 @@
       method: GET
       return_content: yes
     register: nodejs_latest_response
-    when: need_node_latest | bool
     failed_when: false
 
-  - name: Set Node.js version (latest LTS from API)
+  - name: Set Node.js latest version (from API or fallback)
     set_fact:
-      node_version: "{{ (nodejs_latest_response.json | selectattr('lts', 'ne', false) | first).version | regex_replace('^v', '') | regex_replace('\\..*', '') }}"
-    when: 
-      - need_node_latest | bool
-      - nodejs_latest_response is defined 
-      - nodejs_latest_response.status is defined
-      - nodejs_latest_response.status == 200
-      - nodejs_latest_response.json is defined
-
-  - name: Set fallback Node.js version if API failed
-    set_fact:
-      node_version: "22"  # Fallback to known LTS version
-    when: 
-      - need_node_latest | bool
-      - node_version == "latest"
-      - (nodejs_latest_response is not defined or nodejs_latest_response.status is not defined or nodejs_latest_response.status != 200)
+      node_latest_version: >-
+        {%- if nodejs_latest_response is defined and nodejs_latest_response.status is defined and nodejs_latest_response.status == 200 and nodejs_latest_response.json is defined -%}
+        {{ (nodejs_latest_response.json | selectattr('lts', 'ne', false) | first).version | regex_replace('^v', '') }}
+        {%- else -%}
+        22.12.0
+        {%- endif -%}
 
   - name: Get latest Docker version from GitHub releases
     uri:
@@ -97,27 +110,16 @@
       method: GET
       return_content: yes
     register: docker_latest_response
-    when: need_docker_latest | bool
     failed_when: false
 
-  - name: Set Docker version (latest from API)
+  - name: Set Docker latest version (from API or fallback)
     set_fact:
-      docker_version: "{{ docker_latest_response.json.tag_name | regex_replace('^v', '') | regex_replace('\\..*', '') }}"
-    when: 
-      - need_docker_latest | bool
-      - docker_latest_response is defined 
-      - docker_latest_response.status is defined
-      - docker_latest_response.status == 200
-      - docker_latest_response.json is defined
-      - docker_latest_response.json.tag_name is defined
-
-  - name: Set fallback Docker version if API failed
-    set_fact:
-      docker_version: "27"  # Fallback to known stable version
-    when: 
-      - need_docker_latest | bool
-      - docker_version == "latest"
-      - (docker_latest_response is not defined or docker_latest_response.status is not defined or docker_latest_response.status != 200)
+      docker_latest_version: >-
+        {%- if docker_latest_response is defined and docker_latest_response.status is defined and docker_latest_response.status == 200 and docker_latest_response.json is defined and docker_latest_response.json.tag_name is defined -%}
+        {{ docker_latest_response.json.tag_name | regex_replace('^v', '') }}
+        {%- else -%}
+        27.3.1
+        {%- endif -%}
 
   - name: Get latest Google Chrome version (stable channel)
     uri:
@@ -125,41 +127,63 @@
       method: GET
       return_content: yes
     register: chrome_latest_response
-    when: need_chrome_latest | bool
     failed_when: false
 
-  - name: Set Chrome version (latest from API)
+  - name: Set Chrome latest version (from API or fallback)
     set_fact:
-      chrome_min_version: "{{ chrome_latest_response.json.releases[0].version | regex_replace('\\..*', '') }}"
-    when: 
-      - need_chrome_latest | bool
-      - chrome_latest_response is defined 
-      - chrome_latest_response.status is defined
-      - chrome_latest_response.status == 200
-      - chrome_latest_response.json is defined
-      - chrome_latest_response.json.releases is defined
-      - chrome_latest_response.json.releases | length > 0
+      chrome_latest_version: >-
+        {%- if chrome_latest_response is defined and chrome_latest_response.status is defined and chrome_latest_response.status == 200 and chrome_latest_response.json is defined and chrome_latest_response.json.releases is defined and chrome_latest_response.json.releases | length > 0 -%}
+        {{ chrome_latest_response.json.releases[0].version }}
+        {%- else -%}
+        131.0.6778.108
+        {%- endif -%}
 
-  - name: Set fallback Chrome version if API failed
+  # Compare versions and determine if updates are needed
+  - name: Compare Neovim versions
     set_fact:
-      chrome_min_version: "130"  # Fallback to known stable version
-    when: 
-      - need_chrome_latest | bool
-      - chrome_min_version == "latest"
-      - (chrome_latest_response is not defined or chrome_latest_response.status is not defined or chrome_latest_response.status != 200)
+      neovim_needs_update: "{{ neovim_latest_version is version(neovim_installed_version, '>') }}"
 
-  - name: Display version management decisions
+  - name: Compare Node.js versions
+    set_fact:
+      node_needs_update: "{{ node_latest_version is version(node_installed_version, '>') }}"
+
+  - name: Compare Docker versions
+    set_fact:
+      docker_needs_update: "{{ docker_latest_version is version(docker_installed_version, '>') }}"
+
+  - name: Compare Chrome versions
+    set_fact:
+      chrome_needs_update: "{{ chrome_latest_version is version(chrome_installed_version, '>') }}"
+
+  # Set the version variables for use in other roles
+  - name: Set version variables for roles
+    set_fact:
+      neovim_version: "{{ neovim_latest_version }}"
+      node_version: "{{ node_latest_version }}"
+      docker_version: "{{ docker_latest_version }}"
+      chrome_min_version: "{{ chrome_latest_version }}"
+
+  - name: Display smart version management summary
     debug:
       msg: |
-        Version Management Summary:
-        - Neovim: {{ neovim_version }} ({% if need_neovim_latest %}fetched latest{% else %}using configured{% endif %})
-        - Node.js: {{ node_version }} ({% if need_node_latest %}fetched latest{% else %}using configured{% endif %})
-        - Docker: {{ docker_version }} ({% if need_docker_latest %}fetched latest{% else %}using configured{% endif %})
-        - Chrome: {{ chrome_min_version }} ({% if need_chrome_latest %}fetched latest{% else %}using configured{% endif %})
-        - DBeaver: {{ dbeaver_min_version }} (using configured)
+        Smart Version Management Summary:
+        ==========================================
+        Neovim:
+          - Installed: {{ neovim_installed_version }}
+          - Latest:    {{ neovim_latest_version }}
+          - Update:    {{ neovim_needs_update }}
         
-        Auto-update settings:
-        - Neovim: {{ auto_update_neovim }}
-        - Node.js: {{ auto_update_node }}
-        - Docker: {{ auto_update_docker }}
-        - Chrome: {{ auto_update_chrome }}
+        Node.js:
+          - Installed: {{ node_installed_version }}
+          - Latest:    {{ node_latest_version }}
+          - Update:    {{ node_needs_update }}
+        
+        Docker:
+          - Installed: {{ docker_installed_version }}
+          - Latest:    {{ docker_latest_version }}
+          - Update:    {{ docker_needs_update }}
+        
+        Chrome:
+          - Installed: {{ chrome_installed_version }}
+          - Latest:    {{ chrome_latest_version }}
+          - Update:    {{ chrome_needs_update }}

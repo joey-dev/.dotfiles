@@ -36,7 +36,7 @@
       - lsb-release
     state: present
     update_cache: false
-  when: docker_version_check.rc != 0 or not (docker_version + '.') in docker_version_check.stdout
+  when: docker_needs_update | default(true)
 
 - name: Remove old Docker versions
   ansible.builtin.apt:
@@ -48,7 +48,7 @@
       - runc
     state: absent
     update_cache: false
-  when: docker_version_check.rc != 0 or not (docker_version + '.') in docker_version_check.stdout
+  when: docker_needs_update | default(true)
 
 - name: Download and dearmor Docker GPG key
   become: true
@@ -56,7 +56,7 @@
     curl -fsSL "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg" | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
     chmod 644 /usr/share/keyrings/docker-archive-keyring.gpg
   register: docker_key
-  when: docker_version_check.rc != 0 or not (docker_version + '.') in docker_version_check.stdout
+  when: docker_needs_update | default(true)
 
 - name: Add Docker deb repository
   become: true
@@ -71,14 +71,14 @@
     state: present
   vars:
     ansible_python_interpreter: /usr/bin/python3
-  when: docker_key is succeeded and (docker_version_check.rc != 0 or not (docker_version + '.') in docker_version_check.stdout)
+  when: docker_key is succeeded and docker_needs_update | default(true)
   register: docker_repo
 
 - name: Update apt cache after adding Docker repository
   become: true
   ansible.builtin.apt:
     update_cache: true
-  when: docker_key is succeeded and docker_repo is succeeded and (docker_version_check.rc != 0 or not (docker_version + '.') in docker_version_check.stdout)
+  when: docker_key is succeeded and docker_repo is succeeded and docker_needs_update | default(true)
 
 - name: Install the latest version of Docker CE, Docker Compose, and containerd
   become: true
@@ -90,7 +90,7 @@
       - docker-compose-plugin
     state: present
     update_cache: false
-  when: docker_version_check.rc != 0 or not (docker_version + '.') in docker_version_check.stdout
+  when: docker_needs_update | default(true)
 
 - name: Pass docker.sock ownership to the user so they can pull from the docker image repository
   become: true
