@@ -1,6 +1,5 @@
 - name: install php
   block:
-  # Ubuntu: Use stable PPA approach
   - name: Add PPA for PHP (Ubuntu only)
     become: true
     apt_repository:
@@ -9,7 +8,6 @@
     register: php_ppa
     when: ansible_distribution == "Ubuntu"
 
-  # Debian: Use modern deb822_repository approach
   - name: Ensure GPG tools and python3-debian are available (Debian only)
     become: true
     apt:

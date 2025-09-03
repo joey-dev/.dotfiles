@@ -28,7 +28,6 @@
       - curl
       - gnupg
       - lsb-release
-      - python3-debian
     state: present
     update_cache: false
 
@@ -88,7 +87,7 @@
   ansible.builtin.file:
     owner: "{{ host_local_user }}"
     path: /var/run/docker.sock
-  when: not (ansible_env.CI | default(false) | bool)
+  when: ansible_virtualization_role is defined and ansible_virtualization_role == "guest"
 
 - name: Eliminate the need for sudo when issuing docker commands (1/2)
   become: true
@@ -97,12 +96,12 @@
     append: true
     groups:
       - docker
-  when: not (ansible_env.CI | default(false) | bool)
+  when: ansible_virtualization_role is defined and ansible_virtualization_role == "guest"
 
 - name: Eliminate the need for sudo when issuing docker commands (2/2)
   become: false
   ansible.builtin.shell: newgrp docker
-  when: not (ansible_env.CI | default(false) | bool)
+  when: ansible_virtualization_role is defined and ansible_virtualization_role == "guest"
 
 - name: Ensure Ansible is able to manage Docker (1/2)
   become: true
