@@ -35,6 +35,11 @@
     set_fact:
       neovim_needs_update: "{{ neovim_target_version is version(neovim_installed_version, '>') }}"
 
+  # Extract common conditional patterns for cleaner when clauses
+  - name: Set Neovim installation status flags
+    set_fact:
+      neovim_build_ready: "{{ neovim_clone is succeeded and neovim_needs_update }}"
+
   - name: Display Neovim version comparison
     debug:
       msg: |
@@ -75,14 +80,14 @@
     command: make CMAKE_BUILD_TYPE=RelWithDebInfo
     args:
       chdir: /tmp/neovim
-    when: neovim_clone is succeeded and neovim_needs_update
+    when: neovim_build_ready
 
   - name: Install Neovim from source
     become: yes
     command: make install
     args:
       chdir: /tmp/neovim
-    when: neovim_clone is succeeded and neovim_needs_update
+    when: neovim_build_ready
 
   - name: Ensure ~/.config/nvim directory exists
     file:
@@ -148,17 +153,22 @@
       dest: ~/vscode-php-debug
     register: php_debug_clone
 
+  # Extract common conditional patterns  
+  - name: Set PHP debug build status flags
+    set_fact:
+      php_debug_build_ready: "{{ php_debug_clone is succeeded }}"
+
   - name: Install dependencies
     shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && cd {{ ansible_env.HOME}}/vscode-php-debug && npm install 2>&1 || true
     args:
       executable: /bin/zsh
-    when: php_debug_clone is succeeded
+    when: php_debug_build_ready
 
   - name: Build dependencies
     shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && cd {{ ansible_env.HOME}}/vscode-php-debug && npm run build
     args:
       executable: /bin/zsh
-    when: php_debug_clone is succeeded
+    when: php_debug_build_ready
 
   - name: Install/Update global npm packages for Neovim
     shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g @vue/language-server typescript stylelint postcss-html stylelint-config-recommended-vue fixjson yaml-language-server
@@ -177,6 +187,11 @@
     failed_when: false
     changed_when: false
 
+  # Extract common conditional patterns for universal-ctags
+  - name: Set universal-ctags installation status flags
+    set_fact:
+      ctags_not_installed: "{{ ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout }}"
+
   - name: universal-ctags - install required packages
     become: yes
     package:
@@ -192,7 +207,7 @@
         - libjansson-dev
         - libyaml-dev
         - libxml2-dev
-    when: ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout
+    when: ctags_not_installed
 
   - name: universal-ctags - Clone or update repo
     ansible.builtin.git:
@@ -200,32 +215,37 @@
       dest: /tmp/ctags
       force: yes
     register: ctags_clone
-    when: ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout
+    when: ctags_not_installed
+
+  # Set build readiness flag
+  - name: Set universal-ctags build status flags
+    set_fact:
+      ctags_build_ready: "{{ ctags_clone is succeeded and ctags_not_installed }}"
 
   - name: universal-ctags - Run autogen
     command: "./autogen.sh"
     args:
       chdir: "/tmp/ctags"
-    when: ctags_clone is succeeded and (ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout)
+    when: ctags_build_ready
 
   - name: universal-ctags - Run configure
     command: "./configure"
     args:
       chdir: "/tmp/ctags"
-    when: ctags_clone is succeeded and (ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout)
+    when: ctags_build_ready
 
   - name: universal-ctags - Run make
     command: "make"
     args:
       chdir: "/tmp/ctags"
-    when: ctags_clone is succeeded and (ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout)
+    when: ctags_build_ready
 
   - name: universal-ctags - Run make install
     command: "make install"
     become: true
     args:
       chdir: "/tmp/ctags"
-    when: ctags_clone is succeeded and (ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout)
+    when: ctags_build_ready
 
 - name: install luarocks
   block:
@@ -250,6 +270,12 @@
     set_fact:
       luarocks_needs_update: "{{ luarocks_version is version(luarocks_installed_version, '>') }}"
 
+  # Extract common conditional patterns for luarocks installation chain
+  - name: Set luarocks installation status flags  
+    set_fact:
+      luarocks_lua_build_ready: "{{ lua_download is succeeded and luarocks_needs_update }}"
+      luarocks_download_chain_ready: "{{ lua_download is succeeded and luarocks_download is succeeded and luarocks_needs_update }}"
+
   - name: luarocks - install required packages
     become: yes
     package:
@@ -271,55 +297,55 @@
     command: "tar -zxf lua-{{ lua_version }}.tar.gz"
     args:
       chdir: "/tmp"
-    when: lua_download is succeeded and luarocks_needs_update
+    when: luarocks_lua_build_ready
 
   - name: luarocks - install lua installer
     command: "make linux test"
     args:
       chdir: "/tmp/lua-{{ lua_version }}"
-    when: lua_download is succeeded and luarocks_needs_update
+    when: luarocks_lua_build_ready
 
   - name: luarocks - install lua
     command: "make install"
     become: true
     args:
       chdir: "/tmp/lua-{{ lua_version }}"
-    when: lua_download is succeeded and luarocks_needs_update
+    when: luarocks_lua_build_ready
 
   - name: luarocks - Download tar
     command: "curl -R -O https://luarocks.github.io/luarocks/releases/luarocks-{{ luarocks_version }}.tar.gz"
     args:
       chdir: "/tmp"
     register: luarocks_download
-    when: lua_download is succeeded and luarocks_needs_update
+    when: luarocks_lua_build_ready
 
   - name: luarocks - Unpack
     command: "tar -zxf luarocks-{{ luarocks_version }}.tar.gz"
     args:
       chdir: "/tmp"
-    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_needs_update
+    when: luarocks_download_chain_ready
 
   - name: luarocks - configure installer
     command: "./configure --with-lua=/usr/local"
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
-    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_needs_update
+    when: luarocks_download_chain_ready
 
   - name: luarocks - configure installer 2
     command: "make"
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
-    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_needs_update
+    when: luarocks_download_chain_ready
 
   - name: luarocks - install
     command: "make install"
     become: true
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
-    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_needs_update
+    when: luarocks_download_chain_ready
 
   - name: luarocks - install lua files system
     command: "luarocks install luafilesystem"
     become: true
-    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_needs_update
+    when: luarocks_download_chain_ready
 

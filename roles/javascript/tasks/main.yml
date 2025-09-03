@@ -11,7 +11,7 @@
     executable: /bin/zsh
     chdir: "$HOME"
     creates: "$HOME/.nvm/nvm.sh"
-  when: not nvm_installed.stat.exists
+  when: nvm_not_installed
 
 - name: Check current Node.js version
   shell: >
@@ -43,6 +43,11 @@
 - name: Compare Node.js versions and determine if update needed
   set_fact:
     node_needs_update: "{{ node_target_version is version(node_installed_version, '>') }}"
+
+# Extract common conditional patterns  
+- name: Set NVM installation status flags
+  set_fact:
+    nvm_not_installed: "{{ not nvm_installed.stat.exists }}"
 
 - name: Display Node.js version comparison
   debug:

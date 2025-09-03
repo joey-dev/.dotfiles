@@ -53,6 +53,12 @@
   set_fact:
     docker_needs_update: "{{ docker_target_version is version(docker_installed_version, '>') }}"
 
+# Extract common conditional patterns
+- name: Set Docker installation status flags
+  set_fact:
+    docker_ci_environment: "{{ not (ansible_env.CI | default(false) | bool) or (ansible_env.CI | default(false) | bool and ansible_virtualization_role == 'guest' and ansible_distribution == 'Ubuntu') }}"
+    docker_repo_ready: "{{ docker_key is succeeded and docker_repo is succeeded and docker_needs_update }}"
+
 - name: Display Docker version comparison
   debug:
     msg: |
@@ -114,7 +120,7 @@
   become: true
   ansible.builtin.apt:
     update_cache: true
-  when: docker_key is succeeded and docker_repo is succeeded and docker_needs_update
+  when: docker_repo_ready
 
 - name: Install the latest version of Docker CE, Docker Compose, and containerd
   become: true
@@ -133,7 +139,7 @@
   ansible.builtin.file:
     owner: "{{ host_local_user }}"
     path: /var/run/docker.sock
-  when: not (ansible_env.CI | default(false) | bool) or (ansible_env.CI | default(false) | bool and ansible_virtualization_role == "guest" and ansible_distribution == "Ubuntu")
+  when: docker_ci_environment
 
 - name: Eliminate the need for sudo when issuing docker commands (1/2)
   become: true
@@ -142,12 +148,12 @@
     append: true
     groups:
       - docker
-  when: not (ansible_env.CI | default(false) | bool) or (ansible_env.CI | default(false) | bool and ansible_virtualization_role == "guest" and ansible_distribution == "Ubuntu")
+  when: docker_ci_environment
 
 - name: Eliminate the need for sudo when issuing docker commands (2/2)
   become: false
   ansible.builtin.shell: newgrp docker
-  when: not (ansible_env.CI | default(false) | bool) or (ansible_env.CI | default(false) | bool and ansible_virtualization_role == "guest" and ansible_distribution == "Ubuntu")
+  when: docker_ci_environment
 
 - name: Ensure Ansible is able to manage Docker (1/2)
   become: true

@@ -18,6 +18,11 @@
   set_fact:
     dbeaver_needs_update: "{{ dbeaver_version is version(dbeaver_installed_version, '>') or dbeaver_version_check.rc != 0 }}"
 
+# Extract common conditional patterns
+- name: Set DBeaver installation status flags
+  set_fact:
+    dbeaver_not_installed: "{{ dbeaver_version_check.rc != 0 }}"
+
 - name: Download DBeaver .deb file
   get_url:
     url: https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb

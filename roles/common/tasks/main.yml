@@ -64,7 +64,7 @@
 
 - name: Extract installed Chrome version
   set_fact:
-    chrome_installed_version: "{{ (chrome_version_check.stdout | regex_search('Google Chrome ([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1')) | default(['0.0.0']) | first }}"
+    chrome_installed_version: "{{ chrome_version_check.stdout | regex_search('Google Chrome ([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | default(['0.0.0']) | first }}"
   when: chrome_version_check.rc == 0
 
 - name: Set Chrome installed version to 0.0.0 if not installed
@@ -90,6 +90,11 @@
   set_fact:
     chrome_needs_update: "{{ chrome_target_version is version(chrome_installed_version, '>') }}"
 
+# Extract common conditional patterns
+- name: Set Chrome installation status flags
+  set_fact:
+    chrome_download_ready: "{{ chrome_download is succeeded }}"
+
 - name: Display Chrome version comparison
   debug:
     msg: |
@@ -110,7 +115,7 @@
     deb: /tmp/google-chrome-stable_current_amd64.deb
     state: present
   become: yes
-  when: chrome_download is succeeded
+  when: chrome_download_ready
 
 - name: Create Downloads folder
   file:

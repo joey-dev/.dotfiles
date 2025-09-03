@@ -51,7 +51,7 @@
     become: true
     apt:
       update_cache: yes
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
+    when: php_install_ready
 
   - name: Install PHP and related packages
     become: true
@@ -71,7 +71,7 @@
       - php{{ php_version }}-pdo
       - php{{ php_version }}-simplexml
       - php{{ php_version }}-zip
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
+    when: php_install_ready
 
   - name: Check if Composer is already installed and get version
     command: composer --version
@@ -79,31 +79,46 @@
     failed_when: false
     changed_when: false
 
+  # Extract common conditional patterns for PHP platform and Composer installation
+  - name: Set PHP platform and Composer installation status flags
+    set_fact:
+      php_platform_ready: "{{ (ansible_distribution == 'Ubuntu' and php_ppa is succeeded) or (ansible_distribution == 'Debian' and php_key is succeeded and php_repo is succeeded) }}"
+      php_needs_install: "{{ php_version_check.rc != 0 or php_version not in php_version_check.stdout }}"
+      composer_not_installed: "{{ composer_version_check.rc != 0 }}"
+      composer_installed: "{{ composer_version_check.rc == 0 }}"
+
+  - name: Set PHP and Composer installation chain flags
+    set_fact:
+      php_install_ready: "{{ php_platform_ready and php_needs_install }}"
+      composer_install_ready: "{{ php_platform_ready and composer_not_installed }}"
+      composer_build_ready: "{{ php_platform_ready and composer_download is succeeded and composer_not_installed }}"
+      composer_packages_ready: "{{ php_platform_ready and (composer_installed or composer_download is succeeded) }}"
+
   - name: Update Composer to latest version (if already installed)
     command: composer self-update
-    when: composer_version_check.rc == 0
+    when: composer_installed
     failed_when: false
 
   - name: Download Composer installer
     command: php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');"
     register: composer_download
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_version_check.rc != 0
+    when: composer_install_ready
 
   - name: Run Composer installer
     command: php /tmp/composer-setup.php
-    when: (((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded) and composer_version_check.rc != 0
+    when: composer_build_ready
 
   - name: Remove Composer installer
     command: php -r "unlink('/tmp/composer-setup.php');"
-    when: (((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded) and composer_version_check.rc != 0
+    when: composer_build_ready
 
   - name: Make composer global
     command: mv {{ playbook_dir }}/composer.phar /usr/local/bin/composer
     become: true
-    when: (((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded) and composer_version_check.rc != 0
+    when: composer_build_ready
 
   - name: Install/Update global Composer packages
     command: composer global require phpmd/phpmd phpstan/phpstan phpstan/phpstan-strict-rules phpstan/phpstan-phpunit shipmonk/phpstan-rules jangregor/phpstan-prophecy
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and (composer_version_check.rc == 0 or composer_download is succeeded)
+    when: composer_packages_ready
     failed_when: false
 
