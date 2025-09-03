@@ -101,53 +101,104 @@
 - name: install neovim dependencies
   block:
 
+  - name: Check if vscode-php-debug repository already exists
+    stat:
+      path: "{{ ansible_env.HOME }}/vscode-php-debug"
+    register: php_debug_exists
+
   - name: Clone vscode-php-debug repository
     ansible.builtin.git:
       repo: https://github.com/xdebug/vscode-php-debug.git
       dest: ~/vscode-php-debug
     register: php_debug_clone
+    when: not php_debug_exists.stat.exists
 
   - name: Install dependencies
     shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && cd {{ ansible_env.HOME}}/vscode-php-debug && npm install 2>&1 || true
     args:
       executable: /bin/zsh
-    when: php_debug_clone is succeeded
+    when: php_debug_clone is succeeded or php_debug_exists.stat.exists
 
   - name: Build dependencies
     shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && cd {{ ansible_env.HOME}}/vscode-php-debug && npm run build
     args:
       executable: /bin/zsh
-    when: php_debug_clone is succeeded
+    when: php_debug_clone is succeeded or php_debug_exists.stat.exists
+
+  - name: Check if Vue Language Server is already installed
+    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm list -g @vue/language-server
+    args:
+      executable: /bin/zsh
+    register: vue_ls_check
+    failed_when: false
+    changed_when: false
 
   - name: Install Vue Language Server globally
     become: yes
     shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g @vue/language-server
     args:
       executable: /bin/zsh
+    when: vue_ls_check.rc != 0
+
+  - name: Check if Typescript is already installed
+    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm list -g typescript
+    args:
+      executable: /bin/zsh
+    register: typescript_check
+    failed_when: false
+    changed_when: false
 
   - name: Install Typescript globally
     become: yes
     shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g typescript
     args:
       executable: /bin/zsh
+    when: typescript_check.rc != 0
+
+  - name: Check if Stylelint is already installed
+    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm list -g stylelint
+    args:
+      executable: /bin/zsh
+    register: stylelint_check
+    failed_when: false
+    changed_when: false
 
   - name: Install Stylelint globally
     become: yes
     shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g stylelint postcss-html stylelint-config-recommended-vue
     args:
       executable: /bin/zsh
+    when: stylelint_check.rc != 0
+
+  - name: Check if FixJson is already installed
+    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm list -g fixjson
+    args:
+      executable: /bin/zsh
+    register: fixjson_check
+    failed_when: false
+    changed_when: false
 
   - name: Install FixJson globally
     become: yes
     shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g fixjson
     args:
       executable: /bin/zsh
+    when: fixjson_check.rc != 0
+
+  - name: Check if YAML Language Server is already installed
+    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm list -g yaml-language-server
+    args:
+      executable: /bin/zsh
+    register: yaml_ls_check
+    failed_when: false
+    changed_when: false
 
   - name: install yamp language server
     become: yes
     shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g yaml-language-server
     args:
       executable: /bin/zsh
+    when: yaml_ls_check.rc != 0
 
 
 - name: install universal-ctags

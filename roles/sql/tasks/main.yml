@@ -1,10 +1,18 @@
+- name: Check if DBeaver is already installed
+  command: dbeaver --version
+  register: dbeaver_version_check
+  failed_when: false
+  changed_when: false
+
 - name: Download DBeaver .deb file
   get_url:
     url: https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb
     dest: /tmp/dbeaver-ce_latest_amd64.deb
+  when: dbeaver_version_check.rc != 0
 
 - name: Install DBeaver from .deb file
   apt:
     deb: /tmp/dbeaver-ce_latest_amd64.deb
     state: present
   become: yes
+  when: dbeaver_version_check.rc != 0
