@@ -56,7 +56,7 @@
     path: "{{ ansible_env.HOME }}/scripts"
     state: directory
 
-- name: Check if Google Chrome is already installed
+- name: Check if Google Chrome is already installed and get version
   command: google-chrome --version
   register: chrome_version_check
   failed_when: false
@@ -67,14 +67,14 @@
     url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
     dest: /tmp/google-chrome-stable_current_amd64.deb
   register: chrome_download
-  when: chrome_version_check.rc != 0
+  when: chrome_version_check.rc != 0 or not (chrome_min_version + '.') in chrome_version_check.stdout
 
 - name: Install Google Chrome from .deb file
   apt:
     deb: /tmp/google-chrome-stable_current_amd64.deb
     state: present
   become: yes
-  when: chrome_download is succeeded and chrome_version_check.rc != 0
+  when: chrome_download is succeeded and (chrome_version_check.rc != 0 or not (chrome_min_version + '.') in chrome_version_check.stdout)
 
 - name: Create Downloads folder
   file:

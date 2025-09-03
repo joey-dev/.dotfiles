@@ -25,7 +25,7 @@
     ansible.builtin.file:
       path: /tmp/neovim
       state: absent
-    when: neovim_version_check.rc != 0 or 'NVIM v0.10' not in neovim_version_check.stdout
+    when: neovim_version_check.rc != 0 or ('NVIM v' + neovim_version) not in neovim_version_check.stdout
 
   - name: Clone Neovim repository to a specific stable tag
     ansible.builtin.git:
@@ -33,20 +33,20 @@
       dest: /tmp/neovim
       version: master
     register: neovim_clone
-    when: neovim_version_check.rc != 0 or 'NVIM v0.10' not in neovim_version_check.stdout
+    when: neovim_version_check.rc != 0 or ('NVIM v' + neovim_version) not in neovim_version_check.stdout
 
   - name: Build Neovim from source
     command: make CMAKE_BUILD_TYPE=RelWithDebInfo
     args:
       chdir: /tmp/neovim
-    when: neovim_clone is succeeded and (neovim_version_check.rc != 0 or 'NVIM v0.10' not in neovim_version_check.stdout)
+    when: neovim_clone is succeeded and (neovim_version_check.rc != 0 or ('NVIM v' + neovim_version) not in neovim_version_check.stdout)
 
   - name: Install Neovim from source
     become: yes
     command: make install
     args:
       chdir: /tmp/neovim
-    when: neovim_clone is succeeded and (neovim_version_check.rc != 0 or 'NVIM v0.10' not in neovim_version_check.stdout)
+    when: neovim_clone is succeeded and (neovim_version_check.rc != 0 or ('NVIM v' + neovim_version) not in neovim_version_check.stdout)
 
   - name: Ensure ~/.config/nvim directory exists
     file:
