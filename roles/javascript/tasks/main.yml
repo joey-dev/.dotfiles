@@ -3,6 +3,11 @@
     path: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
   register: nvm_installed
 
+# Extract common conditional patterns  
+- name: Set NVM installation status flags
+  set_fact:
+    nvm_not_installed: "{{ not nvm_installed.stat.exists }}"
+
 - name: Install nvm
   become: no
   ansible.builtin.shell: >
@@ -43,11 +48,6 @@
 - name: Compare Node.js versions and determine if update needed
   set_fact:
     node_needs_update: "{{ node_target_version is version(node_installed_version, '>') }}"
-
-# Extract common conditional patterns  
-- name: Set NVM installation status flags
-  set_fact:
-    nvm_not_installed: "{{ not nvm_installed.stat.exists }}"
 
 - name: Display Node.js version comparison
   debug:

@@ -7,6 +7,11 @@
     failed_when: false
     changed_when: false
 
+  - name: Set default Neovim version check if command was skipped
+    set_fact:
+      neovim_version_check: { "rc": 1, "stdout": "" }
+    when: neovim_version_check is not defined
+
   - name: Extract installed Neovim version  
     set_fact:
       neovim_installed_version: "{{ neovim_version_check.stdout | regex_search('NVIM v([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first | default('0.0.0') }}"
@@ -34,11 +39,6 @@
   - name: Compare Neovim versions and determine if update needed
     set_fact:
       neovim_needs_update: "{{ neovim_target_version is version(neovim_installed_version, '>') }}"
-
-  # Extract common conditional patterns for cleaner when clauses
-  - name: Set Neovim installation status flags
-    set_fact:
-      neovim_build_ready: "{{ neovim_clone is succeeded and neovim_needs_update }}"
 
   - name: Display Neovim version comparison
     debug:
@@ -75,6 +75,11 @@
       version: "v{{ neovim_target_version }}"
     register: neovim_clone
     when: neovim_needs_update
+
+  # Extract common conditional patterns for cleaner when clauses
+  - name: Set Neovim build status flags
+    set_fact:
+      neovim_build_ready: "{{ neovim_clone is succeeded and neovim_needs_update }}"
 
   - name: Build Neovim from source
     command: make CMAKE_BUILD_TYPE=RelWithDebInfo

@@ -56,6 +56,10 @@
     path: "{{ ansible_env.HOME }}/scripts"
     state: directory
 
+- name: Initialize Chrome version check default
+  set_fact:
+    chrome_version_check: { "rc": 1, "stdout": "" }
+
 - name: Check if Google Chrome is already installed and get version
   command: google-chrome --version
   register: chrome_version_check
@@ -91,24 +95,16 @@
     chrome_needs_update: "{{ chrome_target_version is version(chrome_installed_version, '>') }}"
 
 # Extract common conditional patterns
-- name: Set Chrome installation status flags
-  set_fact:
-    chrome_download_ready: "{{ chrome_download is succeeded }}"
-
-- name: Display Chrome version comparison
-  debug:
-    msg: |
-      Chrome Version Check:
-      - Installed: {{ chrome_installed_version }}
-      - Target:    {{ chrome_target_version }}
-      - Update:    {{ chrome_needs_update }}
-
 - name: Download Google Chrome .deb file
   get_url:
     url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
     dest: /tmp/google-chrome-stable_current_amd64.deb
   register: chrome_download
   when: chrome_needs_update
+
+- name: Set Chrome installation status flags
+  set_fact:
+    chrome_download_ready: "{{ chrome_download is succeeded }}"
 
 - name: Install Google Chrome from .deb file
   apt:

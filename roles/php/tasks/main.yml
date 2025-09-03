@@ -6,6 +6,11 @@
     failed_when: false
     changed_when: false
 
+  - name: Set default PHP version check if command was skipped
+    set_fact:
+      php_version_check: { "rc": 1, "stdout": "" }
+    when: php_version_check is not defined
+
   - name: Add PPA for PHP (Ubuntu only)
     become: true
     apt_repository:
@@ -47,6 +52,16 @@
     when: ansible_distribution == "Debian" and php_key is succeeded and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
     register: php_repo
 
+  # Extract common conditional patterns for PHP platform and Composer installation
+  - name: Set PHP platform and Composer installation status flags
+    set_fact:
+      php_platform_ready: "{{ (ansible_distribution == 'Ubuntu' and php_ppa is succeeded) or (ansible_distribution == 'Debian' and php_key is succeeded and php_repo is succeeded) }}"
+      php_needs_install: "{{ php_version_check.rc != 0 or php_version not in php_version_check.stdout }}"
+
+  - name: Set PHP installation chain flags
+    set_fact:
+      php_install_ready: "{{ php_platform_ready and php_needs_install }}"
+
   - name: Update apt package cache
     become: true
     apt:
@@ -79,17 +94,18 @@
     failed_when: false
     changed_when: false
 
-  # Extract common conditional patterns for PHP platform and Composer installation
-  - name: Set PHP platform and Composer installation status flags
+  - name: Set default Composer version check if command was skipped
     set_fact:
-      php_platform_ready: "{{ (ansible_distribution == 'Ubuntu' and php_ppa is succeeded) or (ansible_distribution == 'Debian' and php_key is succeeded and php_repo is succeeded) }}"
-      php_needs_install: "{{ php_version_check.rc != 0 or php_version not in php_version_check.stdout }}"
+      composer_version_check: { "rc": 1, "stdout": "" }
+    when: composer_version_check is not defined
+
+  - name: Set Composer installation status flags  
+    set_fact:
       composer_not_installed: "{{ composer_version_check.rc != 0 }}"
       composer_installed: "{{ composer_version_check.rc == 0 }}"
 
-  - name: Set PHP and Composer installation chain flags
+  - name: Set Composer installation chain flags
     set_fact:
-      php_install_ready: "{{ php_platform_ready and php_needs_install }}"
       composer_install_ready: "{{ php_platform_ready and composer_not_installed }}"
       composer_build_ready: "{{ php_platform_ready and composer_download is succeeded and composer_not_installed }}"
       composer_packages_ready: "{{ php_platform_ready and (composer_installed or composer_download is succeeded) }}"

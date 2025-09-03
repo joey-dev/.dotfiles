@@ -4,9 +4,14 @@
   failed_when: false
   changed_when: false
 
+- name: Set default DBeaver version check if command was skipped
+  set_fact:
+    dbeaver_version_check: { "rc": 1, "stdout": "" }
+  when: dbeaver_version_check is not defined
+
 - name: Extract installed DBeaver version
   set_fact:
-    dbeaver_installed_version: "{{ dbeaver_version_check.stdout | regex_search('([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first | default('0.0.0') }}"
+    dbeaver_installed_version: "{{ dbeaver_version_check.stdout | regex_search('([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | default(['0.0.0']) | first }}"
   when: dbeaver_version_check.rc == 0
 
 - name: Set DBeaver installed version to 0.0.0 if not installed
