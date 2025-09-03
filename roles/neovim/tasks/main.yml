@@ -275,11 +275,6 @@
     set_fact:
       luarocks_needs_update: "{{ luarocks_version is version(luarocks_installed_version, '>') }}"
 
-  # Extract common conditional patterns for luarocks installation chain
-  - name: Set luarocks installation status flags (before download)
-    set_fact:
-      luarocks_lua_build_ready: "{{ lua_download is succeeded and luarocks_needs_update }}"
-
   - name: luarocks - install required packages
     become: yes
     package:
@@ -296,6 +291,11 @@
       dest: "/tmp/lua-{{ lua_version }}.tar.gz"
     register: lua_download
     when: luarocks_needs_update
+
+  # Extract common conditional patterns for luarocks installation chain  
+  - name: Set luarocks installation status flags (after lua download)
+    set_fact:
+      luarocks_lua_build_ready: "{{ lua_download is succeeded and luarocks_needs_update }}"
 
   - name: luarocks - Unpack lua
     command: "tar -zxf lua-{{ lua_version }}.tar.gz"
