@@ -244,7 +244,7 @@
   - name: Set LuaRocks installed version to 0.0.0 if not installed
     set_fact:
       luarocks_installed_version: "0.0.0"
-    when: luarocks_needs_update
+    when: luarocks_version_check.rc != 0
 
   - name: Compare LuaRocks versions and determine if update needed
     set_fact:
