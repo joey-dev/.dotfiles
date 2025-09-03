@@ -3,7 +3,7 @@
   tags: env
   changed_when: false
   command: whoami
-  failed_when: "'root' in host_local_user.stdout"
+  failed_when: "'root' in host_local_user.stdout and not (ansible_env.CI | default(false) | bool)"
   register: host_local_user
 
 - name: Retrieve group of user invoking the playbook
@@ -11,7 +11,7 @@
   tags: env
   changed_when: false
   command: id -gn
-  failed_when: "'root' in host_local_user.stdout"
+  failed_when: "'root' in host_local_user.stdout and not (ansible_env.CI | default(false) | bool)"
   register: host_local_group
 
 - name: Set a fact with the retrieved user name
@@ -42,22 +42,34 @@
     state: absent
     update_cache: false
 
-- name: Verify and add the Docker package signing key
+- name: Download and dearmor Docker GPG key
   become: true
-  ansible.builtin.apt_key:
-    id: 8D81803C0EBFCD88
-    keyring: /usr/share/keyrings/docker-archive-keyring.gpg
-    state: present
-    url: https://download.docker.com/linux/ubuntu/gpg
-    validate_certs: true
+  shell: |
+    curl -fsSL "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg" | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    chmod 644 /usr/share/keyrings/docker-archive-keyring.gpg
+  register: docker_key
 
 - name: Add Docker deb repository
   become: true
-  ansible.builtin.apt_repository:
-    repo: deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ansible_facts.lsb.codename }} stable
+  deb822_repository:
+    name: docker
+    types: [deb]
+    uris: "https://download.docker.com/linux/{{ ansible_distribution | lower }}"
+    suites: ["{{ ansible_facts.lsb.codename }}"]
+    components: [stable]
+    architectures: [amd64]
+    signed_by: /usr/share/keyrings/docker-archive-keyring.gpg
     state: present
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  when: docker_key is succeeded
+  register: docker_repo
+
+- name: Update apt cache after adding Docker repository
+  become: true
+  ansible.builtin.apt:
     update_cache: true
-    validate_certs: true
+  when: docker_key is succeeded and docker_repo is succeeded
 
 - name: Install the latest version of Docker CE, Docker Compose, and containerd
   become: true
@@ -75,6 +87,7 @@
   ansible.builtin.file:
     owner: "{{ host_local_user }}"
     path: /var/run/docker.sock
+  when: not (ansible_env.CI | default(false) | bool) or (ansible_env.CI | default(false) | bool and ansible_virtualization_role == "guest" and ansible_distribution == "Ubuntu")
 
 - name: Eliminate the need for sudo when issuing docker commands (1/2)
   become: true
@@ -83,10 +96,12 @@
     append: true
     groups:
       - docker
+  when: not (ansible_env.CI | default(false) | bool) or (ansible_env.CI | default(false) | bool and ansible_virtualization_role == "guest" and ansible_distribution == "Ubuntu")
 
 - name: Eliminate the need for sudo when issuing docker commands (2/2)
   become: false
   ansible.builtin.shell: newgrp docker
+  when: not (ansible_env.CI | default(false) | bool) or (ansible_env.CI | default(false) | bool and ansible_virtualization_role == "guest" and ansible_distribution == "Ubuntu")
 
 - name: Ensure Ansible is able to manage Docker (1/2)
   become: true
@@ -96,10 +111,18 @@
     state: present
     update_cache: false
 
-- name: Ensure Ansible is able to manage Docker (2/2)
+- name: Ensure Ansible is able to manage Docker (2/2) - Ubuntu
   become: true
   ansible.builtin.pip:
     name: docker
+  when: ansible_distribution == "Ubuntu"
+
+- name: Ensure Ansible is able to manage Docker (2/2) - Debian
+  become: true
+  ansible.builtin.apt:
+    name: python3-docker
+    state: present
+  when: ansible_distribution == "Debian"
 
 - name: Verify that Docker CE is installed correctly (1/2)
   community.docker.docker_container:

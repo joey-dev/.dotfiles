@@ -5,8 +5,6 @@
     autoremove: true
     update_cache: true
     upgrade: true
-  async: 1800
-  poll: 30
 
 - name: Install common tools
   become: true
@@ -29,12 +27,24 @@
     - python3-setuptools
     - python3-venv
     - ncdu
+    - git
 
-- name: Install common tools with python
+- name: Install common tools with python (Ubuntu)
   become: true
   shell: pip3 install {{ item }} --user
   loop:
     - thefuck
+  when: ansible_distribution == "Ubuntu"
+
+- name: Install common tools with apt (Debian)
+  become: true
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - thefuck
+    - python3-debian
+  when: ansible_distribution == "Debian"
 
 - name: Remove scripts folder
   file:
