@@ -53,7 +53,7 @@ jobs:
           echo "This run will install/setup everything fresh"
           echo "================================================"
           start_time=$(date +%s)
-          time ansible-playbook -i inventory playbook.yml
+          ansible-playbook -i inventory playbook.yml
           end_time=$(date +%s)
           duration=$((end_time - start_time))
           echo "================================================"
@@ -69,7 +69,7 @@ jobs:
           echo "This run should be faster due to version checks"
           echo "================================================"
           start_time=$(date +%s)
-          time ansible-playbook -i inventory playbook.yml
+          ansible-playbook -i inventory playbook.yml
           end_time=$(date +%s)
           duration=$((end_time - start_time))
           echo "================================================"
