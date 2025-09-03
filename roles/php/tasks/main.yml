@@ -73,11 +73,16 @@
       - php{{ php_version }}-zip
     when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
 
-  - name: Check if Composer is already installed
+  - name: Check if Composer is already installed and get version
     command: composer --version
     register: composer_version_check
     failed_when: false
     changed_when: false
+
+  - name: Update Composer to latest version (if already installed)
+    command: composer self-update
+    when: composer_version_check.rc == 0
+    failed_when: false
 
   - name: Download Composer installer
     command: php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');"
@@ -97,63 +102,8 @@
     become: true
     when: (((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded) and composer_version_check.rc != 0
 
-  - name: Check if phpMD is already installed
-    command: composer global show phpmd/phpmd
-    register: phpmd_check
+  - name: Install/Update global Composer packages
+    command: composer global require phpmd/phpmd phpstan/phpstan phpstan/phpstan-strict-rules phpstan/phpstan-phpunit shipmonk/phpstan-rules jangregor/phpstan-prophecy
+    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and (composer_version_check.rc == 0 or composer_download is succeeded)
     failed_when: false
-    changed_when: false
-
-  - name: Install phpMD
-    command: composer global require phpmd/phpmd
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded and phpmd_check.rc != 0
-
-  - name: Check if phpStan is already installed
-    command: composer global show phpstan/phpstan
-    register: phpstan_check
-    failed_when: false
-    changed_when: false
-
-  - name: Install phpStan
-    command: composer global require phpstan/phpstan
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded and phpstan_check.rc != 0
-
-  - name: Check if phpStan strict rules is already installed
-    command: composer global show phpstan/phpstan-strict-rules
-    register: phpstan_strict_check
-    failed_when: false
-    changed_when: false
-
-  - name: Install phpStan strict rules
-    command: composer global require phpstan/phpstan-strict-rules
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded and phpstan_strict_check.rc != 0
-
-  - name: Check if phpStan phpunit is already installed
-    command: composer global show phpstan/phpstan-phpunit
-    register: phpstan_phpunit_check
-    failed_when: false
-    changed_when: false
-
-  - name: Install phpStan phpunit
-    command: composer global require phpstan/phpstan-phpunit
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded and phpstan_phpunit_check.rc != 0
-
-  - name: Check if phpStan shipmonk rules is already installed
-    command: composer global show shipmonk/phpstan-rules
-    register: shipmonk_check
-    failed_when: false
-    changed_when: false
-
-  - name: Install phpStan shipmonk phpstan-rules
-    command: composer global require shipmonk/phpstan-rules
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded and shipmonk_check.rc != 0
-
-  - name: Check if phpStan jangregor prophecy is already installed
-    command: composer global show jangregor/phpstan-prophecy
-    register: jangregor_check
-    failed_when: false
-    changed_when: false
-
-  - name: Install phpStan jangregor phpstan-prophecy
-    command: composer global require jangregor/phpstan-prophecy
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded and jangregor_check.rc != 0
 

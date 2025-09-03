@@ -142,99 +142,30 @@
       path: "{{ ansible_env.HOME }}/vscode-php-debug"
     register: php_debug_exists
 
-  - name: Clone vscode-php-debug repository
+  - name: Clone or update vscode-php-debug repository
     ansible.builtin.git:
       repo: https://github.com/xdebug/vscode-php-debug.git
       dest: ~/vscode-php-debug
     register: php_debug_clone
-    when: not php_debug_exists.stat.exists
 
   - name: Install dependencies
     shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && cd {{ ansible_env.HOME}}/vscode-php-debug && npm install 2>&1 || true
     args:
       executable: /bin/zsh
-    when: php_debug_clone is succeeded or php_debug_exists.stat.exists
+    when: php_debug_clone is succeeded
 
   - name: Build dependencies
     shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && cd {{ ansible_env.HOME}}/vscode-php-debug && npm run build
     args:
       executable: /bin/zsh
-    when: php_debug_clone is succeeded or php_debug_exists.stat.exists
+    when: php_debug_clone is succeeded
 
-  - name: Check if Vue Language Server is already installed
-    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm list -g @vue/language-server
+  - name: Install/Update global npm packages for Neovim
+    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g @vue/language-server typescript stylelint postcss-html stylelint-config-recommended-vue fixjson yaml-language-server
     args:
       executable: /bin/zsh
-    register: vue_ls_check
+    register: npm_global_install
     failed_when: false
-    changed_when: false
-
-  - name: Install Vue Language Server globally
-    become: yes
-    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g @vue/language-server
-    args:
-      executable: /bin/zsh
-    when: vue_ls_check.rc != 0
-
-  - name: Check if Typescript is already installed
-    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm list -g typescript
-    args:
-      executable: /bin/zsh
-    register: typescript_check
-    failed_when: false
-    changed_when: false
-
-  - name: Install Typescript globally
-    become: yes
-    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g typescript
-    args:
-      executable: /bin/zsh
-    when: typescript_check.rc != 0
-
-  - name: Check if Stylelint is already installed
-    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm list -g stylelint
-    args:
-      executable: /bin/zsh
-    register: stylelint_check
-    failed_when: false
-    changed_when: false
-
-  - name: Install Stylelint globally
-    become: yes
-    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g stylelint postcss-html stylelint-config-recommended-vue
-    args:
-      executable: /bin/zsh
-    when: stylelint_check.rc != 0
-
-  - name: Check if FixJson is already installed
-    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm list -g fixjson
-    args:
-      executable: /bin/zsh
-    register: fixjson_check
-    failed_when: false
-    changed_when: false
-
-  - name: Install FixJson globally
-    become: yes
-    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g fixjson
-    args:
-      executable: /bin/zsh
-    when: fixjson_check.rc != 0
-
-  - name: Check if YAML Language Server is already installed
-    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm list -g yaml-language-server
-    args:
-      executable: /bin/zsh
-    register: yaml_ls_check
-    failed_when: false
-    changed_when: false
-
-  - name: install yamp language server
-    become: yes
-    shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && npm install -g yaml-language-server
-    args:
-      executable: /bin/zsh
-    when: yaml_ls_check.rc != 0
 
 
 - name: install universal-ctags
@@ -263,10 +194,11 @@
         - libxml2-dev
     when: ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout
 
-  - name: universal-ctags - Clone repo
+  - name: universal-ctags - Clone or update repo
     ansible.builtin.git:
       repo: https://github.com/universal-ctags/ctags.git
       dest: /tmp/ctags
+      force: yes
     register: ctags_clone
     when: ctags_version_check.rc != 0 or 'Universal Ctags' not in ctags_version_check.stdout
 
@@ -298,11 +230,25 @@
 - name: install luarocks
   block:
 
-  - name: Check if luarocks is already installed
+  - name: Check if luarocks is already installed and get version
     command: luarocks --version
     register: luarocks_version_check
     failed_when: false
     changed_when: false
+
+  - name: Extract installed LuaRocks version
+    set_fact:
+      luarocks_installed_version: "{{ luarocks_version_check.stdout | regex_search('([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first | default('0.0.0') }}"
+    when: luarocks_version_check.rc == 0
+
+  - name: Set LuaRocks installed version to 0.0.0 if not installed
+    set_fact:
+      luarocks_installed_version: "0.0.0"
+    when: luarocks_needs_update
+
+  - name: Compare LuaRocks versions and determine if update needed
+    set_fact:
+      luarocks_needs_update: "{{ luarocks_version is version(luarocks_installed_version, '>') }}"
 
   - name: luarocks - install required packages
     become: yes
@@ -312,68 +258,68 @@
         - build-essential
         - libreadline-dev
         - unzip
-    when: luarocks_version_check.rc != 0
+    when: luarocks_needs_update
 
   - name: luarocks - Download lua tar
     get_url:
       url: "http://www.lua.org/ftp/lua-{{ lua_version }}.tar.gz"
       dest: "/tmp/lua-{{ lua_version }}.tar.gz"
     register: lua_download
-    when: luarocks_version_check.rc != 0
+    when: luarocks_needs_update
 
   - name: luarocks - Unpack lua
     command: "tar -zxf lua-{{ lua_version }}.tar.gz"
     args:
       chdir: "/tmp"
-    when: lua_download is succeeded and luarocks_version_check.rc != 0
+    when: lua_download is succeeded and luarocks_needs_update
 
   - name: luarocks - install lua installer
     command: "make linux test"
     args:
       chdir: "/tmp/lua-{{ lua_version }}"
-    when: lua_download is succeeded and luarocks_version_check.rc != 0
+    when: lua_download is succeeded and luarocks_needs_update
 
   - name: luarocks - install lua
     command: "make install"
     become: true
     args:
       chdir: "/tmp/lua-{{ lua_version }}"
-    when: lua_download is succeeded and luarocks_version_check.rc != 0
+    when: lua_download is succeeded and luarocks_needs_update
 
   - name: luarocks - Download tar
     command: "curl -R -O https://luarocks.github.io/luarocks/releases/luarocks-{{ luarocks_version }}.tar.gz"
     args:
       chdir: "/tmp"
     register: luarocks_download
-    when: lua_download is succeeded and luarocks_version_check.rc != 0
+    when: lua_download is succeeded and luarocks_needs_update
 
   - name: luarocks - Unpack
     command: "tar -zxf luarocks-{{ luarocks_version }}.tar.gz"
     args:
       chdir: "/tmp"
-    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_version_check.rc != 0
+    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_needs_update
 
   - name: luarocks - configure installer
     command: "./configure --with-lua=/usr/local"
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
-    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_version_check.rc != 0
+    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_needs_update
 
   - name: luarocks - configure installer 2
     command: "make"
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
-    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_version_check.rc != 0
+    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_needs_update
 
   - name: luarocks - install
     command: "make install"
     become: true
     args:
       chdir: "/tmp/luarocks-{{ luarocks_version }}"
-    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_version_check.rc != 0
+    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_needs_update
 
   - name: luarocks - install lua files system
     command: "luarocks install luafilesystem"
     become: true
-    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_version_check.rc != 0
+    when: lua_download is succeeded and luarocks_download is succeeded and luarocks_needs_update
 
