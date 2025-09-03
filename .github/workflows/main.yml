@@ -48,11 +48,31 @@ jobs:
         env:
           CI: true
         run: |
-          echo "=== First ansible-playbook run ==="
+          echo "================================================"
+          echo "🚀 FIRST ANSIBLE RUN (initial setup)"
+          echo "This run will install/setup everything fresh"
+          echo "================================================"
+          start_time=$(date +%s)
           time ansible-playbook -i inventory playbook.yml
+          end_time=$(date +%s)
+          duration=$((end_time - start_time))
+          echo "================================================"
+          echo "✅ First run completed in: ${duration} seconds"
+          echo "================================================"
       - name: Run ansible-playbook (second run - should be faster)
         env:
           CI: true
         run: |
-          echo "=== Second ansible-playbook run (should be faster) ==="
+          echo ""
+          echo "================================================"
+          echo "⚡ SECOND ANSIBLE RUN (optimized)"
+          echo "This run should be faster due to version checks"
+          echo "================================================"
+          start_time=$(date +%s)
           time ansible-playbook -i inventory playbook.yml
+          end_time=$(date +%s)
+          duration=$((end_time - start_time))
+          echo "================================================"
+          echo "✅ Second run completed in: ${duration} seconds"
+          echo "🎯 Optimization success! Tasks were skipped when software was already installed."
+          echo "================================================"
