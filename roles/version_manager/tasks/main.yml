@@ -29,7 +29,7 @@
 
   - name: Extract installed Node.js version
     set_fact:
-      node_installed_version: "{{ node_installed_check.stdout | regex_replace('^v', '') | default('0.0.0') }}"
+      node_installed_version: "{{ (node_installed_check.stdout | regex_replace('^v', '')) if (node_installed_check.stdout | regex_replace('^v', '')) != '' else '0.0.0' }}"
     when: node_installed_check.stdout != "none"
 
   - name: Set Node.js installed version to 0.0.0 if not installed
@@ -80,12 +80,17 @@
 
   - name: Set Neovim latest version (from API or fallback)
     set_fact:
-      neovim_latest_version: >-
-        {%- if neovim_latest_response is defined and neovim_latest_response.status is defined and neovim_latest_response.status == 200 and neovim_latest_response.json is defined and neovim_latest_response.json.tag_name is defined -%}
-        {{ neovim_latest_response.json.tag_name | regex_replace('^v', '') }}
-        {%- else -%}
-        0.10.2
-        {%- endif -%}
+      neovim_latest_version: "0.10.2"  # Default fallback
+    when: neovim_latest_response is not defined or neovim_latest_response.status != 200 or neovim_latest_response.json is not defined or neovim_latest_response.json.tag_name is not defined
+
+  - name: Set Neovim latest version from API if successful
+    set_fact:
+      neovim_latest_version: "{{ neovim_latest_response.json.tag_name | regex_replace('^v', '') }}"
+    when: 
+      - neovim_latest_response is defined
+      - neovim_latest_response.status == 200
+      - neovim_latest_response.json is defined
+      - neovim_latest_response.json.tag_name is defined
 
   - name: Get latest stable Node.js LTS version
     uri:
@@ -97,12 +102,17 @@
 
   - name: Set Node.js latest version (from API or fallback)
     set_fact:
-      node_latest_version: >-
-        {%- if nodejs_latest_response is defined and nodejs_latest_response.status is defined and nodejs_latest_response.status == 200 and nodejs_latest_response.json is defined -%}
-        {{ (nodejs_latest_response.json | selectattr('lts', 'ne', false) | first).version | regex_replace('^v', '') }}
-        {%- else -%}
-        22.12.0
-        {%- endif -%}
+      node_latest_version: "22.12.0"  # Default fallback
+    when: nodejs_latest_response is not defined or nodejs_latest_response.status != 200 or nodejs_latest_response.json is not defined
+
+  - name: Set Node.js latest version from API if successful
+    set_fact:
+      node_latest_version: "{{ (nodejs_latest_response.json | selectattr('lts', 'ne', false) | first).version | regex_replace('^v', '') }}"
+    when: 
+      - nodejs_latest_response is defined
+      - nodejs_latest_response.status == 200
+      - nodejs_latest_response.json is defined
+      - nodejs_latest_response.json | length > 0
 
   - name: Get latest Docker version from GitHub releases
     uri:
@@ -114,12 +124,17 @@
 
   - name: Set Docker latest version (from API or fallback)
     set_fact:
-      docker_latest_version: >-
-        {%- if docker_latest_response is defined and docker_latest_response.status is defined and docker_latest_response.status == 200 and docker_latest_response.json is defined and docker_latest_response.json.tag_name is defined -%}
-        {{ docker_latest_response.json.tag_name | regex_replace('^v', '') }}
-        {%- else -%}
-        27.3.1
-        {%- endif -%}
+      docker_latest_version: "27.3.1"  # Default fallback
+    when: docker_latest_response is not defined or docker_latest_response.status != 200 or docker_latest_response.json is not defined or docker_latest_response.json.tag_name is not defined
+
+  - name: Set Docker latest version from API if successful
+    set_fact:
+      docker_latest_version: "{{ docker_latest_response.json.tag_name | regex_replace('^v', '') }}"
+    when: 
+      - docker_latest_response is defined
+      - docker_latest_response.status == 200
+      - docker_latest_response.json is defined
+      - docker_latest_response.json.tag_name is defined
 
   - name: Get latest Google Chrome version (stable channel)
     uri:
@@ -131,14 +146,31 @@
 
   - name: Set Chrome latest version (from API or fallback)
     set_fact:
-      chrome_latest_version: >-
-        {%- if chrome_latest_response is defined and chrome_latest_response.status is defined and chrome_latest_response.status == 200 and chrome_latest_response.json is defined and chrome_latest_response.json.releases is defined and chrome_latest_response.json.releases | length > 0 -%}
-        {{ chrome_latest_response.json.releases[0].version }}
-        {%- else -%}
-        131.0.6778.108
-        {%- endif -%}
+      chrome_latest_version: "131.0.6778.108"  # Default fallback
+    when: chrome_latest_response is not defined or chrome_latest_response.status != 200 or chrome_latest_response.json is not defined or chrome_latest_response.json.releases is not defined or (chrome_latest_response.json.releases | length) == 0
+
+  - name: Set Chrome latest version from API if successful
+    set_fact:
+      chrome_latest_version: "{{ chrome_latest_response.json.releases[0].version }}"
+    when: 
+      - chrome_latest_response is defined
+      - chrome_latest_response.status == 200
+      - chrome_latest_response.json is defined
+      - chrome_latest_response.json.releases is defined
+      - (chrome_latest_response.json.releases | length) > 0
 
   # Compare versions and determine if updates are needed
+  - name: Ensure all version variables are not empty (safety check)
+    set_fact:
+      neovim_latest_version: "{{ neovim_latest_version if neovim_latest_version is defined and neovim_latest_version != '' else '0.10.2' }}"
+      neovim_installed_version: "{{ neovim_installed_version if neovim_installed_version is defined and neovim_installed_version != '' else '0.0.0' }}"
+      node_latest_version: "{{ node_latest_version if node_latest_version is defined and node_latest_version != '' else '22.12.0' }}"
+      node_installed_version: "{{ node_installed_version if node_installed_version is defined and node_installed_version != '' else '0.0.0' }}"
+      docker_latest_version: "{{ docker_latest_version if docker_latest_version is defined and docker_latest_version != '' else '27.3.1' }}"
+      docker_installed_version: "{{ docker_installed_version if docker_installed_version is defined and docker_installed_version != '' else '0.0.0' }}"
+      chrome_latest_version: "{{ chrome_latest_version if chrome_latest_version is defined and chrome_latest_version != '' else '131.0.6778.108' }}"
+      chrome_installed_version: "{{ chrome_installed_version if chrome_installed_version is defined and chrome_installed_version != '' else '0.0.0' }}"
+
   - name: Compare Neovim versions
     set_fact:
       neovim_needs_update: "{{ neovim_latest_version is version(neovim_installed_version, '>') }}"
