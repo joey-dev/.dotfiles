@@ -104,11 +104,9 @@
       composer_not_installed: "{{ composer_version_check.rc != 0 }}"
       composer_installed: "{{ composer_version_check.rc == 0 }}"
 
-  - name: Set Composer installation chain flags
+  - name: Set Composer installation chain flags (before download)
     set_fact:
       composer_install_ready: "{{ php_platform_ready and composer_not_installed }}"
-      composer_build_ready: "{{ php_platform_ready and composer_download is succeeded and composer_not_installed }}"
-      composer_packages_ready: "{{ php_platform_ready and (composer_installed or composer_download is succeeded) }}"
 
   - name: Update Composer to latest version (if already installed)
     command: composer self-update
@@ -119,6 +117,11 @@
     command: php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');"
     register: composer_download
     when: composer_install_ready
+
+  - name: Set Composer installation chain flags (after download)
+    set_fact:
+      composer_build_ready: "{{ php_platform_ready and composer_download is succeeded and composer_not_installed }}"
+      composer_packages_ready: "{{ php_platform_ready and (composer_installed or composer_download is succeeded) }}"
 
   - name: Run Composer installer
     command: php /tmp/composer-setup.php
