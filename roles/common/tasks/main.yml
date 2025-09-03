@@ -62,19 +62,55 @@
   failed_when: false
   changed_when: false
 
+- name: Extract installed Chrome version
+  set_fact:
+    chrome_installed_version: "{{ chrome_version_check.stdout | regex_search('Google Chrome ([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first | default('0.0.0') }}"
+  when: chrome_version_check.rc == 0
+
+- name: Set Chrome installed version to 0.0.0 if not installed
+  set_fact:
+    chrome_installed_version: "0.0.0"
+  when: chrome_version_check.rc != 0
+
+# Fetch latest Chrome version if configured for automatic updates
+- name: Get latest Google Chrome version (stable channel)
+  uri:
+    url: https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases?filter=endtime=none&order_by=version%20desc
+    method: GET
+    return_content: yes
+  register: chrome_latest_response
+  failed_when: false
+  when: chrome_version == "latest"
+
+- name: Set Chrome target version (from API or static)
+  set_fact:
+    chrome_target_version: "{{ chrome_version if chrome_version != 'latest' else (chrome_latest_response.json.releases[0].version if chrome_latest_response is succeeded and chrome_latest_response.json.releases is defined and (chrome_latest_response.json.releases | length) > 0 else '131.0.6778.108') }}"
+
+- name: Compare Chrome versions and determine if update needed
+  set_fact:
+    chrome_needs_update: "{{ chrome_target_version is version(chrome_installed_version, '>') }}"
+
+- name: Display Chrome version comparison
+  debug:
+    msg: |
+      Chrome Version Check:
+      - Installed: {{ chrome_installed_version }}
+      - Target:    {{ chrome_target_version }}
+      - Update:    {{ chrome_needs_update }}
+
 - name: Download Google Chrome .deb file
   get_url:
     url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
     dest: /tmp/google-chrome-stable_current_amd64.deb
   register: chrome_download
-  when: chrome_needs_update | default(true)
+  when: chrome_needs_update
 
 - name: Install Google Chrome from .deb file
   apt:
     deb: /tmp/google-chrome-stable_current_amd64.deb
     state: present
   become: yes
-  when: chrome_download is succeeded and chrome_needs_update | default(true)
+  when: chrome_download is succeeded
 
 - name: Create Downloads folder
   file:

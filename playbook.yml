@@ -1,7 +1,6 @@
 ---
 - hosts: localhost
   roles:
-    - version_manager
     - common
     - i3
     - alacritty

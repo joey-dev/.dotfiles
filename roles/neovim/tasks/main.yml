@@ -7,6 +7,42 @@
     failed_when: false
     changed_when: false
 
+  - name: Extract installed Neovim version  
+    set_fact:
+      neovim_installed_version: "{{ neovim_version_check.stdout | regex_search('NVIM v([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first | default('0.0.0') }}"
+    when: neovim_version_check.rc == 0
+
+  - name: Set Neovim installed version to 0.0.0 if not installed
+    set_fact:
+      neovim_installed_version: "0.0.0"
+    when: neovim_version_check.rc != 0
+
+  # Fetch latest version if configured for automatic updates
+  - name: Get latest Neovim version from GitHub releases
+    uri:
+      url: https://api.github.com/repos/neovim/neovim/releases/latest
+      method: GET
+      return_content: yes
+    register: neovim_latest_response
+    failed_when: false
+    when: neovim_version == "latest"
+
+  - name: Set Neovim target version (from API or static)
+    set_fact:
+      neovim_target_version: "{{ neovim_version if neovim_version != 'latest' else (neovim_latest_response.json.tag_name | regex_replace('^v', '') if neovim_latest_response is succeeded else '0.10.2') }}"
+
+  - name: Compare Neovim versions and determine if update needed
+    set_fact:
+      neovim_needs_update: "{{ neovim_target_version is version(neovim_installed_version, '>') }}"
+
+  - name: Display Neovim version comparison
+    debug:
+      msg: |
+        Neovim Version Check:
+        - Installed: {{ neovim_installed_version }}
+        - Target:    {{ neovim_target_version }}
+        - Update:    {{ neovim_needs_update }}
+
   - name: install required packages
     become: yes
     package:
@@ -25,28 +61,28 @@
     ansible.builtin.file:
       path: /tmp/neovim
       state: absent
-    when: neovim_needs_update | default(true)
+    when: neovim_needs_update
 
   - name: Clone Neovim repository to a specific stable tag
     ansible.builtin.git:
       repo: https://github.com/neovim/neovim.git
       dest: /tmp/neovim
-      version: master
+      version: "v{{ neovim_target_version }}"
     register: neovim_clone
-    when: neovim_needs_update | default(true)
+    when: neovim_needs_update
 
   - name: Build Neovim from source
     command: make CMAKE_BUILD_TYPE=RelWithDebInfo
     args:
       chdir: /tmp/neovim
-    when: neovim_clone is succeeded and neovim_needs_update | default(true)
+    when: neovim_clone is succeeded and neovim_needs_update
 
   - name: Install Neovim from source
     become: yes
     command: make install
     args:
       chdir: /tmp/neovim
-    when: neovim_clone is succeeded and neovim_needs_update | default(true)
+    when: neovim_clone is succeeded and neovim_needs_update
 
   - name: Ensure ~/.config/nvim directory exists
     file:

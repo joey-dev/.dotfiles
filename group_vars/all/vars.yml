@@ -1,16 +1,17 @@
 default_xdg_config_home: "{{ ansible_user_dir }}/.config"
 
 config_dir: "{{ ansible_env.XDG_CONFIG_HOME | default(default_xdg_config_home) }}"
+
+# Software versions - automatically updated to latest stable releases
+neovim_version: "latest"
+node_version: "latest"
+docker_version: "latest"
+chrome_version: "latest"
+dbeaver_version: "24"
+
+# Static versions (manual updates required)
 php_version: "8.3"
 task_master_version: "2.6.2"
 mysql_workbench_version: "8.0.29"
 lua_version: "5.4.8"
 luarocks_version: "3.12.2"
-
-# Latest versions fetched from APIs - automatically updated
-# These will be fetched from official sources and compared with installed versions
-neovim_version: "latest"
-node_version: "latest"  # Latest LTS version
-docker_version: "latest"  # Latest stable version
-chrome_min_version: "latest"  # Latest stable version
-dbeaver_min_version: "24"  # Minimum version for updates

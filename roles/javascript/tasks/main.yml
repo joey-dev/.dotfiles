@@ -22,15 +22,42 @@
   failed_when: false
   changed_when: false
 
+- name: Extract installed Node.js version
+  set_fact:
+    node_installed_version: "{{ (current_node_version.stdout | regex_replace('^v', '')) if (current_node_version.stdout | regex_replace('^v', '')) != '' and current_node_version.stdout != 'none' else '0.0.0' }}"
+
+# Fetch latest Node.js LTS version if configured for automatic updates  
+- name: Get latest Node.js LTS version
+  uri:
+    url: https://nodejs.org/dist/index.json
+    method: GET
+    return_content: yes
+  register: nodejs_latest_response
+  failed_when: false
+  when: node_version == "latest"
+
+- name: Set Node.js target version (from API or static)
+  set_fact:
+    node_target_version: "{{ node_version if node_version != 'latest' else ((nodejs_latest_response.json | selectattr('lts', 'ne', false) | first).version | regex_replace('^v', '') if nodejs_latest_response is succeeded else '22.12.0') }}"
+
+- name: Compare Node.js versions and determine if update needed
+  set_fact:
+    node_needs_update: "{{ node_target_version is version(node_installed_version, '>') }}"
+
+- name: Display Node.js version comparison
+  debug:
+    msg: |
+      Node.js Version Check:
+      - Installed: {{ node_installed_version }}
+      - Target:    {{ node_target_version }}
+      - Update:    {{ node_needs_update }}
+
 - name: Install node
   become: no
   shell: >
-    . {{ ansible_env.HOME }}/.nvm/nvm.sh && nvm install {{ node_version }}
+    . {{ ansible_env.HOME }}/.nvm/nvm.sh && nvm install {{ node_target_version }}
   args:
     executable: /bin/zsh
     chdir: "{{ ansible_env.HOME }}"
-    creates: "{{ ansible_env.HOME }}/.nvm/versions/{{ node_version }}"
-  loop:
-    - node
-  when: node_needs_update | default(true)
+  when: node_needs_update
 

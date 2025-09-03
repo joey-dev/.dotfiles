@@ -25,6 +25,42 @@
   failed_when: false
   changed_when: false
 
+- name: Extract installed Docker version
+  set_fact:
+    docker_installed_version: "{{ docker_version_check.stdout | regex_search('Docker version ([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first | default('0.0.0') }}"
+  when: docker_version_check.rc == 0
+
+- name: Set Docker installed version to 0.0.0 if not installed
+  set_fact:
+    docker_installed_version: "0.0.0"
+  when: docker_version_check.rc != 0
+
+# Fetch latest Docker version if configured for automatic updates
+- name: Get latest Docker version from GitHub releases
+  uri:
+    url: https://api.github.com/repos/docker/cli/releases/latest
+    method: GET
+    return_content: yes
+  register: docker_latest_response
+  failed_when: false
+  when: docker_version == "latest"
+
+- name: Set Docker target version (from API or static)
+  set_fact:
+    docker_target_version: "{{ docker_version if docker_version != 'latest' else (docker_latest_response.json.tag_name | regex_replace('^v', '') if docker_latest_response is succeeded else '27.3.1') }}"
+
+- name: Compare Docker versions and determine if update needed
+  set_fact:
+    docker_needs_update: "{{ docker_target_version is version(docker_installed_version, '>') }}"
+
+- name: Display Docker version comparison
+  debug:
+    msg: |
+      Docker Version Check:
+      - Installed: {{ docker_installed_version }}
+      - Target:    {{ docker_target_version }}
+      - Update:    {{ docker_needs_update }}
+
 - name: Ensure apt uses https
   become: true
   ansible.builtin.apt:
@@ -36,7 +72,7 @@
       - lsb-release
     state: present
     update_cache: false
-  when: docker_needs_update | default(true)
+  when: docker_needs_update
 
 - name: Remove old Docker versions
   ansible.builtin.apt:
@@ -48,7 +84,7 @@
       - runc
     state: absent
     update_cache: false
-  when: docker_needs_update | default(true)
+  when: docker_needs_update
 
 - name: Download and dearmor Docker GPG key
   become: true
@@ -56,7 +92,7 @@
     curl -fsSL "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg" | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
     chmod 644 /usr/share/keyrings/docker-archive-keyring.gpg
   register: docker_key
-  when: docker_needs_update | default(true)
+  when: docker_needs_update
 
 - name: Add Docker deb repository
   become: true
@@ -71,14 +107,14 @@
     state: present
   vars:
     ansible_python_interpreter: /usr/bin/python3
-  when: docker_key is succeeded and docker_needs_update | default(true)
+  when: docker_key is succeeded and docker_needs_update
   register: docker_repo
 
 - name: Update apt cache after adding Docker repository
   become: true
   ansible.builtin.apt:
     update_cache: true
-  when: docker_key is succeeded and docker_repo is succeeded and docker_needs_update | default(true)
+  when: docker_key is succeeded and docker_repo is succeeded and docker_needs_update
 
 - name: Install the latest version of Docker CE, Docker Compose, and containerd
   become: true
@@ -90,7 +126,7 @@
       - docker-compose-plugin
     state: present
     update_cache: false
-  when: docker_needs_update | default(true)
+  when: docker_needs_update
 
 - name: Pass docker.sock ownership to the user so they can pull from the docker image repository
   become: true
