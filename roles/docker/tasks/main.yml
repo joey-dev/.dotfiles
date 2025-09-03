@@ -47,7 +47,7 @@
 
 - name: Set Docker target version (from API or static)
   set_fact:
-    docker_target_version: "{{ docker_version if docker_version != 'latest' else (docker_latest_response.json.tag_name | regex_replace('^v', '') if docker_latest_response is succeeded else '27.3.1') }}"
+    docker_target_version: "{{ docker_version if docker_version != 'latest' else (docker_latest_response.json.tag_name | regex_replace('^v', '') if docker_latest_response is succeeded and docker_latest_response.json is defined and docker_latest_response.json.tag_name is defined else '27.3.1') }}"
 
 - name: Compare Docker versions and determine if update needed
   set_fact:

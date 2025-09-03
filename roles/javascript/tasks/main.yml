@@ -43,7 +43,7 @@
 
 - name: Set Node.js target version (from API or static)
   set_fact:
-    node_target_version: "{{ node_version if node_version != 'latest' else ((nodejs_latest_response.json | selectattr('lts', 'ne', false) | first).version | regex_replace('^v', '') if nodejs_latest_response is succeeded else '22.12.0') }}"
+    node_target_version: "{{ node_version if node_version != 'latest' else ((nodejs_latest_response.json | selectattr('lts', 'ne', false) | first).version | regex_replace('^v', '') if nodejs_latest_response is succeeded and nodejs_latest_response.json is defined and (nodejs_latest_response.json | selectattr('lts', 'ne', false) | list | length) > 0 else '22.12.0') }}"
 
 - name: Compare Node.js versions and determine if update needed
   set_fact:

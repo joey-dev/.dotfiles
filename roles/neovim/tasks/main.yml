@@ -34,7 +34,7 @@
 
   - name: Set Neovim target version (from API or static)
     set_fact:
-      neovim_target_version: "{{ neovim_version if neovim_version != 'latest' else (neovim_latest_response.json.tag_name | regex_replace('^v', '') if neovim_latest_response is succeeded else '0.10.2') }}"
+      neovim_target_version: "{{ neovim_version if neovim_version != 'latest' else (neovim_latest_response.json.tag_name | regex_replace('^v', '') if neovim_latest_response is succeeded and neovim_latest_response.json is defined and neovim_latest_response.json.tag_name is defined else '0.10.2') }}"
 
   - name: Compare Neovim versions and determine if update needed
     set_fact:
