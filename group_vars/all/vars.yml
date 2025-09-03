@@ -8,9 +8,17 @@ lua_version: "5.4.8"
 luarocks_version: "3.12.2"
 
 # Version specifications for update checking
-# Use "latest" to automatically fetch latest stable versions, or specify exact versions
-neovim_version: "latest"
-node_version: "latest"  # LTS version when "latest"
-docker_version: "latest"  # Major version when "latest"
-chrome_min_version: "latest"  # Latest stable version when "latest"
+# Set to specific version (e.g., "0.10") to install/update to that version
+# Set to "latest" to fetch latest stable version only when software is missing
+# Set auto_update_* to true to always update to latest available version
+neovim_version: "0.10"
+node_version: "22"  # LTS version
+docker_version: "27"  # Major version
+chrome_min_version: "130"  # Minimum version
 dbeaver_min_version: "24"  # Minimum version for updates
+
+# Auto-update settings - set to true to always fetch and update to latest versions
+auto_update_neovim: false
+auto_update_node: false  
+auto_update_docker: false
+auto_update_chrome: false
