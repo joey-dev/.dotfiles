@@ -1,0 +1,128 @@
+---
+- name: Fetch latest software versions
+  block:
+
+  - name: Store original version settings for comparison
+    set_fact:
+      original_neovim_version: "{{ neovim_version }}"
+      original_node_version: "{{ node_version }}"
+      original_docker_version: "{{ docker_version }}"
+      original_chrome_min_version: "{{ chrome_min_version }}"
+
+  - name: Get latest Neovim version from GitHub releases
+    uri:
+      url: https://api.github.com/repos/neovim/neovim/releases/latest
+      method: GET
+      return_content: yes
+    register: neovim_latest_response
+    when: original_neovim_version == "latest"
+    failed_when: false
+
+  - name: Extract Neovim version number  
+    set_fact:
+      neovim_version: "{{ neovim_latest_response.json.tag_name | regex_replace('^v', '') }}"
+    when: 
+      - original_neovim_version == "latest" 
+      - neovim_latest_response is defined 
+      - neovim_latest_response.status is defined
+      - neovim_latest_response.status == 200
+      - neovim_latest_response.json is defined
+      - neovim_latest_response.json.tag_name is defined
+
+  - name: Set fallback Neovim version if API failed
+    set_fact:
+      neovim_version: "0.10"  # Fallback to known stable version
+    when: 
+      - original_neovim_version == "latest"
+      - (neovim_latest_response is not defined or neovim_latest_response.status is not defined or neovim_latest_response.status != 200)
+
+  - name: Get latest stable Node.js LTS version
+    uri:
+      url: https://nodejs.org/dist/index.json
+      method: GET
+      return_content: yes
+    register: nodejs_latest_response
+    when: original_node_version == "latest"
+    failed_when: false
+
+  - name: Extract Node.js LTS version
+    set_fact:
+      node_version: "{{ (nodejs_latest_response.json | selectattr('lts', 'ne', false) | first).version | regex_replace('^v', '') | regex_replace('\\..*', '') }}"
+    when: 
+      - original_node_version == "latest" 
+      - nodejs_latest_response is defined 
+      - nodejs_latest_response.status is defined
+      - nodejs_latest_response.status == 200
+      - nodejs_latest_response.json is defined
+
+  - name: Set fallback Node.js version if API failed
+    set_fact:
+      node_version: "22"  # Fallback to known LTS version
+    when: 
+      - original_node_version == "latest"
+      - (nodejs_latest_response is not defined or nodejs_latest_response.status is not defined or nodejs_latest_response.status != 200)
+
+  - name: Get latest Docker version from GitHub releases
+    uri:
+      url: https://api.github.com/repos/docker/cli/releases/latest
+      method: GET
+      return_content: yes
+    register: docker_latest_response
+    when: original_docker_version == "latest"
+    failed_when: false
+
+  - name: Extract Docker version number
+    set_fact:
+      docker_version: "{{ docker_latest_response.json.tag_name | regex_replace('^v', '') | regex_replace('\\..*', '') }}"
+    when: 
+      - original_docker_version == "latest" 
+      - docker_latest_response is defined 
+      - docker_latest_response.status is defined
+      - docker_latest_response.status == 200
+      - docker_latest_response.json is defined
+      - docker_latest_response.json.tag_name is defined
+
+  - name: Set fallback Docker version if API failed
+    set_fact:
+      docker_version: "27"  # Fallback to known stable version
+    when: 
+      - original_docker_version == "latest"
+      - (docker_latest_response is not defined or docker_latest_response.status is not defined or docker_latest_response.status != 200)
+
+  - name: Get latest Google Chrome version (stable channel)
+    uri:
+      url: https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases?filter=endtime=none&order_by=version%20desc
+      method: GET
+      return_content: yes
+    register: chrome_latest_response
+    when: original_chrome_min_version == "latest"
+    failed_when: false
+
+  - name: Extract Chrome version number
+    set_fact:
+      chrome_min_version: "{{ chrome_latest_response.json.releases[0].version | regex_replace('\\..*', '') }}"
+    when: 
+      - original_chrome_min_version == "latest" 
+      - chrome_latest_response is defined 
+      - chrome_latest_response.status is defined
+      - chrome_latest_response.status == 200
+      - chrome_latest_response.json is defined
+      - chrome_latest_response.json.releases is defined
+      - chrome_latest_response.json.releases | length > 0
+
+  - name: Set fallback Chrome version if API failed
+    set_fact:
+      chrome_min_version: "130"  # Fallback to known stable version
+    when: 
+      - original_chrome_min_version == "latest"
+      - (chrome_latest_response is not defined or chrome_latest_response.status is not defined or chrome_latest_response.status != 200)
+
+  - name: Display resolved versions
+    debug:
+      msg: |
+        Resolved software versions:
+        - Neovim: {{ neovim_version }}
+        - Node.js: {{ node_version }}
+        - Docker: {{ docker_version }}
+        - Chrome: {{ chrome_min_version }}
+        - DBeaver: {{ dbeaver_min_version }}

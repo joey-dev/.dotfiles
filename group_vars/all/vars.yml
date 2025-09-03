@@ -8,8 +8,9 @@ lua_version: "5.4.8"
 luarocks_version: "3.12.2"
 
 # Version specifications for update checking
-neovim_version: "0.10"
-node_version: "22"  # LTS version
-docker_version: "27"  # Major version
-chrome_min_version: "130"  # Minimum version for updates
+# Use "latest" to automatically fetch latest stable versions, or specify exact versions
+neovim_version: "latest"
+node_version: "latest"  # LTS version when "latest"
+docker_version: "latest"  # Major version when "latest"
+chrome_min_version: "latest"  # Latest stable version when "latest"
 dbeaver_min_version: "24"  # Minimum version for updates
