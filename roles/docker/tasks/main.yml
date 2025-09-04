@@ -54,10 +54,9 @@
     docker_needs_update: "{{ docker_target_version is version(docker_installed_version, '>') }}"
 
 # Extract common conditional patterns
-- name: Set Docker installation status flags
+- name: Set Docker CI environment flag
   set_fact:
     docker_ci_environment: "{{ not (ansible_env.CI | default(false) | bool) or (ansible_env.CI | default(false) | bool and ansible_virtualization_role == 'guest' and ansible_distribution == 'Ubuntu') }}"
-    docker_repo_ready: "{{ docker_key is succeeded and docker_repo is succeeded and docker_needs_update }}"
 
 - name: Display Docker version comparison
   debug:
@@ -115,6 +114,10 @@
     ansible_python_interpreter: /usr/bin/python3
   when: docker_key is succeeded and docker_needs_update
   register: docker_repo
+
+- name: Set Docker repository readiness flag
+  set_fact:
+    docker_repo_ready: "{{ docker_key is succeeded and docker_repo is succeeded and docker_needs_update }}"
 
 - name: Update apt cache after adding Docker repository
   become: true
