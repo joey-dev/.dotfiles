@@ -1,12 +1,23 @@
 - name: install php
   block:
+  - name: Check if PHP is already installed with correct version
+    command: php --version
+    register: php_version_check
+    failed_when: false
+    changed_when: false
+
+  - name: Set default PHP version check if command was skipped
+    set_fact:
+      php_version_check: { "rc": 1, "stdout": "" }
+    when: php_version_check is not defined
+
   - name: Add PPA for PHP (Ubuntu only)
     become: true
     apt_repository:
       repo: ppa:ondrej/php
       state: present
     register: php_ppa
-    when: ansible_distribution == "Ubuntu"
+    when: ansible_distribution == "Ubuntu" and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
 
   - name: Ensure GPG tools and python3-debian are available (Debian only)
     become: true
@@ -16,7 +27,7 @@
         - python3-debian
       state: present
       update_cache: false
-    when: ansible_distribution == "Debian"
+    when: ansible_distribution == "Debian" and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
 
   - name: Download and dearmor Sury PHP repository GPG key (Debian only)
     become: true
@@ -24,7 +35,7 @@
       curl -fsSL "https://packages.sury.org/php/apt.gpg" | gpg --dearmor -o /usr/share/keyrings/sury-php-keyring.gpg
       chmod 644 /usr/share/keyrings/sury-php-keyring.gpg
     register: php_key
-    when: ansible_distribution == "Debian"
+    when: ansible_distribution == "Debian" and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
 
   - name: Add Sury PHP repository source (Debian only)
     become: true
@@ -38,14 +49,24 @@
       state: present
     vars:
       ansible_python_interpreter: /usr/bin/python3
-    when: ansible_distribution == "Debian" and php_key is succeeded
+    when: ansible_distribution == "Debian" and php_key is succeeded and (php_version_check.rc != 0 or php_version not in php_version_check.stdout)
     register: php_repo
+
+  # Extract common conditional patterns for PHP platform and Composer installation
+  - name: Set PHP platform and Composer installation status flags
+    set_fact:
+      php_platform_ready: "{{ (ansible_distribution == 'Ubuntu' and php_ppa is succeeded) or (ansible_distribution == 'Debian' and php_key is succeeded and php_repo is succeeded) }}"
+      php_needs_install: "{{ php_version_check.rc != 0 or php_version not in php_version_check.stdout }}"
+
+  - name: Set PHP installation chain flags
+    set_fact:
+      php_install_ready: "{{ php_platform_ready and php_needs_install }}"
 
   - name: Update apt package cache
     become: true
     apt:
       update_cache: yes
-    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)
+    when: php_install_ready
 
   - name: Install PHP and related packages
     become: true
@@ -65,47 +86,58 @@
       - php{{ php_version }}-pdo
       - php{{ php_version }}-simplexml
       - php{{ php_version }}-zip
-    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)
+    when: php_install_ready
+
+  - name: Check if Composer is already installed and get version
+    command: composer --version
+    register: composer_version_check
+    failed_when: false
+    changed_when: false
+
+  - name: Set default Composer version check if command was skipped
+    set_fact:
+      composer_version_check: { "rc": 1, "stdout": "" }
+    when: composer_version_check is not defined
+
+  - name: Set Composer installation status flags  
+    set_fact:
+      composer_not_installed: "{{ composer_version_check.rc != 0 }}"
+      composer_installed: "{{ composer_version_check.rc == 0 }}"
+
+  - name: Set Composer installation chain flags (before download)
+    set_fact:
+      composer_install_ready: "{{ php_platform_ready and composer_not_installed }}"
+
+  - name: Update Composer to latest version (if already installed)
+    command: composer self-update
+    when: composer_installed
+    failed_when: false
 
   - name: Download Composer installer
     command: php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');"
     register: composer_download
-    when: (ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)
+    when: composer_install_ready
+
+  - name: Set Composer installation chain flags (after download)
+    set_fact:
+      composer_build_ready: "{{ php_platform_ready and composer_download is succeeded and composer_not_installed }}"
+      composer_packages_ready: "{{ php_platform_ready and (composer_installed or composer_download is succeeded) }}"
 
   - name: Run Composer installer
     command: php /tmp/composer-setup.php
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded
+    when: composer_build_ready
 
   - name: Remove Composer installer
     command: php -r "unlink('/tmp/composer-setup.php');"
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded
+    when: composer_build_ready
 
   - name: Make composer global
     command: mv {{ playbook_dir }}/composer.phar /usr/local/bin/composer
     become: true
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded
+    when: composer_build_ready
 
-  - name: Install phpMD
-    command: composer global require phpmd/phpmd
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded
-
-  - name: Install phpStan
-    command: composer global require phpstan/phpstan
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded
-
-  - name: Install phpStan strict rules
-    command: composer global require phpstan/phpstan-strict-rules
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded
-
-  - name: Install phpStan phpunit
-    command: composer global require phpstan/phpstan-phpunit
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded
-
-  - name: Install phpStan shipmonk phpstan-rules
-    command: composer global require shipmonk/phpstan-rules
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded
-
-  - name: Install phpStan jangregor phpstan-prophecy
-    command: composer global require jangregor/phpstan-prophecy
-    when: ((ansible_distribution == "Ubuntu" and php_ppa is succeeded) or (ansible_distribution == "Debian" and php_key is succeeded and php_repo is succeeded)) and composer_download is succeeded
+  - name: Install/Update global Composer packages
+    command: composer global require phpmd/phpmd phpstan/phpstan phpstan/phpstan-strict-rules phpstan/phpstan-phpunit shipmonk/phpstan-rules jangregor/phpstan-prophecy
+    when: composer_packages_ready
+    failed_when: false
 

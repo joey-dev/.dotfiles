@@ -11,10 +11,11 @@
     url: "https://api.github.com/repos/jesseduffield/lazygit/releases/latest"
     return_content: yes
   register: lazygit_release
+  failed_when: false
 
 - name: Extract LazyGit version
   set_fact:
-    lazygit_version: "{{ lazygit_release.json.tag_name | regex_replace('^v', '') }}"
+    lazygit_version: "{{ lazygit_release.json.tag_name | regex_replace('^v', '') if lazygit_release is succeeded and lazygit_release.json is defined and lazygit_release.json.tag_name is defined else '0.32.0' }}"
 
 - name: Download LazyGit
   command: "curl -Lo /tmp/lazygit.tar.gz https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_{{ lazygit_version }}_Linux_x86_64.tar.gz"

@@ -1,10 +1,40 @@
+- name: Check if DBeaver is already installed and get version
+  command: dbeaver --version
+  register: dbeaver_version_check
+  failed_when: false
+  changed_when: false
+
+- name: Set default DBeaver version check if command was skipped
+  set_fact:
+    dbeaver_version_check: { "rc": 1, "stdout": "" }
+  when: dbeaver_version_check is not defined
+
+- name: Extract installed DBeaver version
+  set_fact:
+    dbeaver_installed_version: "{{ dbeaver_version_check.stdout | regex_search('([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | default(['0.0.0']) | first }}"
+  when: dbeaver_version_check.rc == 0
+
+- name: Set DBeaver installed version to 0.0.0 if not installed
+  set_fact:
+    dbeaver_installed_version: "0.0.0"
+  when: dbeaver_version_check.rc != 0
+
+- name: Compare DBeaver versions and determine if update needed
+  set_fact:
+    dbeaver_needs_update: "{{ dbeaver_version is version(dbeaver_installed_version, '>') or dbeaver_version_check.rc != 0 }}"
+
+
+
 - name: Download DBeaver .deb file
   get_url:
     url: https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb
     dest: /tmp/dbeaver-ce_latest_amd64.deb
+    force: yes
+  when: dbeaver_needs_update
 
 - name: Install DBeaver from .deb file
   apt:
     deb: /tmp/dbeaver-ce_latest_amd64.deb
     state: present
   become: yes
+  when: dbeaver_needs_update
