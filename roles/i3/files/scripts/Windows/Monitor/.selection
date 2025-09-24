@@ -1,13 +1,16 @@
 @Monitor
 -Primary
-_/home/joey/scripts/i3/Windows/Monitor/primary
+_/home/joey/.dotfiles/roles/i3/files/scripts/Windows/Monitor/primary
 
 -Work
-_/home/joey/scripts/i3/Windows/Monitor/work
+_/home/joey/.dotfiles/roles/i3/files/scripts/Windows/Monitor/work
 
 -WorkReverse
-_/home/joey/scripts/i3/Windows/Monitor/workReverse
+_/home/joey/.dotfiles/roles/i3/files/scripts/Windows/Monitor/workReverse
 
 -WorkExtra
-_/home/joey/scripts/i3/Windows/Monitor/workExtra
+_/home/joey/.dotfiles/roles/i3/files/scripts/Windows/Monitor/workExtra
+
+-ExtraHdmiDisplay
+_/home/joey/.dotfiles/roles/i3/files/scripts/Windows/Monitor/extraHdmiDisplay
 
