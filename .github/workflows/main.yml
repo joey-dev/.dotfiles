@@ -8,6 +8,8 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     name: Validate NixOS configuration
+    permissions:
+      contents: read
     steps:
       - name: checkout branch
         uses: actions/checkout@v4
