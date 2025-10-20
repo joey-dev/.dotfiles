@@ -1,52 +1,51 @@
 # My .Dotfiles
 
-These are all my settings and program's I use. Written in Ansible for easy installation, and synchronization between different computers.
+These are all my settings and programs I use. Written in NixOS configuration for easy installation, and synchronization between different computers.
 
 ## Table of Contents
 - [Getting Started](#getting_started)
-- [Configure Program](#configure)
-- [Create a new project](#project)
 - [Configuration](#configuration)
 - [Commands](#commands)
 - [Keybinds](#keybinds)
 - [Language specific Documentation/Keybinds](#language)
-- [Testing](#testing)
-
 
 ## Getting Started <a name = "getting_started"></a>
-Currently Ubuntu 22.04 and Debian Trixie are supported.
+Currently NixOS is supported.
 
-Run the following 2 commands in your terminal:
--   make install
--   make provision
+### Prerequisites
+- NixOS installed on your system
+- Nix flakes enabled (see instructions below)
 
-If you have a new system, without i3. Logout, and login agin
-If you already have set-up i3, Run the following shortcut's:
--   win + shift + r (anywhere)
--   alt + r (in the terminal)
+### Installation
 
-## Configure Program <a name = "configure"></a>
-Some programs require custom configuration, which might be hard to automate
-
-To open the questions, run `make configure`
-
-- [Meld](#configure_meld)
-
-### Meld <a name = "configure_meld"> </a>
-
-1. nvim ~/.gitconfig
-2. add the following lines:
-```
-[merge]
-	tool = meld
-
-[mergetool "meld"]
-	cmd = meld "$LOCAL" "$MERGED" "$REMOTE" --output "$MERGED"
-	keepBackup = false
+1. Clone this repository:
+```bash
+git clone https://github.com/joey-dev/.dotfiles.git ~/.dotfiles
+cd ~/.dotfiles
 ```
 
-## Create a new project <a name = "project"></a>
-For some language's, you might need to do more. Please go to [Language specific Documentation/Keybinds](#language)
+2. Enable flakes if not already enabled:
+```bash
+mkdir -p ~/.config/nix
+echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+```
+
+3. Update your username in `flake.nix` (replace 'user' with your actual username)
+
+4. Install and apply the configuration:
+```bash
+make install    # Add home-manager channel
+make switch     # Apply the configuration
+```
+
+5. If you're using i3, logout and login again to load the new configuration.
+
+### Available Make Commands
+- `make install` - Install home-manager channel
+- `make build` - Build the configuration without applying
+- `make switch` - Apply the configuration
+- `make update` - Update flake inputs
+- `make check` - Validate the flake configuration
 
 ## Configuration <a name = "configuration"></a>
 - [Neovim Snippets](#configuration_snippets)
@@ -121,22 +120,32 @@ snippet pubf
 ## Language specific Documentation/Keybinds <a name = "language"></a>
 - [PHP](documentation/PHP.md)
 
-## Testing <a name = "testing"></a>
-To test the new features/improvements in ansible, there are 2 things:
-1. run it locally. This way we know it will work for upgrading
-2. run it on Vagrant. This way we know it will work for a new machine
+## NixOS Roles <a name = "nixos_roles"></a>
+This configuration is organized into modular roles, each handling a specific aspect of the system:
 
-### Testing in Vagrant
-The Password for the Vagrant machine is: `vagrant`
-run:
--   make install-test
--   ssh-keygen -f "/home/{username}/.ssh/known_hosts" -R "[127.0.0.1]:2222"
--   make test
--   ssh-copy-id -p 2222 vagrant@127.0.0.1
--   make test-reload
+- **alacritty**: Terminal emulator configuration
+- **common**: Common system utilities (wget, curl, ripgrep, fzf, etc.)
+- **docker**: Docker and docker-compose
+- **git**: Git configuration with Meld as merge tool
+- **gtk**: GTK theme configuration
+- **i3**: i3 window manager with custom scripts
+- **javascript**: Node.js, npm, and JavaScript development tools
+- **neovim**: Neovim with LazyVim configuration
+- **php**: PHP 8.3 with Composer and development tools
+- **sql**: Database tools (PostgreSQL, MySQL, SQLite, DBeaver)
+- **tmux**: Tmux terminal multiplexer
+- **zsh**: Zsh shell with Oh My Zsh
 
-to run it clean again:
--   make test-new
--   ssh-copy-id -p 2222 vagrant@127.0.0.1
--   make test-reload
+Each role has:
+- `roles/{role}/{role}.nix` - NixOS module defining packages and configuration
+- `roles/{role}/configuration/` - Configuration files for the role
+
+## Customization
+You can customize the configuration by:
+1. Editing individual role `.nix` files in `roles/{role}/{role}.nix`
+2. Modifying configuration files in `roles/{role}/configuration/`
+3. Editing `home.nix` to change which roles are included
+4. Updating `flake.nix` to change Nix channels or add dependencies
+
+After making changes, run `make switch` to apply them.
 
