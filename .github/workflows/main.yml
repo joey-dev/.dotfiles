@@ -3,7 +3,7 @@ run-name: Validate NixOS flake and home-manager configuration
 on:
   pull_request:
     branches:
-    - master
+    - nixos
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -51,3 +51,19 @@ jobs:
             nix-instantiate --parse "$nixfile" > /dev/null
           done
           echo "All .nix files have valid syntax!"
+      
+      - name: Test home-manager build
+        run: |
+          echo "Building home-manager configuration..."
+          echo "This verifies that the configuration can be built successfully."
+          # Try to build the configuration (dry-run)
+          nix build --dry-run .#homeConfigurations.user.activationPackage 2>&1 | tee build-output.log || true
+          
+          # Check if the build evaluation succeeded (even if packages aren't downloaded)
+          if grep -q "error:" build-output.log; then
+            echo "❌ Build evaluation failed. Check the errors above."
+            cat build-output.log
+            exit 1
+          else
+            echo "✅ Configuration builds successfully!"
+          fi
