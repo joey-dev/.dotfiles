@@ -49,13 +49,15 @@ roles/{role}/
 
 3. **Clone and install**:
    ```bash
-   git clone https://github.com/joey-dev/.dotfiles.git ~/.dotfiles
+   git clone <repository-url> ~/.dotfiles
    cd ~/.dotfiles
+   
+   # Edit flake.nix and replace 'user' with your actual username in the homeConfigurations section
+   # Example: change "user = home-manager.lib..." to "yourname = home-manager.lib..."
+   
    make install  # Add home-manager channel
-   make switch   # Apply configuration
+   make switch   # Apply configuration (use 'make switch --flake .#yourname' with your username)
    ```
-
-4. **Customize**: Edit `flake.nix` to set your username
 
 ## Usage
 
