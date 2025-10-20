@@ -1,133 +1,115 @@
-# Ubuntu 20.04 Development Environment (.dotfiles)
-This repository contains an Ansible-based configuration system that sets up a complete Ubuntu 20.04 development environment with i3 window manager, Neovim, and comprehensive development tools.
+# NixOS Development Environment (.dotfiles)
+This repository contains a NixOS-based configuration system using home-manager that sets up a complete development environment with i3 window manager, Neovim, and comprehensive development tools.
 
 Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
 ## Working Effectively
 
 ### Bootstrap and Build the Environment
-**CRITICAL: NEVER CANCEL long-running commands. Use timeouts of 60+ minutes for builds.**
 
 ```bash
-# Install Ansible (takes ~30 seconds)
+# Install home-manager channel (takes ~30 seconds)
 make install
 
-# Full system provision (takes 25-50 minutes total, NEVER CANCEL)
-# You will be prompted for sudo password
-make provision
-```
+# Build the configuration (takes 5-15 minutes depending on cache)
+make build
 
-**WARNING**: The provision step requires sudo password input and takes significant time. Set timeout to 60+ minutes minimum.
+# Apply the configuration
+make switch
+```
 
 ### Key Components Installed
 - **i3 Window Manager**: Tiling window manager with custom scripts and keybinds
-- **Neovim**: Built from source with LazyVim configuration (~2-3 minutes build time)
+- **Neovim**: LazyVim configuration
 - **Development Tools**: PHP 8.3, Node.js/npm, Docker, Git, zsh with Oh My Zsh
-- **System Tools**: Taskwarrior, fzf, ripgrep, flameshot, rofi, bat
-- **Applications**: Google Chrome, Alacritty terminal
+- **System Tools**: fzf, ripgrep, bat, htop, flameshot, rofi
+- **Applications**: Alacritty terminal
 
 ### Required System
-- **Ubuntu 20.04 only** - This configuration is specifically designed for Ubuntu 20.04
-- **Architecture**: amd64/x86_64 required
-- **Sudo access**: Required for system package installation
-- **Internet connection**: Required for downloading packages and repositories
+- **NixOS** - This configuration uses NixOS with flakes
+- **Architecture**: x86_64-linux
+- **Flakes enabled**: Required for using this configuration
+- **Internet connection**: Required for downloading packages from Nix cache
 
 ## Build and Test Commands
 
 ### Validation (Run these before and after changes)
 ```bash
-# Validate playbook structure (takes less than 1 second)
-./checkPlaybook.sh
+# Check flake configuration (takes less than 10 seconds)
+nix flake check
 
-# Create hosts file if missing
-echo "localhost ansible_connection=local" > hosts
+# Verify role structure
+for role in alacritty common docker git gtk i3 javascript neovim php sql tmux zsh; do
+  if [ ! -f "roles/$role/$role.nix" ]; then
+    echo "Error: roles/$role/$role.nix not found"
+    exit 1
+  fi
+  if [ ! -d "roles/$role/configuration" ]; then
+    echo "Error: roles/$role/configuration directory not found"
+    exit 1
+  fi
+done
 
-# Dry-run playbook to see what would change (takes 2-5 minutes)
-ansible-playbook -i ./hosts playbook.yml -e ansible_python_interpreter=/usr/bin/python3 --check --diff
+# Build without applying
+make build
 
-# List all tasks in playbook (takes less than 1 second)  
-ansible-playbook -i ./hosts playbook.yml -e ansible_python_interpreter=/usr/bin/python3 --list-tasks
+# Apply configuration
+make switch
 ```
 
-### Known Build Times and Timeouts
-- **make install**: 30 seconds (use 2-minute timeout)
-- **make provision**: 25-50 minutes (use 60+ minute timeout, NEVER CANCEL)
-- **Neovim build**: 1.5-3 minutes (part of provision)
-- **System update**: Variable 2-10 minutes (part of provision)  
-- **Individual role validation**: 1-5 minutes each
-
-### Testing Infrastructure
-```bash
-# Vagrant testing setup (may require fixing architecture issues)
-make install-test    # Install Vagrant - KNOWN ISSUE: i686 vs amd64 architecture mismatch
-make test           # Start Vagrant VM
-make test-reload    # Reload Vagrant VM  
-make test-new       # Destroy and recreate Vagrant VM
-```
-
-**Note**: Current Vagrant configuration downloads i686 instead of amd64 - this is a known issue in the repository.
+### Known Build Times
+- **make install**: 30 seconds
+- **make build**: 5-15 minutes (depending on Nix cache availability)
+- **make switch**: 5-15 minutes (first run) or 30 seconds (subsequent runs with no changes)
+- **nix flake check**: Less than 10 seconds
 
 ## Complete End-to-End Validation Scenario
 
 ### Fresh System Installation Test
-After running `make install` and `make provision`, validate the complete environment:
+After running `make install` and `make switch`, validate the complete environment:
 
 ```bash
 # 1. Verify shell environment
-echo $SHELL  # Should be /usr/bin/zsh or /bin/zsh
+echo $SHELL  # Should be /bin/zsh or similar
 which zsh    # Should show zsh path
 
 # 2. Test development tools
 php --version && composer --version
 node --version && npm --version  
 docker --version && docker compose version
-task --version  # Taskwarrior
 
 # 3. Test CLI utilities
 fzf --version
 rg --version     # ripgrep  
-batcat --help    # bat command (aliased as bat in zsh)
+bat --version
 git --version
 
 # 4. Launch and test Neovim
-nvim --version   # Should show 0.10+ 
+nvim --version   # Should show Neovim version
 # Test actual launch: nvim (should load LazyVim without errors)
 
 # 5. Verify configurations are linked
-ls -la ~/.config/nvim     # Should be symlinked to repo
-ls -la ~/.config/i3       # Should be symlinked to repo  
-ls -la ~/.zshrc          # Should be symlinked to repo
-ls -la ~/.taskrc         # Should be symlinked to repo
+ls -la ~/.config/nvim     # Should point to nix store
+ls -la ~/.config/i3       # Should point to nix store  
+ls -la ~/.zshrc          # Should point to nix store
 
 # 6. Test that basic functionality works
-task add "Test task"     # Should create a task
-task list               # Should show the test task
-task 1 done             # Should complete the task
+# Launch applications to verify they work correctly
 ```
 
 ### Expected Installation Time Breakdown
-- **System update**: 2-10 minutes (varies by packages needing updates)
-- **Common tools**: 2-5 minutes
-- **i3 installation**: 1-2 minutes  
-- **Alacritty terminal**: 1 minute
-- **Zsh + Oh My Zsh**: 2-3 minutes
-- **JavaScript/Node.js**: 3-5 minutes
-- **Tmux**: 1 minute
-- **Neovim build**: 2-3 minutes
-- **Git configuration**: less than 1 minute
-- **GTK themes**: 1-2 minutes
-- **Taskwarrior build**: 2-3 minutes
-- **PHP installation**: 3-5 minutes  
-- **SQL tools**: 1-2 minutes
-- **Docker setup**: 3-5 minutes
+- **Initial flake evaluation**: 30 seconds
+- **Downloading packages**: 3-10 minutes (from Nix cache)
+- **Building configuration**: 1-2 minutes
+- **Activating home-manager**: 1-2 minutes
 
-**Total estimated time: 25-50 minutes** (NEVER CANCEL, set 60+ minute timeout)
+**Total estimated time: 5-15 minutes** (much faster with Nix binary cache)
 
 ### After Installation, Validate These Scenarios:
 1. **Shell Environment**:
    ```bash
    # Test zsh with Oh My Zsh loaded
-   echo $SHELL  # Should show /usr/bin/zsh or /bin/zsh
+   echo $SHELL
    # Test auto-suggestions and syntax highlighting work
    ```
 
@@ -166,17 +148,48 @@ task 1 done             # Should complete the task
    batcat --version  # bat (aliased as bat in zsh)
    ```
 
-5. **i3 Window Manager** (if running on Ubuntu desktop):
+
+3. **Development Tools**:
+   ```bash
+   # Verify PHP installation
+   php --version  # Should show PHP 8.3.x
+   composer --version  # Should show Composer
+
+   # Verify Node.js installation
+   node --version  # Should show latest Node.js version
+   npm --version   # Should show npm version
+
+   # Verify Docker installation
+   docker --version  # Should show Docker version
+   docker compose version  # Should show Docker Compose
+   ```
+
+4. **System Tools**:
+   ```bash
+   # Test CLI tools
+   fzf --version
+   rg --version    # ripgrep
+   bat --version
+   ```
+
+5. **i3 Window Manager** (if running on NixOS with display manager):
    - Logout and login selecting i3 as window manager
    - Test basic shortcuts: Win+d (application launcher), Win+Enter (terminal)
 
 ## Configuration and Customization
 
-### Manual Configuration Steps
+### Customizing Your Setup
+To customize the configuration:
+
+1. Edit individual role `.nix` files in `roles/{role}/{role}.nix`
+2. Modify configuration files in `roles/{role}/configuration/`
+3. Edit `home.nix` to change which roles are included
+4. Update `flake.nix` to change your username or add dependencies
+
+After making changes:
 ```bash
-# Run interactive configuration for services requiring manual setup
-make configure
-# This covers: SSH keys, GitHub keys, ProtonPass, DBeaver, WireGuard, Meld
+make build    # Verify the build works
+make switch   # Apply the changes
 ```
 
 ### Additional Project Setup
@@ -185,60 +198,61 @@ For specific language projects, see [Language-specific Documentation](documentat
 ## Common Issues and Troubleshooting
 
 ### Known Issues:
-1. **python3.8-venv package not found**: The playbook references Python 3.8 specifically for virtual environment support. On some Ubuntu 20.04 installations, the python3.8-venv package may not be available in the default repositories. This will cause a failure but is non-critical to the overall setup.
-
-2. **Vagrant architecture mismatch**: The Makefile downloads i686 Vagrant package instead of amd64. Testing with Vagrant requires manual fix:
+1. **Flakes not enabled**: Ensure you have flakes enabled in your Nix configuration:
    ```bash
-   # Fix Vagrant download URL to use amd64
-   curl -O https://releases.hashicorp.com/vagrant/2.4.0/vagrant_2.4.0-1_amd64.deb
-   sudo apt install ./vagrant_2.4.0-1_amd64.deb
+   mkdir -p ~/.config/nix
+   echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
    ```
 
-3. **Interactive configure script**: The configure.sh script requires user input for: SSH keys, GitHub keys, ProtonPass, DBeaver, WireGuard, Meld configuration.
+2. **Username mismatch**: Update the username in `flake.nix` to match your actual username.
 
-4. **Missing hosts file**: If `hosts` file is missing, create it with: `echo "localhost ansible_connection=local" > hosts`
-
-5. **Build dependencies**: Ensure `build-essential` and development packages are available.
+3. **Build failures**: If a build fails, check the error message. Common issues:
+   - Missing or incorrect package names
+   - Syntax errors in `.nix` files
+   - Configuration file paths that don't exist
 
 ### Recovery Commands:
 ```bash
-# Retry provision if it fails partway through
-make provision
+# Check configuration validity
+nix flake check
 
-# Update Ansible if needed
+# Rebuild configuration
+make build
+
+# Update flake inputs
 make update
 
-# Reset specific configurations
-ansible-playbook -i ./hosts playbook.yml -e ansible_python_interpreter=/usr/bin/python3 --connection=local --tags={role_name}
+# Roll back to previous generation
+home-manager generations  # List available generations
+home-manager switch --flake .#user --rollback
 ```
 
 ## Frequently Accessed Files and Locations
 
 ### Key Configuration Files:
-- `playbook.yml` - Main Ansible playbook defining roles
-- `Makefile` - Primary commands for installation and testing
-- `roles/` - Individual configuration modules for each tool
-- `group_vars/all/vars.yml` - Global variables and versions
-- `roles/neovim/files/nvim/` - Neovim LazyVim configuration
-- `roles/i3/files/scripts/` - Custom i3 window manager scripts
+- `flake.nix` - Main Nix flake configuration
+- `home.nix` - Home Manager configuration importing all roles
+- `Makefile` - Primary commands for installation and building
+- `roles/` - Individual NixOS modules for each tool
+- `roles/{role}/{role}.nix` - NixOS module for each role
+- `roles/{role}/configuration/` - Configuration files for each role
 - `documentation/PHP.md` - PHP-specific project setup instructions
 
 ### User Configurations After Install:
-- `~/.config/nvim/` - Neovim configuration (symlinked)
-- `~/.config/i3/` - i3 window manager configuration (symlinked)  
-- `~/.zshrc` - Zsh configuration (symlinked)
-- `~/.taskrc` - Taskwarrior configuration (symlinked)
+- `~/.config/nvim/` - Neovim configuration (managed by Nix)
+- `~/.config/i3/` - i3 window manager configuration (managed by Nix)
+- `~/.zshrc` - Zsh configuration (managed by Nix)
+- `~/.tmux.conf` - Tmux configuration (managed by Nix)
 
 ## Important Reminders
 
-- **NEVER CANCEL**: Always wait for builds and provision to complete, even if they take 50+ minutes
-- **Ubuntu 20.04 only**: Do not attempt to run on other Ubuntu versions or distributions
-- **Sudo required**: The provision step requires administrative privileges
-- **Backup first**: This modifies system configurations extensively
-- **Internet required**: Many steps download packages and repositories from the internet
-- **Test in VM first**: Use Vagrant testing for validating changes before applying to main system
+- **NixOS required**: This configuration is designed for NixOS with home-manager
+- **Flakes enabled**: Ensure flakes are enabled in your Nix configuration
+- **Declarative**: All configuration is declarative and reproducible
+- **Internet required**: Initial setup downloads packages from Nix binary cache
+- **No sudo needed**: Home Manager doesn't require sudo for user-level configuration
 
 ## CI/CD Integration
-- GitHub Actions workflow in `.github/workflows/main.yml` validates playbook structure
-- All pull requests automatically run `./checkPlaybook.sh` and basic Ansible playbook validation
-- Always run `./checkPlaybook.sh` before committing changes
+- GitHub Actions workflow in `.github/workflows/main.yml` validates NixOS configuration
+- All pull requests automatically run `nix flake check` and role structure validation
+- Validates syntax of all `.nix` files
