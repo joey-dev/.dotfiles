@@ -1,0 +1,14 @@
+[
+	{
+		"name": "work",
+		"task": "work",
+		"node_version": "18",
+		"php_version": "8.2"
+	},
+	{
+		"name": "personal",
+		"task": "project",
+		"node_version": "node",
+		"php_version": "8.3"
+	}
+]

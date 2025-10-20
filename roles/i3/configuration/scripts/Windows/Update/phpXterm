@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+alacritty --hold -e "/home/joey/scripts/i3/Windows/Update/php"
+

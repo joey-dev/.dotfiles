@@ -1,0 +1,32 @@
+-- ~/.config/nvim/lua/plugins/linting.lua
+return {
+  "mfussenegger/nvim-lint",
+  event = { "BufWritePost", "BufReadPost" },
+  opts = {
+    linters_by_ft = {
+      php = { "phpstan" },
+    },
+    linters = {
+      phpstan = {
+        cmd = "/home/joey/.config/composer/vendor/bin/phpstan",
+        -- Use a function to build the arguments dynamically
+        fn_args = function(opts)
+          local bufnr = opts.bufnr
+          local filename = vim.api.nvim_buf_get_name(bufnr)
+
+          return {
+            "analyse",
+            "--level=8",
+            "-a",
+            "vendor/autoload.php",
+            "-c",
+            "phpstan.neon",
+            "--error-format=raw",
+            "--no-progress",
+            filename, -- Use the filename obtained via the API
+          }
+        end,
+      },
+    },
+  },
+}

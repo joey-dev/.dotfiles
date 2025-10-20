@@ -1,0 +1,5 @@
+echo "looking for updates..."
+sudo apt-get update
+echo "updating packages..."
+sudo apt-get upgrade
+echo "done!"
