@@ -9,20 +9,7 @@
     oh-my-zsh
   ];
 
-  # Zsh configuration using home-manager
-  programs.zsh = {
-    enable = true;
-    enableCompletion = true;
-    autosuggestion.enable = true;
-    syntaxHighlighting.enable = true;
-    
-    oh-my-zsh = {
-      enable = true;
-      theme = "robbyrussell";
-      plugins = [ "git" "docker" "npm" "node" ];
-    };
-  };
-
-  # Link zsh configuration
+  # Link custom zsh configuration
+  # Note: We don't use programs.zsh.enable to avoid conflicts with the custom .zshrc
   home.file.".zshrc".source = ./configuration/.zshrc;
 }
