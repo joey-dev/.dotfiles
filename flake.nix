@@ -35,5 +35,11 @@
         # You can add your personal configuration by uncommenting and editing:
         # yourname = mkHomeConfiguration "yourname";
       };
+
+      # Checks that run when you do `nix flake check`
+      checks.${system} = {
+        # This checks that the home-manager configuration can be built
+        home-manager = self.homeConfigurations.user.activationPackage;
+      };
     };
 }
