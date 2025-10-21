@@ -25,7 +25,4 @@
 
   # Link zsh configuration
   home.file.".zshrc".source = ./configuration/.zshrc;
-  
-  # If there's also a tmux.conf in zsh role
-  home.file.".tmux.conf".source = ./configuration/.tmux.conf;
 }
