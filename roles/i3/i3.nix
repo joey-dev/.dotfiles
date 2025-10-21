@@ -1,8 +1,9 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   # Install i3 window manager and related tools
-  home.packages = with pkgs; [
+  # Only install i3 and X-related packages on NixOS
+  home.packages = with pkgs; lib.mkIf pkgs.stdenv.isLinux [
     i3
     i3status
     i3lock

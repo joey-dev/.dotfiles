@@ -6,7 +6,6 @@
     # System utilities
     wget
     curl
-    git
     unzip
     htop
     tree
@@ -14,9 +13,7 @@
     
     # Additional tools
     fzf
-    ripgrep
     bat
-    fd
     eza
     
     # System monitoring
@@ -27,9 +24,6 @@
     
     # Screenshot tool
     flameshot
-    
-    # Application launcher
-    rofi
   ];
 
   # Link DBeaver configuration if it exists

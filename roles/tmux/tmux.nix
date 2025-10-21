@@ -1,20 +1,14 @@
 { config, pkgs, ... }:
 
 {
-  # Install tmux and related tools
+  # Install tmux
   home.packages = with pkgs; [
     tmux
   ];
 
-  # Tmux configuration using home-manager
-  programs.tmux = {
-    enable = true;
-    # Additional tmux configuration will be loaded from .tmux.conf
-  };
-
-  # Link tmux configuration
+  # Link tmux configuration manually
+  # We manage the full .tmux.conf file ourselves
   home.file.".tmux.conf".source = ./configuration/.tmux.conf;
-  home.file.".bashrc".source = ./configuration/.bashrc;
   
   # Link tmux scripts
   home.file.".local/bin/tmux-cht.sh" = {
