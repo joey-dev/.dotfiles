@@ -9,6 +9,6 @@
     nodePackages.typescript
     nodePackages.typescript-language-server
     nodePackages.eslint
-    nodePackages.prettier
+    # prettier removed - install per-project or use: nix run nixpkgs#nodePackages.prettier
   ];
 }
