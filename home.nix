@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   # Import all role modules
@@ -19,8 +19,9 @@
 
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
-  home.username = builtins.getEnv "USER";
-  home.homeDirectory = builtins.getEnv "HOME";
+  # These can be overridden in flake.nix or when using the configuration
+  home.username = lib.mkDefault "user";
+  home.homeDirectory = lib.mkDefault "/home/${config.home.username}";
 
   # This value determines the Home Manager release that your
   # configuration is compatible with. This helps avoid breakage
