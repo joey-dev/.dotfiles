@@ -3,8 +3,7 @@
 {
   # Install Node.js and JavaScript development tools
   home.packages = with pkgs; [
-    nodejs
-    nodePackages.npm
+    nodejs  # This includes npm by default
     nodePackages.pnpm
     nodePackages.yarn
     nodePackages.typescript
