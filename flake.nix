@@ -13,17 +13,27 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
+      
+      # Function to create home configuration for a user
+      mkHomeConfiguration = username: home-manager.lib.homeManagerConfiguration {
+        inherit pkgs;
+        
+        modules = [
+          ./home.nix
+          {
+            home.username = username;
+            home.homeDirectory = "/home/${username}";
+          }
+        ];
+      };
     in
     {
       homeConfigurations = {
-        # Replace 'user' with your username
-        user = home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
-
-          modules = [
-            ./home.nix
-          ];
-        };
+        # Default configuration for CI and testing
+        user = mkHomeConfiguration "user";
+        
+        # You can add your personal configuration by uncommenting and editing:
+        # yourname = mkHomeConfiguration "yourname";
       };
     };
 }

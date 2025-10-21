@@ -19,9 +19,8 @@
 
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
-  # These can be overridden in flake.nix or when using the configuration
-  home.username = lib.mkDefault "user";
-  home.homeDirectory = lib.mkDefault "/home/${config.home.username}";
+  # These are now provided by flake.nix
+  # home.username and home.homeDirectory are set in the flake
 
   # This value determines the Home Manager release that your
   # configuration is compatible with. This helps avoid breakage

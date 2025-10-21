@@ -30,12 +30,17 @@ mkdir -p ~/.config/nix
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 ```
 
-3. Update your username in `flake.nix` (replace 'user' with your actual username)
+3. Add your username to `flake.nix`:
+   - Open `flake.nix` and find the `homeConfigurations` section
+   - Uncomment and edit the line: `# yourname = mkHomeConfiguration "yourname";`
+   - Replace `yourname` with your actual username (both occurrences)
 
 4. Install and apply the configuration:
 ```bash
-make install    # Add home-manager channel
-make switch     # Apply the configuration
+make install              # Add home-manager channel
+make switch               # Apply the configuration (uses 'user' by default)
+# Or for your custom username:
+home-manager switch --flake .#yourname
 ```
 
 5. If you're using i3, logout and login again to load the new configuration.
