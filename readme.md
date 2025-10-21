@@ -30,12 +30,25 @@ mkdir -p ~/.config/nix
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 ```
 
-3. Add your username to `flake.nix`:
+3. (Optional) Create a private git configuration file:
+```bash
+cat > ~/.git_private.nix << EOF
+{
+  programs.git = {
+    userName = "Your Name";
+    userEmail = "your.email@example.com";
+  };
+}
+EOF
+```
+   This file will be automatically imported if it exists.
+
+4. Add your username to `flake.nix`:
    - Open `flake.nix` and find the `homeConfigurations` section
    - Uncomment and edit the line: `# yourname = mkHomeConfiguration "yourname";`
    - Replace `yourname` with your actual username (both occurrences)
 
-4. Install and apply the configuration:
+5. Install and apply the configuration:
 ```bash
 make install              # Add home-manager channel
 make switch               # Apply the configuration (uses 'user' by default)
@@ -43,7 +56,12 @@ make switch               # Apply the configuration (uses 'user' by default)
 home-manager switch --flake .#yourname
 ```
 
-5. If you're using i3, logout and login again to load the new configuration.
+6. If you're using i3, logout and login again to load the new configuration.
+
+7. (NixOS only) For Docker support, add to your system configuration:
+```nix
+virtualisation.docker.enable = true;
+```
 
 ### Available Make Commands
 - `make install` - Install home-manager channel

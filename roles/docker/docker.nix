@@ -1,10 +1,10 @@
 { config, pkgs, ... }:
 
 {
-  # Install Docker
-  # Note: Docker typically requires system-level configuration
-  # This can be enabled at the system level with:
-  # virtualisation.docker.enable = true;
+  # Install Docker CLI tools
+  # Note: For Docker daemon on NixOS, add this to your system configuration:
+  #   virtualisation.docker.enable = true;
+  # For non-NixOS systems, Docker needs to be installed separately
   
   home.packages = with pkgs; [
     docker

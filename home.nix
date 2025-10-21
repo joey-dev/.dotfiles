@@ -15,7 +15,7 @@
     ./roles/sql/sql.nix
     ./roles/tmux/tmux.nix
     ./roles/zsh/zsh.nix
-  ];
+  ] ++ lib.optional (builtins.pathExists ~/.git_private.nix) ~/.git_private.nix;
 
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
