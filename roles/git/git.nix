@@ -13,7 +13,7 @@
     enable = true;
     # userName and userEmail should be set per-user
     # These can be configured in the user's home-manager configuration
-    extraConfig = {
+    settings = {
       core = {
         editor = "nvim";
       };

@@ -9,8 +9,10 @@
     nodePackages.typescript
     nodePackages.typescript-language-server
     nodePackages.eslint
-    nodePackages.prettier
   ];
+
+  # Prettier as a separate install to avoid LICENSE conflicts
+  home.file.".local/bin/prettier".source = "${pkgs.nodePackages.prettier}/bin/prettier";
 
   # Node.js configuration
   home.sessionVariables = {
