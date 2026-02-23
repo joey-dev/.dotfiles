@@ -15,25 +15,32 @@
       pkgs = nixpkgs.legacyPackages.${system};
       
       # Function to create home configuration for a user
-      mkHomeConfiguration = username: home-manager.lib.homeManagerConfiguration {
-        inherit pkgs;
-        
-        modules = [
-          ./home.nix
-          {
-            home.username = username;
-            home.homeDirectory = "/home/${username}";
-          }
-        ];
-      };
+      # Optionally pass a list of extra modules (e.g., a private git config file)
+      mkHomeConfiguration = { username, extraModules ? [] }:
+        home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+          
+          modules = [
+            ./home.nix
+            {
+              home.username = username;
+              home.homeDirectory = "/home/${username}";
+            }
+          ] ++ extraModules;
+        };
     in
     {
       homeConfigurations = {
         # Default configuration for CI and testing
-        user = mkHomeConfiguration "user";
+        user = mkHomeConfiguration { username = "user"; };
         
         # You can add your personal configuration by uncommenting and editing:
-        # yourname = mkHomeConfiguration "yourname";
+        # To include a private git config (with your name/email), create
+        # ~/.git_private.nix and add it as an extra module:
+        # yourname = mkHomeConfiguration {
+        #   username = "yourname";
+        #   extraModules = [ /home/yourname/.git_private.nix ];
+        # };
       };
 
       # Checks that run when you do `nix flake check`
