@@ -1,6 +1,7 @@
 name: NixOS Configuration Validation
 run-name: Validate NixOS flake and home-manager configuration
 on:
+  workflow_dispatch:
   pull_request:
     branches:
     - nixos
