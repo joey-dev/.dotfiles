@@ -8,7 +8,7 @@
     
     # PHP development tools
     phpactor
-    php83Packages.phpstan
+    phpstan
     php83Packages.phpmd
     php83Packages.psalm
   ];
