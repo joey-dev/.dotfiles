@@ -13,7 +13,7 @@
     
     # Command-line database tools
     pgcli
-    mycli
+    # mycli is currently broken in nixpkgs (sqlglot version conflict); use: nix run nixpkgs#mycli
     litecli
   ];
 }
