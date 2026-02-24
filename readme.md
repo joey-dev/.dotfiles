@@ -30,35 +30,35 @@ mkdir -p ~/.config/nix
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 ```
 
-3. (Optional) Create a private git configuration file:
+3. Create your personal configuration from the example:
 ```bash
-cat > ~/.git_private.nix << EOF
-{
-  programs.git = {
-    userName = "Your Name";
-    userEmail = "your.email@example.com";
-  };
-}
-EOF
+cp local.nix.example local.nix
 ```
-   This file will be automatically imported if it exists.
+   Then edit `local.nix` and fill in your username and git identity:
+```nix
+{
+  username = "yourname";        # must match your Linux user account
+  extraModules = [
+    {
+      programs.git = {
+        userName = "Your Name";
+        userEmail = "your@email.com";
+      };
+    }
+  ];
+}
+```
+   `local.nix` is gitignored so it will never appear in your `git status`.
 
-4. Add your username to `flake.nix`:
-   - Open `flake.nix` and find the `homeConfigurations` section
-   - Uncomment and edit the line: `# yourname = mkHomeConfiguration "yourname";`
-   - Replace `yourname` with your actual username (both occurrences)
-
-5. Install and apply the configuration:
+4. Install and apply the configuration:
 ```bash
 make install              # Add home-manager channel
-make switch               # Apply the configuration (uses 'user' by default)
-# Or for your custom username:
-home-manager switch --flake .#yourname
+make switch               # Applies the configuration using the username in local.nix
 ```
 
-6. If you're using i3, logout and login again to load the new configuration.
+5. If you're using i3, logout and login again to load the new configuration.
 
-7. (NixOS only) For Docker support, add to your system configuration:
+6. (NixOS only) For Docker support, add to your system configuration:
 ```nix
 virtualisation.docker.enable = true;
 ```
@@ -66,9 +66,9 @@ virtualisation.docker.enable = true;
 ### Available Make Commands
 - `make install` - Install home-manager channel
 - `make build` - Build the configuration without applying
-- `make switch` - Apply the configuration
+- `make switch` - Apply the configuration (username read from `local.nix`)
 - `make update` - Update flake inputs
-- `make check` - Validate the flake configuration
+- `make check` - Validate the flake configuration (pure mode, no `local.nix` needed)
 
 ## Configuration <a name = "configuration"></a>
 - [Neovim Snippets](#configuration_snippets)

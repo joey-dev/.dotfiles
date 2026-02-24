@@ -2,6 +2,9 @@
 result
 result-*
 
+# Local user configuration (copy local.nix.example to local.nix and fill in your details)
+local.nix
+
 # Development files
 /i3
 /nvim
