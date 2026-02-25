@@ -1,13 +1,7 @@
 { config, pkgs, ... }:
 
 {
-  # Install Docker CLI tools
-  # Note: For Docker daemon on NixOS, add this to your system configuration:
-  #   virtualisation.docker.enable = true;
-  # For non-NixOS systems, Docker needs to be installed separately
-  
-  home.packages = with pkgs; [
-    docker
-    docker-compose
-  ];
+  # Left intentionally blank for NixOS.
+  # Docker CLI and Compose are automatically installed when you enable
+  # virtualisation.docker.enable = true; in your system configuration.nix
 }

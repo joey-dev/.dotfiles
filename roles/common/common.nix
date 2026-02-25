@@ -1,31 +1,34 @@
 { config, pkgs, ... }:
 
 {
-  # Common system utilities and tools
+  # Core packages
   home.packages = with pkgs; [
-    # System utilities
     wget
     curl
     unzip
     htop
     tree
     jq
-    
-    # Additional tools
-    fzf
-    bat
-    eza
-    
-    # System monitoring
     neofetch
-    
-    # Clipboard manager
     xclip
-    
-    # Screenshot tool
     flameshot
   ];
 
-  # Link DBeaver configuration if it exists
+  # Use native modules for modern CLI tools to auto-inject shell aliases
+  programs.eza = {
+    enable = true;
+    enableZshIntegration = true;
+  };
+
+  programs.fzf = {
+    enable = true;
+    enableZshIntegration = true;
+  };
+
+  programs.bat = {
+    enable = true;
+  };
+
+  # Link DBeaver configuration
   xdg.configFile."DBeaverData/workspace6/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.jkiss.dbeaver.core.prefs".source = ./configuration/DBeaver.epf;
 }
