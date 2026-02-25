@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 
 if [ ! -v 1 ]; then
 	vared -p 'Version: ' -c version
@@ -6,8 +6,7 @@ else
 	version=$1
 fi
 
-sudo update-alternatives --set php "/usr/bin/php$version"
-sudo update-alternatives --set phar "/usr/bin/phar$version"
-sudo update-alternatives --set phar.phar "/usr/bin/phar.phar$version"
-
-echo "done:"
+# On NixOS, PHP version switching is done declaratively in roles/php/php.nix.
+# update-alternatives is Ubuntu-specific and not available on NixOS.
+echo "On NixOS, change the PHP version in roles/php/php.nix and run 'home-manager switch'."
+echo "Requested version: $version"

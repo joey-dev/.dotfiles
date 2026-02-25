@@ -1,16 +1,14 @@
 { config, pkgs, ... }:
 
 {
-  # Git is typically already installed in NixOS, but we ensure it here
   home.packages = with pkgs; [
-    git
-    git-lfs
     meld  # Git merge tool
   ];
 
   # Git configuration
   programs.git = {
     enable = true;
+    lfs.enable = true;
     
     settings = {
       core = {

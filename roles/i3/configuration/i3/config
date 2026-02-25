@@ -46,7 +46,7 @@ bindsym $mod+Shift+q kill
 # start dmenu (a program launcher)
 bindsym $mod+d exec --no-startup-id i3-dmenu-desktop
 #bindsym $mod+d exec "dmenu_run -nf '#F8F8F2' -nb '#282A36' -sb '#6272A4' -sf '#F8F8F2' -fn 'monospace-10' -p 'dmenu%'"
-exec --no-startup-id /usr/lib/gsd-xsettings
+# gsd-xsettings is a GNOME daemon and is not available on NixOS i3 setups; removed FHS path
 
 
 

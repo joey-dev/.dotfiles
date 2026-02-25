@@ -1,2 +1,3 @@
+#!/usr/bin/env bash
 i3-msg move workspace to output left
 
