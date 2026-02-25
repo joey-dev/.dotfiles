@@ -40,6 +40,41 @@
       checks.${system} = {
         home-manager = self.homeConfigurations.user.activationPackage;
       };
+
+      # Development shells — use with `nix develop .#php` or `nix develop .#node`
+      # For per-project shells, copy the relevant file from shells/ into your project root.
+      devShells.${system} = {
+        # PHP development shell: `nix develop .#php`
+        php = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            php83
+            php83Packages.composer
+            phpactor
+            phpstan
+            php83Packages.phpmd
+          ];
+        };
+
+        # Node.js development shell: `nix develop .#node`
+        node = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            nodejs
+            nodePackages.pnpm
+            nodePackages.yarn
+            nodePackages.typescript
+            nodePackages.typescript-language-server
+          ];
+        };
+
+        # Default shell with common tools: `nix develop`
+        default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            git
+            curl
+            jq
+          ];
+        };
+      };
     };
 }
 

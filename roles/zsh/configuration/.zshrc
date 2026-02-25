@@ -27,7 +27,6 @@ alias whereami="pwd"
 eval "$(pay-respects zsh --alias fuck)"
 
 # nnn configuration
-# nreload: removed — on NixOS, nnn plugins must be managed declaratively via programs.nnn or home.packages
 export NNN_BMS='h:~;d:~/.dotfiles;s:~/Scripts'
 export NNN_PLUG='v:preview-tabbed'
 export NNN_INFO="/tmp/nnn.fifo"
