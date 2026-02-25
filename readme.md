@@ -1,52 +1,76 @@
 # My .Dotfiles
 
-These are all my settings and program's I use. Written in Ansible for easy installation, and synchronization between different computers.
+These are all my settings and programs I use. Written in NixOS configuration for easy installation, and synchronization between different computers.
 
 ## Table of Contents
 - [Getting Started](#getting_started)
-- [Configure Program](#configure)
-- [Create a new project](#project)
 - [Configuration](#configuration)
 - [Commands](#commands)
 - [Keybinds](#keybinds)
 - [Language specific Documentation/Keybinds](#language)
-- [Testing](#testing)
-
 
 ## Getting Started <a name = "getting_started"></a>
-Currently Ubuntu 22.04 and Debian Trixie are supported.
+Currently NixOS is supported.
 
-Run the following 2 commands in your terminal:
--   make install
--   make provision
+### Prerequisites
+- NixOS installed on your system
+- Nix flakes enabled (Usually enabled by default on modern installs, or via `experimental-features = nix-command flakes` in `nix.conf`)
 
-If you have a new system, without i3. Logout, and login agin
-If you already have set-up i3, Run the following shortcut's:
--   win + shift + r (anywhere)
--   alt + r (in the terminal)
+### System Configuration (Pre-Installation)
+Before installing these dotfiles, your base NixOS system needs to be configured to support the graphical environment, your user permissions, and the Docker daemon. 
 
-## Configure Program <a name = "configure"></a>
-Some programs require custom configuration, which might be hard to automate
+Add the following to your `/etc/nixos/configuration.nix`:
 
-To open the questions, run `make configure`
+```nix
+  # Enable the X11 windowing system
+  services.xserver = {
+    enable = true;
+    
+    # Enable the LightDM Display Manager
+    displayManager.lightdm.enable = true;
+    
+    # Defer to Home Manager for the window manager
+    desktopManager.runXdgAutostartIfNone = true;
+    
+    # System-level fallback
+    windowManager.i3.enable = true; 
+  };
 
-- [Meld](#configure_meld)
+  # Enable Docker system-wide
+  virtualisation.docker.enable = true;
 
-### Meld <a name = "configure_meld"> </a>
-
-1. nvim ~/.gitconfig
-2. add the following lines:
+  # Define your user account and add to the docker group
+  users.users.joey = {
+    isNormalUser = true;
+    description = "Joey";
+    extraGroups = [ "networkmanager" "wheel" "docker" ]; 
+  };
 ```
-[merge]
-	tool = meld
-
-[mergetool "meld"]
-	cmd = meld "$LOCAL" "$MERGED" "$REMOTE" --output "$MERGED"
-	keepBackup = false
+Apply the system changes by running:
+```bash
+sudo nixos-rebuild switch
 ```
 
-## Create a new project <a name = "project"></a>
-For some language's, you might need to do more. Please go to [Language specific Documentation/Keybinds](#language)
+### Installation
+
+1. Clone this repository:
+```bash
+git clone [https://github.com/joey-dev/.dotfiles.git](https://github.com/joey-dev/.dotfiles.git) ~/.dotfiles
+cd ~/.dotfiles
+```
+
+2. Run the automated bootstrap script. This will prompt you for your Git credentials, securely create your local config, and execute the first Home Manager build:
+```bash
+./bootstrap.sh
+```
+
+3. Reboot your system to allow LightDM to start cleanly and load your new i3 configuration.
+
+### Available Commands
+- **Apply configuration:** `home-manager switch --flake .#joey` (Run this after making changes to any `.nix` file)
+- **Update inputs:** `nix flake update` (Bumps your packages to the latest versions)
+- **Check flake:** `nix flake check` (Validates the configuration locally)
+- **Garbage collection:** `nix-collect-garbage -d` (Frees up disk space by removing old generations)
 
 ## Configuration <a name = "configuration"></a>
 - [Neovim Snippets](#configuration_snippets)
@@ -57,7 +81,7 @@ The filename is: `fileType.snippets`.
 If all the snippets from one filetype are also used in another filetype, use extends {fileType}.
     Example, the vue.snippets has as first line: `extends js`
 A snippets looks like this:
-```
+```snippet
 snippet {snippetWord}
     {codeHere}
 ```
@@ -66,14 +90,13 @@ In the code you can use `${1:name}`. This will be the first item your carot goes
 It starts with number 1, and goes up. number 0 will be the last one.
 
 example:
-```
+```snippet
 snippet pubf
 	public function ${1:name}(${2:params}): ${3:return}
 	{
 		${0:body}
 	}
 ```
-
 
 ## Commands <a name = "commands"></a>
 - [Todo List](#commands_todo_list)
@@ -121,22 +144,31 @@ snippet pubf
 ## Language specific Documentation/Keybinds <a name = "language"></a>
 - [PHP](documentation/PHP.md)
 
-## Testing <a name = "testing"></a>
-To test the new features/improvements in ansible, there are 2 things:
-1. run it locally. This way we know it will work for upgrading
-2. run it on Vagrant. This way we know it will work for a new machine
+## NixOS Roles <a name = "nixos_roles"></a>
+This configuration is organized into modular roles, each handling a specific aspect of the system:
 
-### Testing in Vagrant
-The Password for the Vagrant machine is: `vagrant`
-run:
--   make install-test
--   ssh-keygen -f "/home/{username}/.ssh/known_hosts" -R "[127.0.0.1]:2222"
--   make test
--   ssh-copy-id -p 2222 vagrant@127.0.0.1
--   make test-reload
+- **alacritty**: Terminal emulator configuration
+- **common**: Common system utilities (wget, curl, ripgrep, fzf, etc.)
+- **docker**: Docker and docker-compose
+- **git**: Git configuration with Meld as merge tool
+- **gtk**: GTK theme configuration
+- **i3**: i3 window manager with custom scripts
+- **javascript**: Node.js, npm, and JavaScript development tools
+- **neovim**: Neovim with LazyVim configuration
+- **php**: PHP 8.3 with Composer and development tools
+- **sql**: Database tools (PostgreSQL, MySQL, SQLite, DBeaver)
+- **tmux**: Tmux terminal multiplexer
+- **zsh**: Zsh shell with Oh My Zsh
 
-to run it clean again:
--   make test-new
--   ssh-copy-id -p 2222 vagrant@127.0.0.1
--   make test-reload
+Each role has:
+- `roles/{role}/{role}.nix` - NixOS module defining packages and configuration
+- `roles/{role}/configuration/` - Configuration files for the role
 
+## Customization
+You can customize the configuration by:
+1. Editing individual role `.nix` files in `roles/{role}/{role}.nix`
+2. Modifying configuration files in `roles/{role}/configuration/`
+3. Editing `home.nix` to change which roles are included
+4. Updating `flake.nix` to change Nix channels or add dependencies
+
+After making changes, run `home-manager switch --flake .#joey` to apply them.

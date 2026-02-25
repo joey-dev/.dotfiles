@@ -1,78 +1,43 @@
-name: GitHub Action
-run-name: Test ansible playbook
+name: NixOS Configuration Validation
+run-name: Validate NixOS flake and home-manager configuration
 on:
+  workflow_dispatch:
   pull_request:
     branches:
-    - master
+    - nixos
+
 jobs:
-  test:
-    strategy:
-      matrix:
-        os: 
-          - ubuntu-22.04
-          - debian:trixie
-        include:
-          - os: ubuntu-22.04
-            container: false
-          - os: debian:trixie
-            container: true
-    runs-on: ${{ matrix.container && 'ubuntu-latest' || matrix.os }}
-    container: ${{ matrix.container && matrix.os || null }}
-    name: Test on ${{ matrix.os }}
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate NixOS configuration
+    permissions:
+      contents: read
     steps:
-      - name: checkout branch
+      - name: Checkout branch
         uses: actions/checkout@v4
-      - name: Install Python and pip (Debian only)
-        if: matrix.os == 'debian:trixie'
-        run: |
-          apt-get update
-          apt-get install -y python3 python3-pip python3-venv
-          ln -sf /usr/bin/python3 /usr/bin/python
-      - name: Run playbook check script
-        run: ./checkPlaybook.sh
-      - name: Set up Python
-        if: matrix.os != 'debian:trixie'
-        uses: actions/setup-python@v4
+      
+      - name: Install Nix
+        uses: cachix/install-nix-action@v25
         with:
-          python-version: '3.x'
-      - name: Install Ansible (Ubuntu)
-        if: matrix.os == 'ubuntu-22.04'
+          nix_path: nixpkgs=channel:nixos-unstable
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      
+      - name: Verify all role modules exist
         run: |
-          python -m pip install --upgrade pip
-          pip install ansible
-      - name: Install Ansible (Debian)
-        if: matrix.os == 'debian:trixie'
-        run: |
-          apt-get install -y ansible
-      - name: Run ansible-playbook (first run)
-        env:
-          CI: true
-        run: |
-          echo "================================================"
-          echo "🚀 FIRST ANSIBLE RUN (initial setup)"
-          echo "This run will install/setup everything fresh"
-          echo "================================================"
-          start_time=$(date +%s)
-          ansible-playbook -i inventory playbook.yml
-          end_time=$(date +%s)
-          duration=$((end_time - start_time))
-          echo "================================================"
-          echo "✅ First run completed in: ${duration} seconds"
-          echo "================================================"
-      - name: Run ansible-playbook (second run - should be faster)
-        env:
-          CI: true
-        run: |
-          echo ""
-          echo "================================================"
-          echo "⚡ SECOND ANSIBLE RUN (optimized)"
-          echo "This run should be faster due to version checks"
-          echo "================================================"
-          start_time=$(date +%s)
-          ansible-playbook -i inventory playbook.yml
-          end_time=$(date +%s)
-          duration=$((end_time - start_time))
-          echo "================================================"
-          echo "✅ Second run completed in: ${duration} seconds"
-          echo "🎯 Optimization success! Tasks were skipped when software was already installed."
-          echo "================================================"
+          echo "Verifying NixOS role structure..."
+          for role in alacritty common docker git gtk i3 javascript neovim php sql tmux zsh; do
+            if [ ! -f "roles/$role/$role.nix" ]; then
+              echo "Error: roles/$role/$role.nix not found"
+              exit 1
+            fi
+            if [ ! -d "roles/$role/configuration" ]; then
+              echo "Error: roles/$role/configuration directory not found"
+              exit 1
+            fi
+            echo "✓ $role role structure is valid"
+          done
+          echo "All roles validated successfully!"
+      
+      - name: Check flake and build configuration
+        run: nix flake check

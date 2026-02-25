@@ -1,34 +1,26 @@
+# Set USERNAME to your system username (must match a key in flake.nix homeConfigurations).
+# Override on the command line: make switch USERNAME=yourname
+USERNAME ?= joey
+
 install:
-	#sudo apt -y install ansible
-	python3 -m pip install --user ansible
-	# do git stuff
+	# Install NixOS and home-manager if not already installed
+	# This assumes NixOS is already installed
+	nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
+	nix-channel --update
+
+build:
+	# Build the home-manager configuration
+	home-manager build --flake .#${USERNAME}
+
+switch:
+	# Apply the home-manager configuration
+	home-manager switch --flake .#${USERNAME}
 
 update:
-	python3 -m pip install --upgrade --user ansible
-	./configure.sh
+	# Update flake inputs
+	nix flake update
 
-configure:
-	./configure.sh
+check:
+	# Check the flake configuration
+	nix flake check
 
-sshtoken:
-	echo 'hi'
-
-provision:
-	ansible-playbook -i inventory playbook.yml -e ansible_python_interpreter=/usr/bin/python3 --ask-become-pass
-	echo "please logout, select i3 at the bottom right, then login"
-
-install-test:
-	#sudo apt -y install virtualbox
-	#sudo apt -y install virtualbox-dkms
-	#sudo apt -y install linux-headers-generic
-	curl -O https://releases.hashicorp.com/vagrant/2.4.0/vagrant_2.4.0-1_i686.deb
-	sudo apt -y install ./vagrant_2.4.0-1_i686.deb
-
-test:
-	vagrant up
-
-test-reload:
-	vagrant reload
-
-test-new:
-	vagrant destroy

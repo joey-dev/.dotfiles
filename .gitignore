@@ -1,6 +1,8 @@
-vagrant_2.4.0-1_i686.deb
-.vagrant
-nvim/.config/nvim/init.vim
+# NixOS
+result
+result-*
+
+# Development files
 /i3
 /nvim
 /alacritty
@@ -12,3 +14,5 @@ nvim/.config/nvim/init.vim
 /lazygit.tar.gz
 /phpstan.neon
 /configured.env
+nvim/.config/nvim/init.vim
+

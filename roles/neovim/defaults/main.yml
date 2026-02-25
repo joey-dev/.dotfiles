@@ -1,8 +1,0 @@
-
-neovim_config_dir: "{{ ansible_env.HOME }}/.config/nvim"
-
-neovim_install_state: latest
-
-phpactor_config_dir: "{{ ansible_env.HOME }}/.config/phpactor"
-
-lazygit_config_dir: "{{ ansible_env.HOME }}/.config/lazygit"

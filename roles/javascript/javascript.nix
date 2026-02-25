@@ -1,0 +1,14 @@
+{ config, pkgs, ... }:
+
+{
+  # Install Node.js and JavaScript development tools
+  home.packages = with pkgs; [
+    nodejs  # This includes npm by default
+    nodePackages.pnpm
+    nodePackages.yarn
+    nodePackages.typescript
+    nodePackages.typescript-language-server
+    nodePackages.eslint
+    # prettier removed - install per-project or use: nix run nixpkgs#nodePackages.prettier
+  ];
+}
