@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ALL_DISPLAYS=$(xrandr | awk '/ connected/ {print $1}')
 

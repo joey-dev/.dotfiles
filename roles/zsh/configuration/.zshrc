@@ -27,7 +27,6 @@ alias whereami="pwd"
 eval "$(pay-respects zsh --alias fuck)"
 
 # nnn configuration
-alias nreload='sh -c "$(curl -Ls https://raw.githubusercontent.com/jarun/nnn/master/plugins/getplugs)"'
 export NNN_BMS='h:~;d:~/.dotfiles;s:~/Scripts'
 export NNN_PLUG='v:preview-tabbed'
 export NNN_INFO="/tmp/nnn.fifo"

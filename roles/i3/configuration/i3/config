@@ -46,7 +46,7 @@ bindsym $mod+Shift+q kill
 # start dmenu (a program launcher)
 bindsym $mod+d exec --no-startup-id i3-dmenu-desktop
 #bindsym $mod+d exec "dmenu_run -nf '#F8F8F2' -nb '#282A36' -sb '#6272A4' -sf '#F8F8F2' -fn 'monospace-10' -p 'dmenu%'"
-exec --no-startup-id /usr/lib/gsd-xsettings
+
 
 
 
@@ -261,10 +261,6 @@ bindsym $mod+p exec --no-startup-id ~/.config/i3/i3-power-settings.sh
 # change monitor setup
 #bindsym $mod+o exec --no-startup-id ~/Scripts/monitors
 bindsym $mod+o exec --no-startup-id ~/.dotfiles/roles/i3/files/scripts/Windows/window ~/.dotfiles/roles/i3/files/scripts/Windows/Monitor/
-
-# update programs
-#bindsym $mod+u exec --no-startup-id ~/Scripts/update
-bindsym $mod+u exec --no-startup-id ~/scripts/i3/Windows/window ~/scripts/i3/Windows/Update/
 
 # services
 #bindsym $mod+s exec --no-startup-id ~/scripts/i3/Windows/window ~/scripts/i3/Windows/Services/

@@ -1,10 +1,12 @@
 { config, pkgs, ... }:
 
 {
-  # Install Neovim and related tools
+  programs.neovim = {
+    enable = true;
+    plugins = with pkgs.vimPlugins; [ lazy-nvim ];
+  };
+
   home.packages = with pkgs; [
-    neovim
-    
     # Language servers and tools
     ripgrep
     fd
