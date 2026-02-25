@@ -11,7 +11,8 @@
   # Git configuration
   programs.git = {
     enable = true;
-    settings = {
+    
+    extraConfig = {
       core = {
         editor = "nvim";
       };
@@ -28,11 +29,8 @@
         };
       };
     };
+    
     # Include ~/.gitconfig.local for personal settings (userName, userEmail, etc.)
-    # Create this file on each machine with:
-    #   [user]
-    #     name = Your Name
-    #     email = your@email.com
     includes = [{ path = "~/.gitconfig.local"; }];
   };
 }
