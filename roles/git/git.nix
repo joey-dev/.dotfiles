@@ -11,15 +11,6 @@
   # Git configuration
   programs.git = {
     enable = true;
-    # userName and userEmail can be set in a separate git_private.nix file
-    # Create ~/.git_private.nix with:
-    # {
-    #   programs.git = {
-    #     userName = "Your Name";
-    #     userEmail = "your.email@example.com";
-    #   };
-    # }
-    # The home.nix file will automatically import it if it exists
     settings = {
       core = {
         editor = "nvim";
@@ -37,5 +28,11 @@
         };
       };
     };
+    # Include ~/.gitconfig.local for personal settings (userName, userEmail, etc.)
+    # Create this file on each machine with:
+    #   [user]
+    #     name = Your Name
+    #     email = your@email.com
+    includes = [{ path = "~/.gitconfig.local"; }];
   };
 }

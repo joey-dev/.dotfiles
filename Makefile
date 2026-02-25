@@ -1,7 +1,6 @@
-# Read the username from local.nix if it exists, otherwise fall back to the
-# current system user. This means `make switch` works out of the box after
-# copying local.nix.example to local.nix.
-USERNAME := $(shell grep -o 'username = "[^"]*"' local.nix 2>/dev/null | sed 's/username = "\(.*\)"/\1/' || whoami)
+# Set USERNAME to your system username (must match a key in flake.nix homeConfigurations).
+# Override on the command line: make switch USERNAME=yourname
+USERNAME ?= joey
 
 install:
 	# Install NixOS and home-manager if not already installed
@@ -11,19 +10,17 @@ install:
 
 build:
 	# Build the home-manager configuration
-	# --impure is required so Nix can read local.nix (which is gitignored)
-	home-manager build --flake .#${USERNAME} --impure
+	home-manager build --flake .#${USERNAME}
 
 switch:
 	# Apply the home-manager configuration
-	# --impure is required so Nix can read local.nix (which is gitignored)
-	home-manager switch --flake .#${USERNAME} --impure
+	home-manager switch --flake .#${USERNAME}
 
 update:
 	# Update flake inputs
 	nix flake update
 
 check:
-	# Check the flake configuration (pure evaluation, does not need local.nix)
+	# Check the flake configuration
 	nix flake check
 
