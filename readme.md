@@ -14,61 +14,63 @@ Currently NixOS is supported.
 
 ### Prerequisites
 - NixOS installed on your system
-- Nix flakes enabled (see instructions below)
+- Nix flakes enabled (Usually enabled by default on modern installs, or via `experimental-features = nix-command flakes` in `nix.conf`)
+
+### System Configuration (Pre-Installation)
+Before installing these dotfiles, your base NixOS system needs to be configured to support the graphical environment, your user permissions, and the Docker daemon. 
+
+Add the following to your `/etc/nixos/configuration.nix`:
+
+```nix
+  # Enable the X11 windowing system
+  services.xserver = {
+    enable = true;
+    
+    # Enable the LightDM Display Manager
+    displayManager.lightdm.enable = true;
+    
+    # Defer to Home Manager for the window manager
+    desktopManager.runXdgAutostartIfNone = true;
+    
+    # System-level fallback
+    windowManager.i3.enable = true; 
+  };
+
+  # Enable Docker system-wide
+  virtualisation.docker.enable = true;
+
+  # Define your user account and add to the docker group
+  users.users.joey = {
+    isNormalUser = true;
+    description = "Joey";
+    extraGroups = [ "networkmanager" "wheel" "docker" ]; 
+  };
+```
+Apply the system changes by running:
+```bash
+sudo nixos-rebuild switch
+```
 
 ### Installation
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/joey-dev/.dotfiles.git ~/.dotfiles
+git clone [https://github.com/joey-dev/.dotfiles.git](https://github.com/joey-dev/.dotfiles.git) ~/.dotfiles
 cd ~/.dotfiles
 ```
 
-2. Enable flakes if not already enabled:
+2. Run the automated bootstrap script. This will prompt you for your Git credentials, securely create your local config, and execute the first Home Manager build:
 ```bash
-mkdir -p ~/.config/nix
-echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+./bootstrap.sh
 ```
 
-3. Create your personal configuration from the example:
-```bash
-cp local.nix.example local.nix
-```
-   Then edit `local.nix` and fill in your username and git identity:
-```nix
-{
-  username = "yourname";        # must match your Linux user account
-  extraModules = [
-    {
-      programs.git = {
-        userName = "Your Name";
-        userEmail = "your@email.com";
-      };
-    }
-  ];
-}
-```
-   `local.nix` is gitignored so it will never appear in your `git status`.
+3. Reboot your system to allow LightDM to start cleanly and load your new i3 configuration.
 
-4. Install and apply the configuration:
-```bash
-make install              # Add home-manager channel
-make switch               # Applies the configuration using the username in local.nix
-```
-
-5. If you're using i3, logout and login again to load the new configuration.
-
-6. (NixOS only) For Docker support, add to your system configuration:
-```nix
-virtualisation.docker.enable = true;
-```
-
-### Available Make Commands
-- `make install` - Install home-manager channel
-- `make build` - Build the configuration without applying
-- `make switch` - Apply the configuration (username read from `local.nix`)
-- `make update` - Update flake inputs
-- `make check` - Validate the flake configuration (pure mode, no `local.nix` needed)
+### Available Commands
+- **Apply configuration:** `home-manager switch --flake .#joey` (Run this after making changes to any `.nix` file)
+- **Update inputs:** `nix flake update` (Bumps your packages to the latest versions)
+- **Check flake:** `nix flake check` (Validates the configuration locally)
+- **Garbage collection:** `nix-collect-garbage -d` (Frees up disk space by removing old generations)
 
 ## Configuration <a name = "configuration"></a>
 - [Neovim Snippets](#configuration_snippets)
@@ -79,7 +81,7 @@ The filename is: `fileType.snippets`.
 If all the snippets from one filetype are also used in another filetype, use extends {fileType}.
     Example, the vue.snippets has as first line: `extends js`
 A snippets looks like this:
-```
+```snippet
 snippet {snippetWord}
     {codeHere}
 ```
@@ -88,14 +90,13 @@ In the code you can use `${1:name}`. This will be the first item your carot goes
 It starts with number 1, and goes up. number 0 will be the last one.
 
 example:
-```
+```snippet
 snippet pubf
 	public function ${1:name}(${2:params}): ${3:return}
 	{
 		${0:body}
 	}
 ```
-
 
 ## Commands <a name = "commands"></a>
 - [Todo List](#commands_todo_list)
@@ -170,5 +171,4 @@ You can customize the configuration by:
 3. Editing `home.nix` to change which roles are included
 4. Updating `flake.nix` to change Nix channels or add dependencies
 
-After making changes, run `make switch` to apply them.
-
+After making changes, run `home-manager switch --flake .#joey` to apply them.
