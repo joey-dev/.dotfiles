@@ -5,6 +5,9 @@ return {
     opts = {
       ---@type lspconfig.options
       servers = {
+        nil_ls = {
+          mason = false,
+        },
         -- Ensure phpactor is started with phpstan enabled
         phpactor = {
           keys = {

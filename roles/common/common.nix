@@ -12,6 +12,8 @@
     neofetch
     xclip
     flameshot
+    google-chrome
+    yazi
   ];
 
   # Use native modules for modern CLI tools to auto-inject shell aliases

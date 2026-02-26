@@ -1,24 +1,29 @@
--- On NixOS, lazy.nvim is managed by Nix (see roles/neovim/neovim.nix).
--- We find it via the Nix-managed runtime path instead of downloading it.
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not (vim.uv or vim.loop).fs_stat(lazypath) then
-  -- Search Nix-managed rtp entries for lazy-nvim (installed via programs.neovim.plugins)
-  for _, rtp_entry in ipairs(vim.api.nvim_list_runtime_paths()) do
-    if rtp_entry:match("lazy%-nvim") then
-      lazypath = rtp_entry
-      break
-    end
-  end
+if not vim.loop.fs_stat(lazypath) then
+  -- bootstrap lazy.nvim
+  -- stylua: ignore
+  vim.fn.system({ "git", "clone", "--filter=blob:none", "https://github.com/folke/lazy.nvim.git", "--branch=stable", lazypath })
 end
-vim.opt.rtp:prepend(lazypath)
+vim.opt.rtp:prepend(vim.env.LAZY or lazypath)
+vim.g.lazyvim_news_config = false
 
 require("lazy").setup({
   spec = {
     -- add LazyVim and import its plugins
-    { "LazyVim/LazyVim", import = "lazyvim.plugins" },
-    -- import/override with your plugins
+    {
+      "LazyVim/LazyVim",
+      import = "lazyvim.plugins",
+      opts = {
+        news = {
+          lazyvim = false,
+          neovim = false,
+        },
+      },
+    },
+    { import = "lazyvim.plugins.extras.lang.nix" },
     { import = "plugins" },
   },
+  lockfile = vim.fn.stdpath("state") .. "/lazy-lock.json",
   defaults = {
     -- By default, only LazyVim plugins will be lazy-loaded. Your custom plugins will load during startup.
     -- If you know what you're doing, you can set this to `true` to have all your custom plugins lazy-loaded by default.
