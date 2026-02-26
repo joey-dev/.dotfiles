@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-CONFIG_FILE=$(eval echo '~/.dotfiles/roles/i3/files/scripts/Startup/config.json')
+CONFIG_FILE=$(eval echo '~/.dotfiles/roles/i3/configuration/scripts/Startup/config.json')
 
 names=()
 

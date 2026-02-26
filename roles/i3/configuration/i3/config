@@ -247,9 +247,9 @@ client.background       #F8F8F2
 
 #exec gnome-terminal
 
-exec --no-startup-id xterm -e ~/.dotfiles/roles/i3/files/scripts/Startup/main.sh
+exec --no-startup-id xterm -e ~/.dotfiles/roles/i3/configuration/scripts/Startup/main.sh
 
-exec --no-startup-id ~/.dotfiles/roles/i3/files/scripts/Auto/lock.sh
+exec --no-startup-id ~/.dotfiles/roles/i3/configuration/scripts/Auto/lock.sh
 
 
 # ------------------------------------------
