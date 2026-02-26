@@ -1,0 +1,112 @@
+[colors.bright]
+black = "#5b6268"
+blue = "#3071db"
+cyan = "#46d9ff"
+green = "#4db5bd"
+magenta = "#a9a1e1"
+red = "#da8548"
+white = "#dfdfdf"
+yellow = "#ecbe7b"
+
+[colors.cursor]
+cursor = "CellForeground"
+text = "CellBackground"
+
+[colors.footer_bar]
+background = "#c5c8c6"
+foreground = "#1d1f21"
+
+[colors.hints.end]
+background = "#1d1f21"
+foreground = "#e9ff5e"
+
+[colors.hints.start]
+background = "#e9ff5e"
+foreground = "#1d1f21"
+
+[colors.line_indicator]
+background = "None"
+foreground = "None"
+
+[colors.normal]
+black = "#1c1f24"
+blue = "#51afef"
+cyan = "#5699af"
+green = "#98be65"
+magenta = "#c678dd"
+red = "#ff6c6b"
+white = "#c5c8c6"
+yellow = "#da8548"
+
+[colors.primary]
+background = "#1d1f21"
+foreground = "#c5c8c6"
+
+[colors.search.focused_match]
+background = "#000000"
+foreground = "#ffffff"
+
+[colors.search.matches]
+background = "#ffffff"
+foreground = "#000000"
+
+[colors.selection]
+background = "CellForeground"
+text = "CellBackground"
+
+[colors.vi_mode_cursor]
+cursor = "CellForeground"
+text = "CellBackground"
+
+[cursor.style]
+blinking = "Off"
+shape = "Block"
+
+[env]
+TERM = "xterm-256color"
+
+[font]
+size = 12.0
+
+[font.normal]
+family = "ComicShanns Nerd Font"
+
+[font.bold]
+family = "ComicShanns Nerd Font"
+style = "Bold"
+
+[font.italic]
+family = "ComicShanns Nerd Font"
+style = "Italic"
+
+[font.bold_italic]
+family = "ComicShanns Nerd Font"
+style = "Bold Italic"
+
+[font.offset]
+x = 2
+
+[[keyboard.bindings]]
+action = "ToggleViMode"
+key = "Space"
+mode = "~Search"
+mods = "Shift|Control"
+
+[terminal]
+
+[scrolling]
+history = 10000
+
+[terminal.shell]
+args = ["new-session", "-A", "-D", "-s", "main"]
+program = "tmux"
+
+[window]
+opacity = 1.0
+title = "Alacritty"
+
+[window.class]
+general = "Alacritty"
+instance = "Alacritty"
+
+[keyboard]

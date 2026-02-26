@@ -4,5 +4,5 @@
   programs.alacritty.enable = true;
 
   # Link Alacritty configuration
-  xdg.configFile."alacritty/alacritty.yml".source = ./configuration/alacritty.yml;
+  xdg.configFile."alacritty/alacritty.toml".source = ./configuration/alacritty.toml;
 }

@@ -12,11 +12,15 @@ lib.mkIf pkgs.stdenv.isLinux {
     dmenu
     rofi
     arandr
-    xorg.xrandr
+    xrandr
     autorandr
     feh
     python3
+    pulsemixer
+    pavucontrol
   ];
+
+  services.ssh-agent.enable = true;
 
   xdg.configFile = {
     "i3/config".source = lib.mkForce ./configuration/i3/config;

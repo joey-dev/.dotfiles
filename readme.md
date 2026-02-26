@@ -5,7 +5,6 @@ These are all my settings and programs I use. Written in NixOS configuration for
 ## Table of Contents
 - [Getting Started](#getting_started)
 - [Configuration](#configuration)
-- [Commands](#commands)
 - [Keybinds](#keybinds)
 - [Language specific Documentation/Keybinds](#language)
 
@@ -14,7 +13,9 @@ Currently NixOS is supported.
 
 ### Prerequisites
 - NixOS installed on your system
-- Nix flakes enabled (Usually enabled by default on modern installs, or via `experimental-features = nix-command flakes` in `nix.conf`)
+- Connect to Wi-Fi: Run `nmtui` in the terminal to establish an internet connection.
+- Install Git: Run `nix-shell -p git`
+- Install a basic editor: Run `nix-shell -p vim` (to make any temporary edits to `configuration.nix` before building).
 
 ### System Configuration (Pre-Installation)
 Before installing these dotfiles, your base NixOS system needs to be configured to support the graphical environment, your user permissions, and the Docker daemon. 
@@ -36,6 +37,9 @@ Add the following to your `/etc/nixos/configuration.nix`:
     windowManager.i3.enable = true; 
   };
 
+  # Enable Nix-LD (Required for Neovim LSPs and Mason downloaded binaries)
+  programs.nix-ld.enable = true;
+
   # Enable Docker system-wide
   virtualisation.docker.enable = true;
 
@@ -45,7 +49,10 @@ Add the following to your `/etc/nixos/configuration.nix`:
     description = "Joey";
     extraGroups = [ "networkmanager" "wheel" "docker" ]; 
   };
+
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 ```
+
 Apply the system changes by running:
 ```bash
 sudo nixos-rebuild switch
@@ -98,16 +105,6 @@ snippet pubf
 	}
 ```
 
-## Commands <a name = "commands"></a>
-- [Todo List](#commands_todo_list)
-
-### Todo List <a name = "commands_todo_list"></a>
-- switch context (work, project): `task context work`
-- add task: `task add {description of the task} +{tag} due:{31st} priority:{L,M,H}`
-    - tags: later, problem, work, project
-- show all tasks: `task`
-- complete task: `task {id} done`
-
 ## Keybinds <a name = "keybinds"></a>
 - [I3](#keybinds_i3)
 - [Nvim](#keybinds_nvim)
@@ -115,11 +112,12 @@ snippet pubf
 
 ### I3 <a name = "keybinds_i3"> </a>
 - Find programs: `Win+d`
-- Power settings: `Win+s`
-- Monitor settings: `Win+o`
-- Switch profile: `Win+i`
-- Update/switch version: `Win+u`
+- Power settings: `Win+p`
+- Monitor settings: `Win+m`
 - Switch workspace from monitor: `Win+shift+d`
+- Network settings: `Win+n`
+- Audio settings: `Win+a`
+- File Explorer: `Win+e`
 
 ### Nvim <a name = "keybinds_nvim"> </a>
 - All commands are within nvim itself: `<space>h`

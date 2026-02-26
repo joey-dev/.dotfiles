@@ -27,7 +27,7 @@ return {
       dap.adapters.php = {
         type = "executable",
         command = "node",
-        args = { os.getenv("HOME") .. "/vscode-php-debug/out/phpDebug.js" },
+        args = { vim.fn.stdpath("data") .. "/mason/packages/php-debug-adapter/extension/out/phpDebug.js" }
       }
 
       dap.configurations.php = {

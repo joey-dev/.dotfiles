@@ -22,6 +22,12 @@
       ];
     };
 
-    initExtra = builtins.readFile ./configuration/.zshrc;
+    initContent = builtins.readFile ./configuration/.zshrc;
+  };
+
+  programs.direnv = {
+    enable = true;
+    enableZshIntegration = true;
+    nix-direnv.enable = true;
   };
 }
