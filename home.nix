@@ -6,6 +6,7 @@
     ./roles/alacritty/alacritty.nix
     ./roles/common/common.nix
     ./roles/docker/docker.nix
+    ./roles/ghostty/ghostty.nix
     ./roles/git/git.nix
     ./roles/gtk/gtk.nix
     ./roles/i3/i3.nix

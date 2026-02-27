@@ -272,7 +272,7 @@ bindsym $mod+a exec --no-startup-id alacritty -T "Audio Settings" -e pulsemixer
 for_window [title="Audio Settings"] floating enable, resize set 70 ppt 70 ppt, move position center
 
 # File Manager
-bindsym $mod+e exec --no-startup-id alacritty -T "File Manager" -o font.size=8.0 -e yazi
+bindsym $mod+e exec --no-startup-id ghostty --title="File Manager" -e yazi
 for_window [title="File Manager"] floating enable, resize set 70 ppt 70 ppt, move position center
 
 # Screenshot

@@ -1,0 +1,13 @@
+# Fonts
+font-family = "ComicShannsMono Nerd Font"
+font-size = 12
+
+# Theme
+theme = Catppuccin Mocha
+
+# Window padding
+window-padding-x = 8
+window-padding-y = 8
+
+# Remove ALL window decorations entirely
+window-decoration = none
