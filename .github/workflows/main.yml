@@ -26,7 +26,7 @@ jobs:
       - name: Verify all role modules exist
         run: |
           echo "Verifying NixOS role structure..."
-          for role in alacritty common docker git gtk i3 javascript neovim php sql tmux zsh; do
+          for role in alacritty common docker git gtk i3 javascript neovim php sql tmux zsh polybar ghostty; do
             if [ ! -f "roles/$role/$role.nix" ]; then
               echo "Error: roles/$role/$role.nix not found"
               exit 1

@@ -13,6 +13,7 @@
     ./roles/javascript/javascript.nix
     ./roles/neovim/neovim.nix
     ./roles/php/php.nix
+    ./roles/polybar/polybar.nix
     ./roles/sql/sql.nix
     ./roles/tmux/tmux.nix
     ./roles/zsh/zsh.nix

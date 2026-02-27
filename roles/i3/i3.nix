@@ -7,7 +7,6 @@ lib.mkIf pkgs.stdenv.isLinux {
   services.dunst.enable = true;
 
   home.packages = with pkgs; [
-    i3status
     i3lock
     dmenu
     rofi
