@@ -16,6 +16,7 @@
     flameshot
     google-chrome
     yazi
+    libreoffice
 
     nerd-fonts.comic-shanns-mono
   ];
