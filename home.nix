@@ -6,12 +6,14 @@
     ./roles/alacritty/alacritty.nix
     ./roles/common/common.nix
     ./roles/docker/docker.nix
+    ./roles/ghostty/ghostty.nix
     ./roles/git/git.nix
     ./roles/gtk/gtk.nix
     ./roles/i3/i3.nix
     ./roles/javascript/javascript.nix
     ./roles/neovim/neovim.nix
     ./roles/php/php.nix
+    ./roles/polybar/polybar.nix
     ./roles/sql/sql.nix
     ./roles/tmux/tmux.nix
     ./roles/zsh/zsh.nix

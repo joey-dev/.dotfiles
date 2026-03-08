@@ -1,6 +1,8 @@
 { config, pkgs, ... }:
 
 {
+  fonts.fontconfig.enable = true;
+
   # Core packages
   home.packages = with pkgs; [
     wget
@@ -14,6 +16,9 @@
     flameshot
     google-chrome
     yazi
+    libreoffice
+
+    nerd-fonts.comic-shanns-mono
   ];
 
   # Use native modules for modern CLI tools to auto-inject shell aliases
