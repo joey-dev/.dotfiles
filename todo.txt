@@ -1,5 +1,3 @@
-- able to run unit tests in nvim per file
-  - see if we can run integration/api tests in nvim as well
 - maybe multi repo for secrets
 - add ssh key to this repo, if its secure enough
 - add syncthing (for task)
