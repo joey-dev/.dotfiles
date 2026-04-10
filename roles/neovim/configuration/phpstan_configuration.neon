@@ -1,14 +1,22 @@
 parameters:
-  level: 8
+  level: 10
+  
   strictRules:
     booleansInConditions: true
-    ignoreErrors:
-      - '#Construct empty\(\) is not allowed. Use more strict comparison.#'
-    stubFiles:
-      - ../../../../.dotfiles/roles/neovim/files/phpstan_stubs/doctrine_dbal_connection.stub.php
-      - ../../../../.dotfiles/roles/neovim/files/phpstan_stubs/json.stub.php
+
+  bootstrapFiles:
+    - phpstan-dba-bootstrap.php
+
+  ignoreErrors:
+    - '#Construct empty\(\) is not allowed. Use more strict comparison.#'
+      
+  stubFiles:
+    - /home/joey/.dotfiles/roles/neovim/configuration/phpstan_stubs/doctrine_dbal_connection.stub.php
+    - /home/joey/.dotfiles/roles/neovim/configuration/phpstan_stubs/json.stub.php
+    
   symfony:
-    containerXmlPath: var/cache/dev/srcApp_KernelDevDebugContainer.xml
+    containerXmlPath: cache/dev/Dyflexis_KernelDevDebugContainer.xml
+    
   shipmonkRules:
     allowComparingOnlyComparableTypes:
       enabled: true
@@ -94,21 +102,18 @@ parameters:
       reportEvenIfExceptionIsNotAcceptableByRethrownOne: true
     uselessPrivatePropertyDefaultValue:
       enabled: true
-    uselessPrivatePropertyNullability:
-      enabled: true
-
 
 includes:
-	- phar://phpstan.phar/conf/bleedingEdge.neon
-	- /home/joey/.config/composer/vendor/phpstan/phpstan-strict-rules/rules.neon
-	- /home/joey/.config/composer/vendor/phpstan/phpstan-phpunit/extension.neon
-	- /home/joey/.config/composer/vendor/phpstan/phpstan-symfony/extension.neon
-	- /home/joey/.config/composer/vendor/shipmonk/phpstan-rules/rules.neon
-	- /home/joey/.config/composer/vendor/jangregor/phpstan-prophecy/extension.neon
-	- /home/joey/.config/composer/vendor/shipmonk/dead-code-detector/rules.neon
-	- /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/extension.neon
-	- /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/disallowed-dangerous-calls.neon
-	- /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/disallowed-execution-calls.neon
-	- /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/disallowed-insecure-calls.neon
-	- /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/disallowed-loose-calls.neon
-
+  - phar://phpstan.phar/conf/bleedingEdge.neon
+  - /home/joey/.config/composer/vendor/phpstan/phpstan-strict-rules/rules.neon
+  - /home/joey/.config/composer/vendor/phpstan/phpstan-phpunit/extension.neon
+  - /home/joey/.config/composer/vendor/phpstan/phpstan-symfony/extension.neon
+  - /home/joey/.config/composer/vendor/shipmonk/phpstan-rules/rules.neon
+  - /home/joey/.config/composer/vendor/jangregor/phpstan-prophecy/extension.neon
+  - /home/joey/.config/composer/vendor/shipmonk/dead-code-detector/rules.neon
+  - /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/extension.neon
+  - /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/disallowed-dangerous-calls.neon
+  - /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/disallowed-execution-calls.neon
+  - /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/disallowed-insecure-calls.neon
+  - /home/joey/.config/composer/vendor/spaze/phpstan-disallowed-calls/disallowed-loose-calls.neon
+  - /home/joey/.config/composer/vendor/staabm/phpstan-dba/config/dba.neon

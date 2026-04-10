@@ -1,0 +1,13 @@
+{
+    "require-dev": {
+        "phpstan/phpstan": "^2.0.2",
+        "phpstan/phpstan-phpunit": "*",
+        "phpstan/phpstan-symfony": "*",
+        "phpstan/phpstan-strict-rules": "2.0.1",
+        "shipmonk/phpstan-rules": "*",
+        "jangregor/phpstan-prophecy": "*",
+        "shipmonk/dead-code-detector": "*",
+        "spaze/phpstan-disallowed-calls": "*",
+        "staabm/phpstan-dba": "*"
+    }
+}

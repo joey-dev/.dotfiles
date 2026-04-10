@@ -14,5 +14,6 @@ result-*
 /lazygit.tar.gz
 /phpstan.neon
 /configured.env
+/roles/php/global-composer/vendor
 nvim/.config/nvim/init.vim
 
