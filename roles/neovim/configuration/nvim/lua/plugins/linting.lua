@@ -1,31 +1,41 @@
--- ~/.config/nvim/lua/plugins/lint.lua
+local current_dir = vim.fn.getcwd()
+local is_legacy = vim.fn.isdirectory(current_dir .. "/legacy") == 1
+
+local autoload_path = is_legacy and "legacy/vendor/autoload.php" or "vendor/autoload.php"
+local config_path = is_legacy and "legacy/phpstan.neon" or "phpstan.neon"
+
 return {
   {
     "mfussenegger/nvim-lint",
-    -- This is the key fix: Explicitly tell LazyVim this plugin creates the "Lint" command.
-    -- This forces the plugin to load when you try to use the command.
-    cmd = { "Lint", "LintToggle" },
-    -- Use the standard 'opts' table for configuration. This is the correct way.
-    opts = {
-      linters_by_ft = {
+    opts = function(_, opts)
+      opts.linters_by_ft = {
         php = { "phpstan" },
-      },
-      linters = {
-        phpstan = {
-          cmd = "/home/joey/.config/composer/vendor/bin/phpstan",
-          args = {
-            "analyse",
-            "--level=8",
-            "-a",
-            "vendor/autoload.php",
-            "-c",
-            "phpstan.neon",
-            "--error-format=raw",
-            "--no-progress",
-            "$file",
-          },
+      }
+
+      -- Grab the default parser to wrap it
+      local default_parser = require("lint.linters.phpstan").parser
+
+      opts.linters = opts.linters or {}
+      opts.linters.phpstan = {
+        args = {
+          "analyse",
+          "-a", autoload_path,
+          "-c", config_path,
+          "--memory-limit=2G",
+          "--error-format=json",
+          "--no-progress",
         },
-      },
-    },
+        -- The JSON Sanitizer: Strips PHP warnings so Neovim doesn't crash
+        parser = function(output, bufnr)
+          local json_start = string.find(output, "{")
+          if json_start then
+            output = string.sub(output, json_start)
+          end
+          return default_parser(output, bufnr)
+        end
+      }
+      
+      return opts
+    end,
   },
 }

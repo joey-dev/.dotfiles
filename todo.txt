@@ -1,10 +1,7 @@
-- phpstan, add https://github.com/staabm/phpstan-dba
-- extract code-base specific nvim code
+- able to run unit tests in nvim per file
+  - see if we can run integration/api tests in nvim as well
+- maybe multi repo for secrets
+- add ssh key to this repo, if its secure enough
 - add syncthing (for task)
 - see if sqlfluff works with sql written in php (https://github.com/sqlfluff/sqlfluff)
-- look into the following for nvim integrations with ale and ?php:
-	- intelephense
-	- langserver
-	- phan
-	- tlint
-	- php
+
