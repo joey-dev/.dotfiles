@@ -20,6 +20,7 @@
     marksman
     nil
     statix
+    sqlfluff
   ];
 
   # Link Neovim configuration

@@ -10,6 +10,8 @@ return {
     opts = function(_, opts)
       opts.linters_by_ft = {
         php = { "phpstan" },
+        sql = { "sqlfluff" },
+        mysql = { "sqlfluff" },
       }
 
       -- Grab the default parser to wrap it
@@ -19,8 +21,10 @@ return {
       opts.linters.phpstan = {
         args = {
           "analyse",
-          "-a", autoload_path,
-          "-c", config_path,
+          "-a",
+          autoload_path,
+          "-c",
+          config_path,
           "--memory-limit=2G",
           "--error-format=json",
           "--no-progress",
@@ -32,9 +36,18 @@ return {
             output = string.sub(output, json_start)
           end
           return default_parser(output, bufnr)
-        end
+        end,
       }
-      
+
+      opts.linters.sqlfluff = {
+        args = {
+          "lint",
+          "--format=json",
+          "--dialect=mysql",
+          "-",
+        },
+      }
+
       return opts
     end,
   },
