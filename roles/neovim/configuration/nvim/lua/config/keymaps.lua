@@ -34,6 +34,12 @@ end, { desc = "Generate imports" })
 
 local function run_phpunit(is_debug, specific_method, skip_rebuild)
   local filepath = vim.fn.expand("%")
+
+  if filepath == "" then
+    vim.notify("Cannot run PHPUnit for an unsaved buffer. Save the file first.", vim.log.levels.WARN)
+    return
+  end
+
   local suite = filepath:match("^legacy/tests/([^/]+)/") or "unit"
 
   local clean_path = filepath
@@ -53,8 +59,6 @@ local function run_phpunit(is_debug, specific_method, skip_rebuild)
     rebuild_flag = " --no-rebuild "
   end
 
-  -- NOTE: Depending on how your bash script reads arguments,
-  -- you may need to move `rebuild_flag` to the very end of this string!
   local cmd = string.format("./test_runner.sh %s%s%s %s", debug_flag, suite, rebuild_flag, clean_path)
 
   if specific_method then
