@@ -1,5 +1,4 @@
 - maybe multi repo for secrets
 - add ssh key to this repo, if its secure enough
 - add syncthing (for task)
-- see if sqlfluff works with sql written in php (https://github.com/sqlfluff/sqlfluff)
 
