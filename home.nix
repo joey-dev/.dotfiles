@@ -5,6 +5,7 @@
   imports = [
     ./roles/alacritty/alacritty.nix
     ./roles/common/common.nix
+    ./roles/claude/claude.nix
     ./roles/cursor/cursor.nix
     ./roles/docker/docker.nix
     ./roles/ghostty/ghostty.nix
