@@ -1,11 +1,9 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
-  programs.neovim = {
-    enable = true;
-  };
-
   home.packages = with pkgs; [
+    neovim
+
     # Language servers and tools
     ripgrep
     fd

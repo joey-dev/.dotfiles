@@ -5,7 +5,7 @@
   home.packages = with pkgs; [
     # Database clients
     postgresql
-    mysql80
+    mariadb
     sqlite
     
     # Database GUI tools
