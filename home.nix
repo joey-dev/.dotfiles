@@ -18,6 +18,7 @@
     ./roles/polybar/polybar.nix
     ./roles/sql/sql.nix
     ./roles/tmux/tmux.nix
+    ./roles/vscode/vscode.nix
     ./roles/zsh/zsh.nix
   ];
 
