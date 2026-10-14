@@ -1,6 +1,6 @@
 { config, pkgs, lib, ... }:
 
-lib.mkIf pkgs.stdenv.isLinux {
+lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
 
   xsession.windowManager.i3.enable = true;
   services.picom.enable = true;
