@@ -13,13 +13,21 @@
     jq
     fastfetch
     xclip
-    flameshot
     google-chrome
     yazi
     libreoffice
 
     nerd-fonts.comic-shanns-mono
   ];
+
+  services.flameshot = {
+    enable = true;
+    settings = {
+      General = {
+        useX11LegacyScreenshot = true;
+      };
+    };
+  };
 
   # Use native modules for modern CLI tools to auto-inject shell aliases
   programs.eza = {
