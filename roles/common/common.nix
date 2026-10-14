@@ -11,7 +11,7 @@
     htop
     tree
     jq
-    neofetch
+    fastfetch
     xclip
     flameshot
     google-chrome
