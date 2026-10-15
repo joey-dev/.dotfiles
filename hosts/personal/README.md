@@ -19,7 +19,13 @@ On the personal laptop:
    - Copy only what is **specific to this laptop** from `/etc/nixos/configuration.nix`. For example the LUKS swap device and `system.stateVersion`.
    - Everything shared is already in `../common.nix`. Compare with it to see what is left.
 
-3. Check and switch:
+3. Stage the new files. Flakes only see files that git knows about, so untracked files are ignored (a commit is not needed yet):
+
+   ```bash
+   git -C ~/.dotfiles add hosts/personal
+   ```
+
+4. Check and switch:
 
    ```bash
    nix flake check

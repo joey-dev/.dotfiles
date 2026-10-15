@@ -41,6 +41,8 @@ EOF
 fi
 
 # 2. NixOS configuration (only once hosts/<host>/configuration.nix exists)
+# Flakes only see files known to git, so stage the host's (new) files first
+git add "hosts/$host"
 if [[ -f "hosts/$host/configuration.nix" ]]; then
     echo "🏗️ Building and switching to the NixOS configuration for '$host'..."
     sudo nixos-rebuild switch --flake ".#$host" --option experimental-features "nix-command flakes"
@@ -50,6 +52,7 @@ fi
 
 # 3. Home Manager, using the version pinned in flake.lock
 echo "🏗️ Building and switching to the Home Manager configuration for 'joey@$host'..."
-nix "${flakes[@]}" run .#home-manager -- switch --flake ".#joey@$host"
+# Home Manager runs its own `nix build`, so it needs the flake flags too
+nix "${flakes[@]}" run .#home-manager -- switch --flake ".#joey@$host" "${flakes[@]}"
 
 echo "🎉 Bootstrap complete! Reboot so LightDM starts with the new i3 configuration."

@@ -26,7 +26,7 @@ git clone https://github.com/joey-dev/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 ```
 
-2. Make sure the host has its NixOS files. For a new laptop, see [hosts/personal/README.md](hosts/personal/README.md): copy `/etc/nixos/hardware-configuration.nix` into `hosts/<host>/` and add a small `configuration.nix`.
+2. Make sure the host has its NixOS files, and that they are staged in git (flakes ignore untracked files). For a new laptop, see [hosts/personal/README.md](hosts/personal/README.md): copy `/etc/nixos/hardware-configuration.nix` into `hosts/<host>/` and add a small `configuration.nix`.
 
 3. Run the bootstrap script with the host name. It asks for your Git name and email, then switches NixOS and Home Manager:
 ```bash
@@ -48,6 +48,8 @@ The host defaults to the machine's hostname. Override with `HOST=work`.
 - **Garbage collection:** runs automatically every week, removing generations older than 14 days
 
 ### New project from a template
+`templates/php-symfony/flake.nix` is a placeholder until you paste your own project flake into it.
+
 ```bash
 nix flake init -t ~/.dotfiles#php-symfony
 echo "use flake" > .envrc && direnv allow
