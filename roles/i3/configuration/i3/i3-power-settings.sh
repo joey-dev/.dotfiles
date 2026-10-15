@@ -6,7 +6,7 @@ case $option in
         i3lock -c 000000
         ;;
     suspend)
-        sudo systemctl suspend
+        systemctl suspend
         ;;
     logout)
         i3-nagbar -t warning -m 'Are you sure you  want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'

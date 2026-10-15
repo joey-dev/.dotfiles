@@ -14,6 +14,7 @@
   "php"
   "polybar"
   "sql"
+  "ssh"
   "tmux"
   "vscode"
   "zsh"
