@@ -1,33 +1,42 @@
-{ pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
-  home.packages = with pkgs; [
-    pay-respects
-    nnn
-  ];
+  options.roles.zsh.enable = lib.mkEnableOption "the zsh role";
 
-  programs.zsh = {
-    enable = true;
+  config = lib.mkIf config.roles.zsh.enable {
+    home.packages = with pkgs; [
+      pay-respects
+      nnn
+    ];
 
-    enableCompletion = true;
-    autosuggestion.enable = true;
-    syntaxHighlighting.enable = true;
-
-    oh-my-zsh = {
+    programs.zsh = {
       enable = true;
-      theme = "nanotech";
-      plugins = [
-        "sudo"
-        "vi-mode"
-      ];
+
+      enableCompletion = true;
+      autosuggestion.enable = true;
+      syntaxHighlighting.enable = true;
+
+      oh-my-zsh = {
+        enable = true;
+        theme = "nanotech";
+        plugins = [
+          "sudo"
+          "vi-mode"
+        ];
+      };
+
+      initContent = builtins.readFile ./configuration/.zshrc;
     };
 
-    initContent = builtins.readFile ./configuration/.zshrc;
-  };
-
-  programs.direnv = {
-    enable = true;
-    enableZshIntegration = true;
-    nix-direnv.enable = true;
+    programs.direnv = {
+      enable = true;
+      enableZshIntegration = true;
+      nix-direnv.enable = true;
+    };
   };
 }

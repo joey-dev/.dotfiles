@@ -1,42 +1,50 @@
-{ pkgs, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
-lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+{
+  options.roles.i3.enable = lib.mkEnableOption "the i3 role";
 
-  xsession.windowManager.i3.enable = true;
-  services.picom.enable = true;
-  services.dunst.enable = true;
+  config = lib.mkIf config.roles.i3.enable {
+    xsession.windowManager.i3.enable = true;
+    services.picom.enable = true;
+    services.dunst.enable = true;
 
-  home.packages = with pkgs; [
-    i3lock
-    dmenu
-    rofi
-    arandr
-    xrandr
-    autorandr
-    feh
-    python3
-    pulsemixer
-    pavucontrol
-  ];
+    home.packages = with pkgs; [
+      i3lock
+      dmenu
+      rofi
+      arandr
+      xrandr
+      autorandr
+      feh
+      python3
+      pulsemixer
+      pavucontrol
+    ];
 
-  services.ssh-agent.enable = true;
+    services.ssh-agent.enable = true;
 
-  xdg.configFile = {
-    "i3/config".source = lib.mkForce ./configuration/i3/config;
+    xdg.configFile = {
+      "i3/config".source = lib.mkForce ./configuration/i3/config;
 
-    "i3/scripts".source = ./configuration/scripts;
+      "i3/scripts".source = ./configuration/scripts;
 
-    "i3/i3-move-display.sh" = {
-      source = ./configuration/i3/i3-move-display.sh;
-      executable = true;
-    };
-    "i3/i3-power-settings.sh" = {
-      source = ./configuration/i3/i3-power-settings.sh;
-      executable = true;
-    };
-    "i3/i3-swap-display.sh" = {
-      source = ./configuration/i3/i3-swap-display.sh;
-      executable = true;
+      "i3/i3-move-display.sh" = {
+        source = ./configuration/i3/i3-move-display.sh;
+        executable = true;
+      };
+      "i3/i3-power-settings.sh" = {
+        source = ./configuration/i3/i3-power-settings.sh;
+        executable = true;
+      };
+      "i3/i3-swap-display.sh" = {
+        source = ./configuration/i3/i3-swap-display.sh;
+        executable = true;
+      };
     };
   };
 }

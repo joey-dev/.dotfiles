@@ -9,76 +9,49 @@ These are all my settings and programs I use. Written in NixOS configuration for
 - [Language specific Documentation/Keybinds](#language)
 
 ## Getting Started <a name = "getting_started"></a>
-Currently NixOS is supported.
+Currently NixOS is supported. Each laptop is a **host** in `hosts/` (`work`, `personal`).
+
+The repo holds both the **NixOS system config** and the **Home Manager config**. NixOS runs on the stable release (`nixpkgs-stable`), Home Manager on `nixos-unstable`.
 
 ### Prerequisites
 - NixOS installed on your system
 - Connect to Wi-Fi: Run `nmtui` in the terminal to establish an internet connection.
 - Install Git: Run `nix-shell -p git`
-- Install a basic editor: Run `nix-shell -p vim` (to make any temporary edits to `configuration.nix` before building).
-
-### System Configuration (Pre-Installation)
-Before installing these dotfiles, your base NixOS system needs to be configured to support the graphical environment, your user permissions, and the Docker daemon. 
-
-Add the following to your `/etc/nixos/configuration.nix`:
-
-```nix
-  # Enable the X11 windowing system
-  services.xserver = {
-    enable = true;
-    
-    # Enable the LightDM Display Manager
-    displayManager.lightdm.enable = true;
-    
-    # Defer to Home Manager for the window manager
-    desktopManager.runXdgAutostartIfNone = true;
-    
-    # System-level fallback
-    windowManager.i3.enable = true; 
-  };
-
-  # Enable Nix-LD (Required for Neovim LSPs and Mason downloaded binaries)
-  programs.nix-ld.enable = true;
-
-  # Enable Docker system-wide
-  virtualisation.docker.enable = true;
-
-  # Define your user account and add to the docker group
-  users.users.joey = {
-    isNormalUser = true;
-    description = "Joey";
-    extraGroups = [ "networkmanager" "wheel" "docker" ]; 
-  };
-
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-```
-
-Apply the system changes by running:
-```bash
-sudo nixos-rebuild switch
-```
 
 ### Installation
 
 1. Clone this repository:
 ```bash
-git clone [https://github.com/joey-dev/.dotfiles.git](https://github.com/joey-dev/.dotfiles.git) ~/.dotfiles
+git clone https://github.com/joey-dev/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 ```
 
-2. Run the automated bootstrap script. This will prompt you for your Git credentials, securely create your local config, and execute the first Home Manager build:
-```bash
-./bootstrap.sh
-```
+2. Make sure the host has its NixOS files. For a new laptop, see [hosts/personal/README.md](hosts/personal/README.md): copy `/etc/nixos/hardware-configuration.nix` into `hosts/<host>/` and add a small `configuration.nix`.
 
-3. Reboot your system to allow LightDM to start cleanly and load your new i3 configuration.
+3. Run the bootstrap script with the host name. It asks for your Git name and email, then switches NixOS and Home Manager:
+```bash
+./bootstrap.sh work
+```
+Flakes don't need to be enabled first; the script passes the flag itself.
+
+4. Reboot your system to allow LightDM to start cleanly and load your new i3 configuration.
 
 ### Available Commands
-- **Apply configuration:** `home-manager switch --flake .#joey` (Run this after making changes to any `.nix` file)
-- **Update inputs:** `nix flake update` (Bumps your packages to the latest versions)
-- **Check flake:** `nix flake check` (Builds the configuration and runs the lint checks: nixfmt, statix, deadnix, shellcheck)
-- **Format:** `nix fmt` (Formats all `.nix` files)
-- **Garbage collection:** `nix-collect-garbage -d` (Frees up disk space by removing old generations)
+The host defaults to the machine's hostname. Override with `HOST=work`.
+
+- **Apply Home Manager:** `make switch` (`nh home switch`, shows a diff of what changed)
+- **Apply NixOS:** `make os` (`nh os switch`, asks for sudo)
+- **Build without applying:** `make build`
+- **Update inputs:** `make update` (`nix flake update`)
+- **Check flake:** `make check` (Builds the configuration and runs the lint checks: nixfmt, statix, deadnix, shellcheck)
+- **Format:** `make fmt` (Formats all `.nix` files)
+- **Garbage collection:** runs automatically every week, removing generations older than 14 days
+
+### New project from a template
+```bash
+nix flake init -t ~/.dotfiles#php-symfony
+echo "use flake" > .envrc && direnv allow
+```
 
 ## Configuration <a name = "configuration"></a>
 - [Neovim Snippets](#configuration_snippets)
@@ -143,31 +116,45 @@ snippet pubf
 ## Language specific Documentation/Keybinds <a name = "language"></a>
 - [PHP](documentation/PHP.md)
 
-## NixOS Roles <a name = "nixos_roles"></a>
-This configuration is organized into modular roles, each handling a specific aspect of the system:
+## Structure <a name = "nixos_roles"></a>
 
+```
+flake.nix               hosts, Home Manager and NixOS configs, lint checks
+hosts/
+  roles.nix             roles enabled on every laptop
+  home.nix              Home Manager settings shared by every host
+  common.nix            NixOS settings shared by every host
+  work/                 configuration.nix + hardware-configuration.nix
+  personal/             (NixOS files not added yet)
+roles/<role>/
+  <role>.nix            Home Manager part, with a `roles.<role>.enable` option
+  system.nix            optional NixOS part (docker, i3, neovim, php)
+  configuration/        config files for the role
+templates/              `nix flake init -t` templates
+```
+
+### Roles
 - **alacritty**: Terminal emulator configuration
-- **common**: Common system utilities (wget, curl, ripgrep, fzf, etc.)
-- **docker**: Docker and docker-compose
+- **claude**: Claude Code with settings
+- **common**: Common utilities (wget, curl, fzf, bat, eza, ...), Chrome, LibreOffice, flameshot
+- **cursor**: Cursor editor
+- **docker**: Docker (NixOS part)
+- **ghostty**: Ghostty terminal, used for the file manager
 - **git**: Git configuration with Meld as merge tool
 - **gtk**: GTK theme configuration
-- **i3**: i3 window manager with custom scripts
+- **i3**: i3 window manager with custom scripts, LightDM (NixOS part)
 - **javascript**: Node.js, npm, and JavaScript development tools
-- **neovim**: Neovim with LazyVim configuration
-- **php**: PHP 8.3 with Composer and development tools
+- **neovim**: Neovim with LazyVim configuration, nix-ld for Mason (NixOS part)
+- **php**: PHP with Composer and development tools, Xdebug firewall port (NixOS part)
+- **polybar**: Status bar
 - **sql**: Database tools (PostgreSQL, MySQL, SQLite, DBeaver)
 - **tmux**: Tmux terminal multiplexer
+- **vscode**: VS Code
 - **zsh**: Zsh shell with Oh My Zsh
 
-Each role has:
-- `roles/{role}/{role}.nix` - NixOS module defining packages and configuration
-- `roles/{role}/configuration/` - Configuration files for the role
-
 ## Customization
-You can customize the configuration by:
-1. Editing individual role `.nix` files in `roles/{role}/{role}.nix`
-2. Modifying configuration files in `roles/{role}/configuration/`
-3. Editing `home.nix` to change which roles are included
-4. Updating `flake.nix` to change Nix channels or add dependencies
+- **Add a role:** create `roles/<role>/<role>.nix` with an `enable` option (copy an existing role), then add it to `hosts/roles.nix`. Roles are picked up automatically from the `roles/` folders.
+- **Different roles per host:** give the host its own list in `flake.nix` (`hosts.<host>.roles`).
+- **System settings:** shared ones in `hosts/common.nix`, role-specific ones in `roles/<role>/system.nix`, laptop-specific ones in `hosts/<host>/configuration.nix`.
 
-After making changes, run `home-manager switch --flake .#joey` to apply them.
+After making changes, run `make switch` (Home Manager) or `make os` (NixOS) to apply them.

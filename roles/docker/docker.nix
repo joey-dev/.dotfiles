@@ -1,7 +1,9 @@
-_:
+{ config, lib, ... }:
 
 {
-  # Left intentionally blank for NixOS.
-  # Docker CLI and Compose are automatically installed when you enable
-  # virtualisation.docker.enable = true; in your system configuration.nix
+  options.roles.docker.enable = lib.mkEnableOption "the docker role";
+
+  config = lib.mkIf config.roles.docker.enable {
+    # Docker itself is enabled in ./system.nix (NixOS side)
+  };
 }

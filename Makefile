@@ -1,27 +1,28 @@
-# Set USERNAME to your system username (must match a key in flake.nix homeConfigurations).
-# Override on the command line: make switch USERNAME=yourname
+# The host to build, a folder in hosts/ (work, personal).
+# Defaults to this machine's hostname. Override: make os HOST=work
+HOST ?= $(shell hostname)
 USERNAME ?= joey
 
-install:
-	# Install NixOS and home-manager if not already installed
-	# This assumes NixOS is already installed
-	nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
-	nix-channel --update
-
-build:
-	# Build the home-manager configuration
-	home-manager build --flake .#${USERNAME}
+.PHONY: switch os build update check fmt
 
 switch:
-	# Apply the home-manager configuration
-	home-manager switch --flake .#${USERNAME}
+	# Apply the Home Manager configuration (shows a diff of what changed)
+	nh home switch . --configuration $(USERNAME)@$(HOST)
+
+os:
+	# Apply the NixOS configuration (asks for your sudo password)
+	nh os switch . --hostname $(HOST)
+
+build:
+	# Build the Home Manager configuration without applying it
+	nh home build . --configuration $(USERNAME)@$(HOST)
 
 update:
 	# Update flake inputs
 	nix flake update
 
 check:
-	# Check the flake configuration
+	# Build the configuration and run the lint checks
 	nix flake check
 
 fmt:

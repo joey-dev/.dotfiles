@@ -7,15 +7,20 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Bootstrap and Build the Environment
 
-```bash
-# Install home-manager channel (takes ~30 seconds)
-make install
+Each laptop is a host in `hosts/` (`work`, `personal`). Commands pick the host from the hostname; override with `HOST=<host>`.
 
-# Build the configuration (takes 5-15 minutes depending on cache)
+```bash
+# First-time setup of a laptop (NixOS + Home Manager)
+./bootstrap.sh <host>
+
+# Build the Home Manager configuration (takes 5-15 minutes depending on cache)
 make build
 
-# Apply the configuration
+# Apply the Home Manager configuration
 make switch
+
+# Apply the NixOS configuration (needs sudo)
+make os
 ```
 
 ### Key Components Installed
@@ -44,7 +49,6 @@ nix flake check
 ```
 
 ### Known Build Times
-- **make install**: 30 seconds
 - **make build**: 5-15 minutes (depending on Nix cache availability)
 - **make switch**: 5-15 minutes (first run) or 30 seconds (subsequent runs with no changes)
 - **nix flake check**: a few minutes (it builds the Home Manager configuration)
@@ -52,7 +56,7 @@ nix flake check
 ## Complete End-to-End Validation Scenario
 
 ### Fresh System Installation Test
-After running `make install` and `make switch`, validate the complete environment:
+After running `./bootstrap.sh <host>`, validate the complete environment:
 
 ```bash
 # 1. Verify shell environment
@@ -167,15 +171,20 @@ ls -la ~/.zshrc          # Should point to nix store
 ### Customizing Your Setup
 To customize the configuration:
 
-1. Edit individual role `.nix` files in `roles/{role}/{role}.nix`
-2. Modify configuration files in `roles/{role}/configuration/`
-3. Edit `home.nix` to change which roles are included
-4. Update `flake.nix` to change your username or add dependencies
+1. Edit individual role `.nix` files in `roles/{role}/{role}.nix` (Home Manager part)
+2. Edit `roles/{role}/system.nix` for the NixOS part of a role (only docker, i3, neovim, php have one)
+3. Modify configuration files in `roles/{role}/configuration/`
+4. Edit `hosts/roles.nix` to change which roles are enabled
+5. Edit `hosts/common.nix` for shared NixOS settings, `hosts/{host}/configuration.nix` for one laptop
+6. Update `flake.nix` to add hosts or inputs
+
+Every role has a `roles.{role}.enable` option and wraps its config in `lib.mkIf`. New role folders are imported automatically by `roles/default.nix` and `roles/system.nix`.
 
 After making changes:
 ```bash
 make build    # Verify the build works
-make switch   # Apply the changes
+make switch   # Apply Home Manager changes
+make os       # Apply NixOS changes
 ```
 
 ### Additional Project Setup
@@ -184,13 +193,9 @@ For specific language projects, see [Language-specific Documentation](documentat
 ## Common Issues and Troubleshooting
 
 ### Known Issues:
-1. **Flakes not enabled**: Ensure you have flakes enabled in your Nix configuration:
-   ```bash
-   mkdir -p ~/.config/nix
-   echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
-   ```
+1. **Flakes not enabled**: `bootstrap.sh` passes the flag itself. After the first NixOS switch, flakes are enabled by `hosts/common.nix`.
 
-2. **Username mismatch**: Update the username in `flake.nix` to match your actual username.
+2. **Hostname mismatch**: `make` uses the hostname to pick `hosts/<host>`. Use `make switch HOST=work` if they differ.
 
 3. **Build failures**: If a build fails, check the error message. Common issues:
    - Missing or incorrect package names
@@ -217,11 +222,14 @@ home-manager generations  # List available generations
 ## Frequently Accessed Files and Locations
 
 ### Key Configuration Files:
-- `flake.nix` - Main Nix flake configuration
-- `home.nix` - Home Manager configuration importing all roles
-- `Makefile` - Primary commands for installation and building
-- `roles/` - Individual NixOS modules for each tool
-- `roles/{role}/{role}.nix` - NixOS module for each role
+- `flake.nix` - Hosts, Home Manager and NixOS configurations, lint checks
+- `hosts/roles.nix` - Roles enabled on every laptop
+- `hosts/home.nix` - Home Manager settings shared by every host
+- `hosts/common.nix` - NixOS settings shared by every host
+- `hosts/{host}/` - `configuration.nix` and `hardware-configuration.nix` per laptop
+- `Makefile` - Primary commands for building and switching
+- `roles/{role}/{role}.nix` - Home Manager module for each role
+- `roles/{role}/system.nix` - Optional NixOS module for a role
 - `roles/{role}/configuration/` - Configuration files for each role
 - `documentation/PHP.md` - PHP-specific project setup instructions
 
