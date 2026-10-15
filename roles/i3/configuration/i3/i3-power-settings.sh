@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Manage logout with rofi
-option=`echo -e "lock screen\nsuspend\nlogout\nreboot\npoweroff\nKill user $USER" | rofi -width 600 -dmenu -p power`
+option=$(echo -e "lock screen\nsuspend\nlogout\nreboot\npoweroff\nKill user $USER" | rofi -width 600 -dmenu -p power)
 case $option in
     'lock screen')
         i3lock -c 000000
@@ -17,7 +17,7 @@ case $option in
     poweroff)
         systemctl poweroff
         ;;
-    'kill user $USER')
-        loginctl kill-user $USER
+    "Kill user $USER")
+        loginctl kill-user "$USER"
         ;;
 esac

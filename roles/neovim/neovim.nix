@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   programs.neovim = {
@@ -12,7 +12,7 @@
     ripgrep
     fd
     lazygit
-    
+
     # Build tools for Neovim plugins
     gcc
     gnumake
@@ -27,7 +27,7 @@
 
   # Link Neovim configuration
   xdg.configFile."nvim".source = ./configuration/nvim;
-  
+
   # Link PHP development tools configuration
   home.file.".config/phpmd_ruleset.xml".source = ./configuration/phpmd_ruleset.xml;
   home.file.".config/phpstan_configuration.neon".source = ./configuration/phpstan_configuration.neon;

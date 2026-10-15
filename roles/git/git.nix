@@ -1,15 +1,15 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   home.packages = with pkgs; [
-    meld  # Git merge tool
+    meld # Git merge tool
   ];
 
   # Git configuration
   programs.git = {
     enable = true;
     lfs.enable = true;
-    
+
     settings = {
       core = {
         editor = "nvim";
@@ -27,8 +27,8 @@
         };
       };
     };
-    
+
     # Include ~/.gitconfig.local for personal settings (userName, userEmail, etc.)
-    includes = [{ path = "~/.gitconfig.local"; }];
+    includes = [ { path = "~/.gitconfig.local"; } ];
   };
 }
