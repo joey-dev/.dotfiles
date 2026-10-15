@@ -43,13 +43,17 @@
       };
 
       mkHome =
-        host:
+        hostname: host:
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           modules = [
             ./roles
             ./hosts/home.nix
             (enableRoles host.roles)
+          ]
+          # Laptop-specific Home Manager settings, such as monitor profiles
+          ++ lib.optional (builtins.pathExists ./hosts/${hostname}/home.nix) ./hosts/${hostname}/home.nix
+          ++ [
             {
               home.username = username;
               home.homeDirectory = "/home/${username}";
@@ -89,7 +93,7 @@
     {
       # home-manager switch --flake .   (picks joey@<hostname>)
       homeConfigurations = lib.mapAttrs' (
-        hostname: host: lib.nameValuePair "${username}@${hostname}" (mkHome host)
+        hostname: host: lib.nameValuePair "${username}@${hostname}" (mkHome hostname host)
       ) hosts;
 
       # sudo nixos-rebuild switch --flake .   (picks <hostname>)
