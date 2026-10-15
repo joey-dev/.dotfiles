@@ -1,8 +1,11 @@
-_:
+{ config, lib, ... }:
 
 {
-  programs.vscode = {
-    enable = true;
-  };
+  options.roles.vscode.enable = lib.mkEnableOption "the vscode role";
 
+  config = lib.mkIf config.roles.vscode.enable {
+    programs.vscode = {
+      enable = true;
+    };
+  };
 }

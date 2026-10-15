@@ -26,7 +26,8 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-      # Builds the Home Manager configuration and runs the nixfmt, statix,
+      # Builds the Home Manager config of every host, evaluates the NixOS
+      # configs, and runs the nixfmt, statix,
       # deadnix and shellcheck checks defined in flake.nix
       - name: Check flake, lint and build configuration
         run: nix flake check --print-build-logs
