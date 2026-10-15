@@ -2,6 +2,9 @@ name: NixOS Configuration Validation
 run-name: Validate NixOS flake and home-manager configuration
 on:
   workflow_dispatch:
+  push:
+    branches:
+    - master
   pull_request:
     branches:
     - master
@@ -15,29 +18,15 @@ jobs:
     steps:
       - name: Checkout branch
         uses: actions/checkout@v7
-      
+
       - name: Install Nix
         uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             experimental-features = nix-command flakes
-      
-      - name: Verify all role modules exist
-        run: |
-          echo "Verifying NixOS role structure..."
-          for role in alacritty common docker git gtk i3 javascript neovim php sql tmux zsh polybar ghostty; do
-            if [ ! -f "roles/$role/$role.nix" ]; then
-              echo "Error: roles/$role/$role.nix not found"
-              exit 1
-            fi
-            if [ ! -d "roles/$role/configuration" ]; then
-              echo "Error: roles/$role/configuration directory not found"
-              exit 1
-            fi
-            echo "✓ $role role structure is valid"
-          done
-          echo "All roles validated successfully!"
-      
-      - name: Check flake and build configuration
-        run: nix flake check
+
+      # Builds the Home Manager configuration and runs the nixfmt, statix,
+      # deadnix and shellcheck checks defined in flake.nix
+      - name: Check flake, lint and build configuration
+        run: nix flake check --print-build-logs

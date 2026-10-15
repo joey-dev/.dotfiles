@@ -1,0 +1,3 @@
+# Flat keys like `home.packages` and `home.file` side by side are the usual
+# Home Manager style, so don't ask to nest them into one `home = { ... }`.
+disabled = [ "repeated_keys" ]

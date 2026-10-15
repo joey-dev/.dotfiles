@@ -23,9 +23,9 @@
   home.file.".config/composer/composer.lock".source = ./global-composer/composer.lock;
 
   # The Activation Hook: Now runs 'install' instead of 'update'
-  home.activation.installGlobalComposerPackages = config.lib.dag.entryAfter ["writeBoundary"] ''
+  home.activation.installGlobalComposerPackages = config.lib.dag.entryAfter [ "writeBoundary" ] ''
     export PATH="${pkgs.php83}/bin:${pkgs.php83Packages.composer}/bin:$PATH"
-    
+
     # Run 'install' so it strictly respects your tracked composer.lock file
     $DRY_RUN_CMD composer global install --no-interaction --quiet
   '';

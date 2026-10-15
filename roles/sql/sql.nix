@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   # Install SQL and database tools
@@ -7,10 +7,10 @@
     postgresql
     mariadb.client
     sqlite
-    
+
     # Database GUI tools
     dbeaver-bin
-    
+
     # Command-line database tools
     pgcli
     # mycli is currently broken in nixpkgs (sqlglot version conflict); use: nix run nixpkgs#mycli

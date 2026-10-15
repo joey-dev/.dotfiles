@@ -24,3 +24,6 @@ check:
 	# Check the flake configuration
 	nix flake check
 
+fmt:
+	# Format all .nix files
+	nix fmt

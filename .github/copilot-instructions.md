@@ -35,33 +35,19 @@ make switch
 
 ### Validation (Run these before and after changes)
 ```bash
-# Check flake configuration (takes less than 10 seconds)
+# Format all .nix files (nixfmt)
+nix fmt
+
+# Build the configuration and run all lint checks:
+# nixfmt, statix, deadnix and shellcheck (see `checks` in flake.nix)
 nix flake check
-
-# Verify role structure
-for role in alacritty common docker git gtk i3 javascript neovim php sql tmux zsh; do
-  if [ ! -f "roles/$role/$role.nix" ]; then
-    echo "Error: roles/$role/$role.nix not found"
-    exit 1
-  fi
-  if [ ! -d "roles/$role/configuration" ]; then
-    echo "Error: roles/$role/configuration directory not found"
-    exit 1
-  fi
-done
-
-# Build without applying
-make build
-
-# Apply configuration
-make switch
 ```
 
 ### Known Build Times
 - **make install**: 30 seconds
 - **make build**: 5-15 minutes (depending on Nix cache availability)
 - **make switch**: 5-15 minutes (first run) or 30 seconds (subsequent runs with no changes)
-- **nix flake check**: Less than 10 seconds
+- **nix flake check**: a few minutes (it builds the Home Manager configuration)
 
 ## Complete End-to-End Validation Scenario
 
@@ -224,7 +210,8 @@ make update
 
 # Roll back to previous generation
 home-manager generations  # List available generations
-home-manager switch --flake .#user --rollback
+# then run the activate script of the generation you want, e.g.:
+# /nix/store/<hash>-home-manager-generation/activate
 ```
 
 ## Frequently Accessed Files and Locations
@@ -254,5 +241,7 @@ home-manager switch --flake .#user --rollback
 
 ## CI/CD Integration
 - GitHub Actions workflow in `.github/workflows/main.yml` validates NixOS configuration
-- All pull requests automatically run `nix flake check` and role structure validation
-- Validates syntax of all `.nix` files
+- Pull requests and pushes to `master` run `nix flake check`
+- This builds the Home Manager configuration and runs nixfmt, statix, deadnix and shellcheck
+- Shell scripts in `roles/*/configuration` must pass shellcheck; `shellcheckExcludes` in `flake.nix` lists temporary exceptions
+- statix settings live in `statix.toml`

@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+_:
 
 {
   # Left intentionally blank for NixOS.

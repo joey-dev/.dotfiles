@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ pkgs, lib, ... }:
 
 lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
 
@@ -23,7 +23,7 @@ lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
 
   xdg.configFile = {
     "i3/config".source = lib.mkForce ./configuration/i3/config;
-    
+
     "i3/scripts".source = ./configuration/scripts;
 
     "i3/i3-move-display.sh" = {

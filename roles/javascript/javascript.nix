@@ -1,9 +1,9 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   # Install Node.js and JavaScript development tools
   home.packages = with pkgs; [
-    nodejs  # This includes npm by default
+    nodejs # This includes npm by default
     pnpm
     yarn
     typescript

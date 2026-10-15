@@ -76,7 +76,8 @@ cd ~/.dotfiles
 ### Available Commands
 - **Apply configuration:** `home-manager switch --flake .#joey` (Run this after making changes to any `.nix` file)
 - **Update inputs:** `nix flake update` (Bumps your packages to the latest versions)
-- **Check flake:** `nix flake check` (Validates the configuration locally)
+- **Check flake:** `nix flake check` (Builds the configuration and runs the lint checks: nixfmt, statix, deadnix, shellcheck)
+- **Format:** `nix fmt` (Formats all `.nix` files)
 - **Garbage collection:** `nix-collect-garbage -d` (Frees up disk space by removing old generations)
 
 ## Configuration <a name = "configuration"></a>
