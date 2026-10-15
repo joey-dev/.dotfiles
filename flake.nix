@@ -5,7 +5,7 @@
     # Home Manager and user packages
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     # NixOS itself stays on the stable release
-    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-26.05";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
