@@ -54,6 +54,7 @@ in
       # PHP tool configuration
       "phpmd_ruleset.xml".source = ./configuration/phpmd_ruleset.xml;
       "phpstan_configuration.neon" = withPaths ./configuration/phpstan_configuration.neon;
+      # Takes the database from PHPSTAN_DBA_URL, see documentation/PHP.md
       "phpstan-dba-bootstrap.php" = withPaths ./configuration/phpstan-dba-bootstrap.php;
       "phpstan_stubs".source = ./configuration/phpstan_stubs;
       "phpactor/phpactor.json".source = ./configuration/phpactor.json;
