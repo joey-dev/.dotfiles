@@ -1,3 +1,4 @@
+- fix global phpstan (in nvim)
 - maybe multi repo for secrets
 - add ssh key to this repo, if its secure enough
 - add syncthing (for task)

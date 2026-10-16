@@ -1,5 +1,6 @@
 ## Table of Contents
 - [New Project](#new_project)
+- [phpstan-dba (database checks)](#phpstan_dba)
 
 ## New Project <a name = "new_project"></a>
 
@@ -27,3 +28,32 @@ add the following file to the root: `.phpactor.json`
 ```
 
 when using phpstan add the phpstan.neon to the root
+
+## phpstan-dba (database checks) <a name = "phpstan_dba"></a>
+
+phpstan-dba checks your SQL queries against a real database: unknown tables or columns, and the types of the result rows.
+
+The global phpstan config (`~/.config/phpstan_configuration.neon`) always loads `~/.config/phpstan-dba-bootstrap.php`.
+That file is the same for every project. It reads the database from the **`PHPSTAN_DBA_URL`** environment variable.
+
+- **Variable set:** phpstan connects to that database and checks the queries.
+- **Variable not set:** the query checks are skipped, phpstan runs as normal.
+
+### Set it up for a project
+
+Add the variable to the project's `.envrc` (direnv loads it when you `cd` into the project):
+
+```sh
+use flake
+export PHPSTAN_DBA_URL="mysql://root:password@127.0.0.1:3306/database_name"
+```
+
+- Use the host and port as seen from your laptop, not the Docker service name.
+- Special characters in the password must be URL-encoded, for example `@` becomes `%40`.
+- Keep `.envrc` out of git (add it to `.git/info/exclude` if the project doesn't ignore it).
+- Start Neovim from a shell inside the project, so it gets the variable too.
+
+### When it fails
+
+- **`PHPSTAN_DBA_URL must look like ...`**: the value is not a `mysql://` URL.
+- **`Connection refused`**: the database container is not running, or the port is wrong.

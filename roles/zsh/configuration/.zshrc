@@ -25,8 +25,3 @@ alias bat="bat"
 alias whereami="pwd"
 
 eval "$(pay-respects zsh --alias fuck)"
-
-# nnn configuration
-export NNN_BMS='h:~;d:~/.dotfiles;s:~/Scripts'
-export NNN_PLUG='v:preview-tabbed'
-export NNN_INFO="/tmp/nnn.fifo"
