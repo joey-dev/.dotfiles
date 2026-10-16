@@ -168,3 +168,5 @@ templates/              `nix flake init -t` templates
 - **System settings:** shared ones in `hosts/common.nix`, role-specific ones in `roles/<role>/system.nix`, laptop-specific ones in `hosts/<host>/configuration.nix`.
 
 After making changes, run `make switch` (Home Manager) or `make os` (NixOS) to apply them.
+
+**No switch needed** for the Neovim, i3 and polybar config: `~/.config/nvim`, `~/.config/i3` and `~/.config/polybar` link straight to their folders in this repo. Edit, then restart Neovim or reload i3 (`Win+Shift+c`, which also restarts polybar). This needs the repo at `~/.dotfiles` (`dotfiles.path` in `roles/default.nix`).

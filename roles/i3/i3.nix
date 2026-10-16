@@ -9,7 +9,8 @@
   options.roles.i3.enable = lib.mkEnableOption "the i3 role";
 
   config = lib.mkIf config.roles.i3.enable {
-    xsession.windowManager.i3.enable = true;
+    # i3 itself is installed by ./system.nix. The Home Manager i3 module is not used,
+    # because it writes i3/config itself and the folder below is linked as a whole.
     services.picom.enable = true;
     services.dunst.enable = true;
 
@@ -59,25 +60,8 @@
         ];
       };
 
-    xdg.configFile = {
-      "i3/config".source = lib.mkForce ./configuration/i3/config;
-
-      "i3/i3-move-display.sh" = {
-        source = ./configuration/i3/i3-move-display.sh;
-        executable = true;
-      };
-      "i3/i3-power-settings.sh" = {
-        source = ./configuration/i3/i3-power-settings.sh;
-        executable = true;
-      };
-      "i3/i3-swap-display.sh" = {
-        source = ./configuration/i3/i3-swap-display.sh;
-        executable = true;
-      };
-      "i3/i3-monitor-menu.sh" = {
-        source = ./configuration/i3/i3-monitor-menu.sh;
-        executable = true;
-      };
-    };
+    # Linked to the repo, not the store: edit, then Win+Shift+c to reload
+    xdg.configFile."i3".source =
+      config.lib.file.mkOutOfStoreSymlink "${config.dotfiles.path}/roles/i3/configuration/i3";
   };
 }

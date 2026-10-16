@@ -13,6 +13,9 @@
       enable = true;
       withRuby = true;
       withPython3 = true;
+      # Pass the generated provider settings as wrapper arguments instead of writing
+      # nvim/init.lua, which would land inside the linked config folder
+      sideloadInitLua = true;
     };
 
     home.packages = with pkgs; [
@@ -33,7 +36,9 @@
       sqlfluff
     ];
 
-    # Link Neovim configuration
-    xdg.configFile."nvim".source = ./configuration/nvim;
+    # Linked to the repo, not the store: edits work right away, and lazy.nvim
+    # writes lazy-lock.json and lazyvim.json straight into the repo
+    xdg.configFile."nvim".source =
+      config.lib.file.mkOutOfStoreSymlink "${config.dotfiles.path}/roles/neovim/configuration/nvim";
   };
 }

@@ -20,15 +20,11 @@
 
       # Start the bar automatically
       script = "polybar main &";
-
-      # Load our config file
-      extraConfig = builtins.readFile ./configuration/config.ini;
     };
 
-    # Win+s shows or hides the bar
-    xdg.configFile."polybar/toggle-status-bar.sh" = {
-      source = ./configuration/toggle-status-bar.sh;
-      executable = true;
-    };
+    # config.ini and the Win+s toggle script, linked to the repo, not the store.
+    # polybar restarts on every i3 reload (Win+Shift+c).
+    xdg.configFile."polybar".source =
+      config.lib.file.mkOutOfStoreSymlink "${config.dotfiles.path}/roles/polybar/configuration";
   };
 }
