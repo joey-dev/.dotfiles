@@ -39,5 +39,32 @@
       # Include ~/.gitconfig.local for personal settings (userName, userEmail, etc.)
       includes = [ { path = "~/.gitconfig.local"; } ];
     };
+
+    # Syntax-highlighted diffs in git
+    programs.delta = {
+      enable = true;
+      enableGitIntegration = true;
+    };
+
+    programs.lazygit = {
+      enable = true;
+      settings.customCommands = [
+        {
+          key = "<c-c>";
+          context = "files";
+          description = "Commit with message starting with ticket";
+          prompts = [
+            {
+              type = "input";
+              title = "Add Commit Message";
+              key = "Message";
+            }
+          ];
+          # Branch `ABC-123-some-name` gives the message `[ABC-123] <message>`
+          command = ''git commit -m "$(git branch --contains | awk -v m="{{.Form.Message}}" ' /\*/{split($2, n, /-/); print ("["n[1] "-" n[2] "] " m)}')"'';
+          output = "terminal";
+        }
+      ];
+    };
   };
 }

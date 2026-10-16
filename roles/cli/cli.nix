@@ -6,12 +6,9 @@
 }:
 
 {
-  options.roles.common.enable = lib.mkEnableOption "the common role";
+  options.roles.cli.enable = lib.mkEnableOption "the cli role";
 
-  config = lib.mkIf config.roles.common.enable {
-    fonts.fontconfig.enable = true;
-
-    # Core packages
+  config = lib.mkIf config.roles.cli.enable {
     home.packages = with pkgs; [
       wget
       curl
@@ -21,21 +18,9 @@
       jq
       fastfetch
       xclip
-      google-chrome
       yazi
-      libreoffice
-
-      nerd-fonts.comic-shanns-mono
+      comma # `, <program>` runs a program without installing it
     ];
-
-    services.flameshot = {
-      enable = true;
-      settings = {
-        General = {
-          useX11LegacyScreenshot = true;
-        };
-      };
-    };
 
     # Use native modules for modern CLI tools to auto-inject shell aliases
     programs.eza = {
@@ -50,6 +35,12 @@
 
     programs.bat = {
       enable = true;
+    };
+
+    # Finds which package has a missing command; also builds the database comma uses
+    programs.nix-index = {
+      enable = true;
+      enableZshIntegration = true;
     };
   };
 }

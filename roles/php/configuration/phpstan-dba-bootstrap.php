@@ -4,7 +4,7 @@ use staabm\PHPStanDba\QueryReflection\RuntimeConfiguration;
 use staabm\PHPStanDba\QueryReflection\QueryReflection;
 use staabm\PHPStanDba\QueryReflection\PdoQueryReflector;
 
-require_once __DIR__ . '/vendor/autoload.php';
+require_once '@composerHome@/vendor/autoload.php';
 
 $config = new RuntimeConfiguration();
 // Enable this if you want it to also check UPDATE/INSERT/DELETE queries

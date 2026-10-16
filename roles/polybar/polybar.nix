@@ -24,5 +24,11 @@
       # Load our config file
       extraConfig = builtins.readFile ./configuration/config.ini;
     };
+
+    # Win+s shows or hides the bar
+    xdg.configFile."polybar/toggle-status-bar.sh" = {
+      source = ./configuration/toggle-status-bar.sh;
+      executable = true;
+    };
   };
 }

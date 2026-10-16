@@ -1,13 +1,16 @@
 # Roles enabled on every laptop. A host can use its own list in flake.nix.
 [
   "alacritty"
+  "apps"
+  "audio"
   "claude"
-  "common"
-  "cursor"
+  "cli"
   "docker"
+  "fonts"
   "ghostty"
   "git"
   "gtk"
+  "gui-editors"
   "i3"
   "javascript"
   "neovim"
@@ -16,6 +19,5 @@
   "sql"
   "ssh"
   "tmux"
-  "vscode"
   "zsh"
 ]

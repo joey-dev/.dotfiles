@@ -15,16 +15,14 @@
 
     home.packages = with pkgs; [
       i3lock
-      dmenu
-      rofi
       arandr
       xrandr
       feh
-      python3
-      pulsemixer
-      pavucontrol
       brightnessctl
     ];
+
+    # App launcher (Win+d) and the menus of the i3 scripts
+    programs.rofi.enable = true;
 
     # Media keys; also installs playerctl
     services.playerctld.enable = true;

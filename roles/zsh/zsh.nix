@@ -11,7 +11,6 @@
   config = lib.mkIf config.roles.zsh.enable {
     home.packages = with pkgs; [
       pay-respects
-      nnn
     ];
 
     programs.zsh = {

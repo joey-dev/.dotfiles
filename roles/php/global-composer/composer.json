@@ -3,7 +3,7 @@
         "phpstan/phpstan": "^2.3.1",
         "phpstan/phpstan-phpunit": "*",
         "phpstan/phpstan-symfony": "*",
-        "phpstan/phpstan-strict-rules": "2.0.1",
+        "phpstan/phpstan-strict-rules": "^2.0",
         "shipmonk/phpstan-rules": "*",
         "jangregor/phpstan-prophecy": "*",
         "shipmonk/dead-code-detector": "*",

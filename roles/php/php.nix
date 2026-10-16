@@ -5,37 +5,65 @@
   ...
 }:
 
+let
+  # Latest PHP, for quick scripts. Projects bring their own PHP through their flake.
+  inherit (pkgs) php;
+  inherit (php.packages) composer;
+
+  composerHome = "${config.xdg.configHome}/composer";
+
+  # Fill in the paths the PHP config files need
+  withPaths = file: {
+    text =
+      builtins.replaceStrings
+        [ "@composerHome@" "@stubs@" "@dbaBootstrap@" ]
+        [
+          composerHome
+          "${./configuration/phpstan_stubs}"
+          "${config.xdg.configHome}/phpstan-dba-bootstrap.php"
+        ]
+        (builtins.readFile file);
+  };
+in
 {
   options.roles.php.enable = lib.mkEnableOption "the php role";
 
   config = lib.mkIf config.roles.php.enable {
-    home.packages = with pkgs; [
-      php83
-      php83Packages.composer
-      phpactor
-      php83Packages.phpmd
-      php83Packages.psalm
-      vscode-extensions.xdebug.php-debug
+    home.packages = [
+      php
+      composer
+      pkgs.phpactor
+      php.packages.phpmd
+      php.packages.psalm
+      pkgs.vscode-extensions.xdebug.php-debug
     ];
 
     home.sessionVariables = {
-      COMPOSER_HOME = "$HOME/.config/composer";
+      COMPOSER_HOME = composerHome;
     };
 
     home.sessionPath = [
-      "$HOME/.config/composer/vendor/bin"
+      "${composerHome}/vendor/bin"
     ];
 
-    # Symlink your tracked files from your dotfiles directly into Composer's home
-    home.file.".config/composer/composer.json".source = ./global-composer/composer.json;
-    home.file.".config/composer/composer.lock".source = ./global-composer/composer.lock;
+    xdg.configFile = {
+      # Global composer packages (phpstan and its extensions)
+      "composer/composer.json".source = ./global-composer/composer.json;
+      "composer/composer.lock".source = ./global-composer/composer.lock;
 
-    # The Activation Hook: Now runs 'install' instead of 'update'
-    home.activation.installGlobalComposerPackages = config.lib.dag.entryAfter [ "writeBoundary" ] ''
-      export PATH="${pkgs.php83}/bin:${pkgs.php83Packages.composer}/bin:$PATH"
+      # PHP tool configuration
+      "phpmd_ruleset.xml".source = ./configuration/phpmd_ruleset.xml;
+      "phpstan_configuration.neon" = withPaths ./configuration/phpstan_configuration.neon;
+      "phpstan-dba-bootstrap.php" = withPaths ./configuration/phpstan-dba-bootstrap.php;
+      "phpstan_stubs".source = ./configuration/phpstan_stubs;
+      "phpactor/phpactor.json".source = ./configuration/phpactor.json;
+    };
 
-      # Run 'install' so it strictly respects your tracked composer.lock file
-      $DRY_RUN_CMD composer global install --no-interaction --quiet
+    # Install the global composer packages, exactly as pinned in composer.lock
+    home.activation.installGlobalComposerPackages = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      export PATH="${php}/bin:${composer}/bin:$PATH"
+      export COMPOSER_HOME="${composerHome}"
+      run composer global install --no-interaction --quiet
     '';
   };
 }
