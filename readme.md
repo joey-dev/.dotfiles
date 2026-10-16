@@ -89,7 +89,7 @@ snippet pubf
 ### I3 <a name = "keybinds_i3"> </a>
 - Find programs: `Win+d`
 - Power settings: `Win+p`
-- Monitor settings: `Win+m`
+- Monitor layout (autorandr profiles): `Win+m`
 - Switch workspace from monitor: `Win+shift+d`
 - Network settings: `Win+n`
 - Audio settings: `Win+a`
@@ -99,6 +99,10 @@ snippet pubf
 - All commands are within nvim itself: `<space>h`
 
 ### DBeaver <a name = "keybinds_dbeaver"> </a>
+
+#### Settings
+DBeaver keeps its settings in its own workspace, so they are not linked by Home Manager.
+Import them once by hand: **File → Import → General → Preferences**, and pick `roles/common/configuration/DBeaver.epf`.
 
 #### In Table view
 - View data in table: `Ctrl+d`
@@ -144,12 +148,13 @@ templates/              `nix flake init -t` templates
 - **ghostty**: Ghostty terminal, used for the file manager
 - **git**: Git configuration with Meld as merge tool
 - **gtk**: GTK theme configuration
-- **i3**: i3 window manager with custom scripts, LightDM (NixOS part)
+- **i3**: i3 window manager, auto-lock (xidlehook), autorandr, media and brightness keys, LightDM and backlight udev rules (NixOS part)
 - **javascript**: Node.js, npm, and JavaScript development tools
 - **neovim**: Neovim with LazyVim configuration, nix-ld for Mason (NixOS part)
 - **php**: PHP with Composer and development tools, Xdebug firewall port (NixOS part)
 - **polybar**: Status bar
 - **sql**: Database tools (PostgreSQL, MySQL, SQLite, DBeaver)
+- **ssh**: SSH agent; keys are added to it on first use. Private hosts go in `~/.ssh/config.local`
 - **tmux**: Tmux terminal multiplexer
 - **vscode**: VS Code
 - **zsh**: Zsh shell with Oh My Zsh
