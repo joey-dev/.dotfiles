@@ -89,6 +89,9 @@
           ${script}
           touch $out
         '';
+
+      # Get the list of all role names from the roles directory
+      allRoles = builtins.attrNames (lib.filterAttrs (name: type: type == "directory") (builtins.readDir ./roles));
     in
     {
       # home-manager switch --flake .   (picks joey@<hostname>)
@@ -148,6 +151,11 @@
             printf 'shellcheck %s\n' "''${scripts[@]}"
             shellcheck "''${scripts[@]}"
           '';
+
+          e2e-test = import ./tests/e2e.nix {
+            inherit pkgs lib username home-manager;
+            roles = allRoles;
+          };
         };
     };
 }
