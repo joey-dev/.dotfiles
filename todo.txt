@@ -1,6 +1,9 @@
 - able to find all templates here with 1 command
-- when loading claude walled, check the template wanting to use. save that to it's home
-- 
+- when loading claude walled, check the template wanting to use. save the name in its home (start with template of flake.nix)
+- remove template placeholder reference, just say to check existing templates
+- 'readme.md#New project from a template'. update to mention the 'remote flakes'
+- 'remote flake'. link the templates to ~/.flakes/*. can allow ai sandboxes to read the flakes. 
+- improve Claude-walled. want an easy way to create new worktrees, for any project, only for the agent to use. see 'agent management'. and a or multiple scripts to run command which is not fully allowed. like nix. to block it
 
 - fix global phpstan (in nvim)
 - currently we use mason + nix for nvim packages. prob want to choose one
@@ -16,3 +19,18 @@ rust is a flake https://jeffkreeftmeijer.com/nix-devshells/
 
 https://github.com/hercules-ci/flake-parts
 https://nix.dev/manual/nix/2.34/store/types/#store-url-formatc
+
+
+# agent management
+
+## setup new
+command: agent-setup
+where to run: in the main repo
+what it does when it runs:
+- if exists (likely untracked): .profile. read all answers, if all are there create. otherwise do the things. 
+- creates a new workspace from current repo in ~/.agents/worktrees/{repositoryName}/{randomUniqueName}/{repoRootHere}
+- asks for template, or requirements:
+  - template: can be like 'lastest'
+  - requirements (nice to have): php: 7.5, MySQL: latest
+- if exists in repo: '.worktreeignore', copy all .gitignore, except those. otherwise ask which ones to copy from the .gitignore
+- ask wich ones to copy from .git/info/exclude
