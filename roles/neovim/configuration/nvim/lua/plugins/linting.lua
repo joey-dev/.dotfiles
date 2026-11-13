@@ -32,10 +32,11 @@ return {
         -- The JSON Sanitizer: Strips PHP warnings so Neovim doesn't crash
         parser = function(output, bufnr)
           local json_start = string.find(output, "{")
-          if json_start then
-            output = string.sub(output, json_start)
+          if not json_start then
+            -- phpstan failed before analysing (bad config, missing autoload); the reason is on stderr
+            return {}
           end
-          return default_parser(output, bufnr)
+          return default_parser(string.sub(output, json_start), bufnr)
         end,
       }
 

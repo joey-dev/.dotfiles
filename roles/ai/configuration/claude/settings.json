@@ -5,13 +5,21 @@
   },
   "spinnerTipsEnabled": false,
   "prefersReducedMotion": true,
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
   "permissions": {
     "deny": [
-      "Read(./.env)",
-      "Read(./.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.*.local)",
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)",
       "Read(~/.gnupg/**)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.docker/config.json)",
       "Read(~/.claude/.credentials.json)"
     ],
     "ask": [
@@ -20,7 +28,9 @@
       "Bash(git commit)",
       "Bash(git commit *)",
       "Bash(home-manager)",
-      "Bash(home-manager *)"
+      "Bash(home-manager *)",
+      "Bash(sudo)",
+      "Bash(sudo *)"
     ]
   },
   "hooks": {
@@ -45,5 +55,8 @@
       }
     ]
   },
-  "editorMode": "vim"
+  "editorMode": "vim",
+  "enabledPlugins": {
+    "superpowers@anthropic-plugin-directory": true
+  }
 }

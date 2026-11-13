@@ -102,9 +102,9 @@
       # The Home Manager version pinned in flake.lock, used by bootstrap.sh
       packages.${system}.home-manager = home-manager.packages.${system}.default;
 
-      templates.php-symfony = {
-        path = ./templates/php-symfony;
-        description = "PHP/Symfony project with its own dev shell";
+      templates.latest = {
+        path = ./templates/latest;
+        description = "The latest project stack with its own dev shell";
       };
 
       # `nix fmt` formats every .nix file in the repo

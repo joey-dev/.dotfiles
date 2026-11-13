@@ -19,6 +19,7 @@
       fastfetch
       xclip
       yazi
+      gh
       comma # `, <program>` runs a program without installing it
     ];
 

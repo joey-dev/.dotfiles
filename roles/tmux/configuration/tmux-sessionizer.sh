@@ -3,7 +3,7 @@
 if [[ $# -eq 1 ]]; then
     folders=$1
 else
-    folders=$(find / /home /usr ~ ~/Code/Learning ~/Code/Projects ~/Code/Test ~/Code/Work -mindepth 1 -maxdepth 1 -type d)
+    folders=$(find / /home /usr ~ ~/Code/Learning ~/Code/Projects ~/Code/Test ~/Code/Work ~/Code/Worktrees -mindepth 1 -maxdepth 1 -type d)
 	alphabet=( "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z")
 
 	items=("${folders[@]}" "${alphabet[@]}")

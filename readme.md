@@ -144,14 +144,14 @@ templates/              `nix flake init -t` templates
 - **alacritty**: Terminal emulator configuration
 - **apps**: Desktop apps: Chrome, LibreOffice, flameshot
 - **audio**: Audio mixers (pulsemixer, pavucontrol)
-- **claude**: Claude Code with settings
+- **ai**: Like Codex and Claude Code with settings
 - **cli**: Command-line tools (wget, curl, jq, fzf, bat, eza, yazi, ...), plus nix-index and comma (`, <program>` runs a program without installing it)
 - **docker**: Docker (NixOS part)
 - **fonts**: Nerd Fonts (ComicShannsMono)
 - **ghostty**: Ghostty terminal, used for the file manager
 - **git**: Git with Meld as merge tool, delta for diffs, and lazygit with a "commit with ticket" command (`Ctrl+c` in the files panel)
 - **gtk**: GTK theme configuration
-- **gui-editors**: VS Code and Cursor
+- **gui-editors**: VS Code
 - **i3**: i3 window manager, rofi, auto-lock (xidlehook), autorandr, media and brightness keys, LightDM and backlight udev rules (NixOS part)
 - **javascript**: Node.js, npm, and JavaScript development tools
 - **neovim**: Neovim with LazyVim configuration, nix-ld for Mason (NixOS part)

@@ -1,9 +1,9 @@
 # Roles enabled on every laptop. A host can use its own list in flake.nix.
 [
+  "ai"
   "alacritty"
   "apps"
   "audio"
-  "claude"
   "cli"
   "docker"
   "fonts"
