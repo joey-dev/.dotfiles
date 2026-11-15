@@ -45,6 +45,7 @@ fi
 git add "hosts/$host"
 if [[ -f "hosts/$host/configuration.nix" ]]; then
     echo "🏗️ Building and switching to the NixOS configuration for '$host'..."
+
     sudo nixos-rebuild switch --flake ".#$host" --option experimental-features "nix-command flakes"
 else
     echo "⚠️ hosts/$host/configuration.nix does not exist yet, skipping NixOS. See hosts/$host/README.md."

@@ -10,6 +10,10 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixos-wsl = {
+      url = "github:nix-community/NixOS-WSL/main";
+      inputs.nixpkgs.follows = "nixpkgs-stable";
+    };
   };
 
   outputs =
@@ -18,6 +22,7 @@
       nixpkgs,
       nixpkgs-stable,
       home-manager,
+      nixos-wsl,
       ...
     }:
     let
@@ -34,6 +39,7 @@
       hosts = {
         work.roles = import ./hosts/roles.nix;
         personal.roles = import ./hosts/roles.nix;
+        windows.roles = import ./hosts/windows/roles.nix;
       };
 
       enableRoles = roles: {
@@ -64,7 +70,7 @@
       mkSystem =
         hostname: host:
         nixpkgs-stable.lib.nixosSystem {
-          specialArgs = { inherit username; };
+          specialArgs = { inherit username nixos-wsl; };
           modules = [
             ./roles/system.nix
             ./hosts/common.nix
