@@ -35,6 +35,8 @@ def _parse_connect_target(header_bytes: bytes) -> tuple[str, str, int] | None:
         if len(parts) < 2:
             return None
         method, target = parts[0].upper(), parts[1]
+        if method != "CONNECT":
+            return (method, "", 0)
         if ":" not in target:
             return (method, target.lower(), 443)
         host, port_str = target.rsplit(":", 1)
