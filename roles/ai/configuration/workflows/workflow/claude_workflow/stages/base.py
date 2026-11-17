@@ -9,7 +9,7 @@ from typing import Protocol
 
 from claude_workflow.claude_runner import run_claude_headless
 from claude_workflow.config import StageName, WorkflowConfig
-from claude_workflow.sandbox import SandboxSpec
+from claude_workflow.sandbox import SandboxPaths, SandboxSpec, sandbox_paths
 from claude_workflow.state import TicketState
 
 
@@ -74,7 +74,24 @@ def build_stage_sandbox(
         kb_dir=kb_dir,
         allow_network=stage_cfg.allow_network,
         workdir=workdir,
+        mcp_config=stage_cfg.mcp_config,
+        flake_dir=ctx.config.flake_path,
     )
+
+
+def skill_prompt_prefix(ctx: StageContext, stage: StageName, paths: SandboxPaths) -> str:
+    """Return a prompt instruction pointing Claude to the mounted stage SKILL.md files."""
+    if paths.skills_dir is None:
+        return ""
+    skill_files = [
+        paths.skills_dir / skill_dir.name / "SKILL.md"
+        for skill_dir in stage_skills(ctx.config, stage)
+        if (skill_dir / "SKILL.md").is_file()
+    ]
+    if not skill_files:
+        return ""
+    joined = ", ".join(str(p) for p in skill_files)
+    return f"First read and follow the instructions in: {joined}.\n\n"
 
 
 def blocked_questions_path(state_dir: Path) -> Path:

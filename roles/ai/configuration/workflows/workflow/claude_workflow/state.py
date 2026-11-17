@@ -21,6 +21,7 @@ class TicketState:
     session_ids: dict[str, str] = field(default_factory=dict)
     worktree_path: Path | None = None
     branch_name: str = ""
+    base_commit: str = ""
     escalation_counts: dict[str, int] = field(default_factory=dict)
 
 
@@ -52,6 +53,7 @@ def load_state(state_dir: Path, ticket_id: str) -> TicketState:
         session_ids=session_ids,
         worktree_path=worktree_path,
         branch_name=str(raw.get("branch_name", "")),
+        base_commit=str(raw.get("base_commit", "")),
         escalation_counts=escalation_counts,
     )
 
@@ -69,6 +71,7 @@ def save_state(state_dir: Path, state: TicketState) -> None:
         "session_ids": state.session_ids,
         "worktree_path": str(state.worktree_path) if state.worktree_path is not None else None,
         "branch_name": state.branch_name,
+        "base_commit": state.base_commit,
         "escalation_counts": state.escalation_counts,
     }
 

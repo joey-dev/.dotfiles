@@ -8,6 +8,7 @@ from collections.abc import Mapping
 
 from claude_workflow.claude_runner import run_claude_interactive
 from claude_workflow.config import STAGE_ORDER, StageName, WorkflowConfig
+from claude_workflow.sandbox import sandbox_paths
 from claude_workflow.stages import STAGE_REGISTRY, StageOutcome, StageProtocol
 from claude_workflow.stages.base import (
     StageContext,
@@ -47,7 +48,6 @@ def _run_escalation_qa(ctx: StageContext, blocked_stage: StageName) -> bool:
     """Run a short interactive Q&A turn for blocked-questions.md and clear the blocker."""
     bq_path = blocked_questions_path(ctx.state_dir)
     questions = read_artifact(bq_path)
-    qa_md = ctx.state_dir / "03-qa.md"
 
     _notify(
         f"claude-workflow: {ctx.ticket_id}",
@@ -61,9 +61,11 @@ def _run_escalation_qa(ctx: StageContext, blocked_stage: StageName) -> bool:
         kb_dir=ctx.config.kb_path,
         workdir=ctx.config.repo_path,
     )
+    paths = sandbox_paths(sandbox)
     prompt = (
         f"Stage '{blocked_stage.value}' is blocked on these questions:\n\n{questions}\n\n"
-        f"Ask the user these questions, append the answers to {qa_md}, and remove {bq_path}."
+        f"Ask the user these questions, append the answers to {paths.notes_dir / '03-qa.md'}, "
+        f"and remove {paths.notes_dir / 'blocked-questions.md'}."
     )
     rc = run_claude_interactive(
         ctx.config.stages[StageName.QA],

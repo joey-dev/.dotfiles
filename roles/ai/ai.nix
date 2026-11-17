@@ -38,7 +38,7 @@
 
         postFixup = ''
           wrapProgram $out/bin/claude-workflow \
-            --prefix PATH : ${lib.makeBinPath [ bubblewrap git libnotify claude-code ]} \
+            --prefix PATH : ${lib.makeBinPath [ bubblewrap git libnotify claude-code socat ]} \
             --set-default CLAUDE_WORKFLOW_SKILLS $out/share/claude-workflow/skills
         '';
       })
@@ -46,6 +46,12 @@
 
     home.file.".claude" = {
       source = ./configuration/claude;
+      recursive = true;
+    };
+
+    xdg.configFile."claude-workflow/config.json".source = ./configuration/workflows/config.json;
+    xdg.configFile."claude-workflow/skills" = {
+      source = ./configuration/workflows/workflow/skills;
       recursive = true;
     };
   };

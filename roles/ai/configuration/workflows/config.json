@@ -1,0 +1,77 @@
+{
+  "repo_path": ".",
+  "worktree_base": "~/.local/state/claude-workflow/worktrees",
+  "state_base": "~/.local/state/claude-workflow",
+  "kb_path": "~/notes/work-kb",
+  "skills_base": "~/.config/claude-workflow/skills",
+  "flake_path": null,
+  "verify_commands": [],
+  "max_plan_reviews": 2,
+  "max_escalations": 3,
+  "stages": {
+    "intake": {
+      "model": "sonnet",
+      "thinking": "medium",
+      "repo_access": "none",
+      "allow_network": true,
+      "mcp_config": null,
+      "allowed_tools": ["Read", "Write", "mcp__atlassian__*"]
+    },
+    "explore": {
+      "model": "opus",
+      "thinking": "high",
+      "repo_access": "ro",
+      "allow_network": true,
+      "mcp_config": null,
+      "allowed_tools": ["Read", "Glob", "Grep", "Write", "WebFetch"]
+    },
+    "qa": {
+      "model": "sonnet",
+      "thinking": "medium",
+      "repo_access": "ro",
+      "allow_network": false,
+      "mcp_config": null,
+      "allowed_tools": ["Read", "Glob", "Grep", "Write"]
+    },
+    "plan": {
+      "model": "opus",
+      "thinking": "high",
+      "repo_access": "ro",
+      "allow_network": true,
+      "mcp_config": null,
+      "allowed_tools": ["Read", "Glob", "Grep", "Write", "WebFetch"]
+    },
+    "implement": {
+      "model": "sonnet",
+      "thinking": "high",
+      "repo_access": "rw",
+      "allow_network": false,
+      "mcp_config": null,
+      "allowed_tools": ["Read", "Edit", "Write", "Glob", "Grep", "Bash"]
+    },
+    "verify": {
+      "model": "sonnet",
+      "thinking": "low",
+      "repo_access": "rw",
+      "allow_network": false,
+      "mcp_config": null,
+      "allowed_tools": []
+    },
+    "review": {
+      "model": "opus",
+      "thinking": "high",
+      "repo_access": "ro",
+      "allow_network": false,
+      "mcp_config": null,
+      "allowed_tools": ["Read", "Glob", "Grep", "Write"]
+    },
+    "retro": {
+      "model": "sonnet",
+      "thinking": "medium",
+      "repo_access": "ro",
+      "allow_network": false,
+      "mcp_config": null,
+      "allowed_tools": ["Read", "Write"]
+    }
+  }
+}

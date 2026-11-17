@@ -6,11 +6,13 @@ import uuid
 
 from claude_workflow.claude_runner import run_claude_interactive
 from claude_workflow.config import StageName
+from claude_workflow.sandbox import sandbox_paths
 from claude_workflow.stages.base import (
     StageContext,
     StageOutcome,
     StageResult,
     build_stage_sandbox,
+    skill_prompt_prefix,
 )
 from claude_workflow.state import save_state
 
@@ -36,10 +38,12 @@ class RetroStage:
             kb_dir=ctx.config.kb_path,
             workdir=ctx.state_dir,
         )
-        prompt = (
-            f"Review {ctx.state_dir / '06-verify.md'} and {ctx.state_dir / '07-review.md'} "
+        paths = sandbox_paths(sandbox)
+        prompt = skill_prompt_prefix(ctx, StageName.RETRO, paths) + (
+            f"Review {paths.notes_dir / '06-verify.md'} and "
+            f"{paths.notes_dir / '07-review.md'} "
             f"with the user. Capture any human feedback and propose concrete diffs to skills "
-            f"or the personal KB in {artifact}."
+            f"or the personal KB in {paths.notes_dir / '08-retro.md'}."
         )
         rc = run_claude_interactive(
             ctx.config.stages[StageName.RETRO],

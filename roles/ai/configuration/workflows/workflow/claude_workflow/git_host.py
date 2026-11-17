@@ -60,6 +60,11 @@ def ensure_worktree(
     return worktree_path
 
 
+def rev_parse_head(repo_path: Path) -> str:
+    """Return the full commit SHA of HEAD in repo_path."""
+    return _run_git(repo_path, ["rev-parse", "HEAD"]).stdout.strip()
+
+
 def is_dirty(worktree_path: Path) -> bool:
     """Return True if the worktree has modified, staged, or untracked files."""
     proc = _run_git(worktree_path, ["status", "--porcelain"])

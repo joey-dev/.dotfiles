@@ -6,11 +6,13 @@ import uuid
 
 from claude_workflow.claude_runner import run_claude_interactive
 from claude_workflow.config import StageName
+from claude_workflow.sandbox import sandbox_paths
 from claude_workflow.stages.base import (
     StageContext,
     StageOutcome,
     StageResult,
     build_stage_sandbox,
+    skill_prompt_prefix,
 )
 from claude_workflow.state import save_state
 
@@ -36,9 +38,12 @@ class QaStage:
             kb_dir=ctx.config.kb_path,
             workdir=ctx.config.repo_path,
         )
-        prompt = (
-            f"Read {ctx.state_dir / '01-ticket.md'} and {ctx.state_dir / '02-findings.md'}. "
-            f"Ask batched clarifying questions and record all Q&A incrementally to {artifact}."
+        paths = sandbox_paths(sandbox)
+        prompt = skill_prompt_prefix(ctx, StageName.QA, paths) + (
+            f"Read {paths.notes_dir / '01-ticket.md'} and "
+            f"{paths.notes_dir / '02-findings.md'}. "
+            f"Ask batched clarifying questions and record all Q&A incrementally to "
+            f"{paths.notes_dir / '03-qa.md'}."
         )
         rc = run_claude_interactive(
             ctx.config.stages[StageName.QA],

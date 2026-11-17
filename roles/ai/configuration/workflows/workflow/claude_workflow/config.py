@@ -65,6 +65,7 @@ class WorkflowConfig:
     state_base: Path
     kb_path: Path
     skills_base: Path
+    flake_path: Path | None
     verify_commands: tuple[str, ...]
     max_plan_reviews: int
     max_escalations: int
@@ -168,6 +169,7 @@ def default_config() -> WorkflowConfig:
         state_base=state_base,
         kb_path=Path.home() / "notes" / "work-kb",
         skills_base=_default_skills_base(),
+        flake_path=None,
         verify_commands=(),
         max_plan_reviews=2,
         max_escalations=3,
@@ -261,6 +263,11 @@ def load_config(config_path: Path | None) -> WorkflowConfig:
         kb_path=_expand_path(str(raw["kb_path"])) if "kb_path" in raw else base.kb_path,
         skills_base=(
             _expand_path(str(raw["skills_base"])) if "skills_base" in raw else base.skills_base
+        ),
+        flake_path=(
+            _expand_path(str(raw["flake_path"]))
+            if raw.get("flake_path") is not None
+            else base.flake_path
         ),
         verify_commands=verify_commands,
         max_plan_reviews=int(raw.get("max_plan_reviews", base.max_plan_reviews)),

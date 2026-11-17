@@ -25,16 +25,27 @@ class VerifyStage:
 
         sections: list[str] = ["# Verification\n"]
         all_passed = True
+        flake = ctx.config.flake_path
+        use_flake = flake is not None and flake.exists()
 
         for cmd in ctx.config.verify_commands:
-            proc = subprocess.run(
-                cmd,
-                shell=True,
-                cwd=workdir,
-                check=False,
-                capture_output=True,
-                text=True,
-            )
+            if use_flake:
+                proc = subprocess.run(
+                    ["nix", "develop", str(flake), "--command", "sh", "-c", cmd],
+                    cwd=workdir,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+            else:
+                proc = subprocess.run(
+                    cmd,
+                    shell=True,
+                    cwd=workdir,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
             status = "PASS" if proc.returncode == 0 else f"FAIL (exit {proc.returncode})"
             if proc.returncode != 0:
                 all_passed = False
