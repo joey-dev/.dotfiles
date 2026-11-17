@@ -29,14 +29,17 @@
           git
         ];
 
-        makeWrapperArgs = [
-          "--prefix PATH : ${lib.makeBinPath [ bubblewrap git libnotify claude-code ]}"
-          "--set-default CLAUDE_WORKFLOW_SKILLS ${placeholder "out"}/share/claude-workflow/skills"
-        ];
+        nativeBuildInputs = [ makeWrapper ];
 
         postInstall = ''
           mkdir -p $out/share/claude-workflow
           cp -r $src/skills $out/share/claude-workflow/skills
+        '';
+
+        postFixup = ''
+          wrapProgram $out/bin/claude-workflow \
+            --prefix PATH : ${lib.makeBinPath [ bubblewrap git libnotify claude-code ]} \
+            --set-default CLAUDE_WORKFLOW_SKILLS $out/share/claude-workflow/skills
         '';
       })
     ];
