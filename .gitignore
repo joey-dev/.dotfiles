@@ -17,3 +17,4 @@ result-*
 /roles/php/global-composer/vendor
 nvim/.config/nvim/init.vim
 
+/templates/*/flake.lock

@@ -28,8 +28,13 @@
       recursive = true;
     };
 
-    home.file.".claude-shared" = {
-      source = ./configuration/claude-shared;
+    home.file.".agents/shared" = {
+      source = ./configuration/agent-shared;
+      recursive = true;
+    };
+
+    home.file.".agents/shared/flakes" = {
+      source = ../../templates;
       recursive = true;
     };
   };
