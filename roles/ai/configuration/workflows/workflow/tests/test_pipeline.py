@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import claude_workflow.pipeline as pipeline_mod
+import claude_workflow.stages.base as base_mod
 import claude_workflow.stages.plan as plan_mod
 from claude_workflow.claude_runner import ClaudeResult
 from claude_workflow.config import STAGE_ORDER, StageName, WorkflowConfig, default_config
@@ -164,6 +165,7 @@ def test_plan_stage_caps_review_loop_at_max_plan_reviews(
             (state_dir / "04-plan.md").write_text("# Plan\n", encoding="utf-8")
         return ClaudeResult(returncode=0, stdout="", stderr="", session_id=session_id)
 
+    monkeypatch.setattr(base_mod, "run_claude_headless", fake_headless)
     monkeypatch.setattr(plan_mod, "run_claude_headless", fake_headless)
 
     ctx = StageContext(
