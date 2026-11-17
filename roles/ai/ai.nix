@@ -17,24 +17,14 @@
       bubblewrap
 
       (pkgs.writeShellApplication {
-        name = "claude-walled";
+        name = "claude-workflow";
         runtimeInputs = [ pkgs.bubblewrap ];
-        text = builtins.readFile ./configuration/scripts/claude-walled.sh;
+        text = builtins.readFile ./configuration/scripts/claude-workflow.sh;
       })
     ];
 
     home.file.".claude" = {
       source = ./configuration/claude;
-      recursive = true;
-    };
-
-    home.file.".agents/shared" = {
-      source = ./configuration/agent-shared;
-      recursive = true;
-    };
-
-    home.file.".agents/shared/flakes" = {
-      source = ../../templates;
       recursive = true;
     };
   };
