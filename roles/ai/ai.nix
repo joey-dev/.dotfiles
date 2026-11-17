@@ -16,10 +16,28 @@
       libnotify
       bubblewrap
 
-      (pkgs.writeShellApplication {
-        name = "claude-workflow";
-        runtimeInputs = [ pkgs.bubblewrap ];
-        text = builtins.readFile ./configuration/scripts/claude-workflow.sh;
+      (python3Packages.buildPythonApplication {
+        pname = "claude-workflow";
+        version = "0.1.0";
+        pyproject = true;
+        src = ./configuration/workflows/workflow;
+
+        build-system = [ python3Packages.setuptools ];
+
+        nativeCheckInputs = [
+          python3Packages.pytestCheckHook
+          git
+        ];
+
+        makeWrapperArgs = [
+          "--prefix PATH : ${lib.makeBinPath [ bubblewrap git libnotify claude-code ]}"
+          "--set-default CLAUDE_WORKFLOW_SKILLS ${placeholder "out"}/share/claude-workflow/skills"
+        ];
+
+        postInstall = ''
+          mkdir -p $out/share/claude-workflow
+          cp -r $src/skills $out/share/claude-workflow/skills
+        '';
       })
     ];
 

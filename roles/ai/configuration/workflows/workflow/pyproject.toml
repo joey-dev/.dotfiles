@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "claude-workflow"
+version = "0.1.0"
+description = "Crash-safe Jira-to-branch Claude Code orchestrator with bwrap sandboxing"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+claude-workflow = "claude_workflow.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["claude_workflow*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+include = ["claude_workflow", "tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
