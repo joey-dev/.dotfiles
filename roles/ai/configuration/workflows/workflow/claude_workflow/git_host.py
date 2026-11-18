@@ -110,6 +110,40 @@ def capture_diff(worktree_path: Path, base_ref: str = "HEAD") -> str:
     return "".join(parts)
 
 
+def _split_z(output: str) -> list[str]:
+    return [item for item in output.split("\0") if item]
+
+
+def _paths_vs_base(worktree_path: Path, base_ref: str, *, include_deleted: bool) -> list[str]:
+    diff_args = ["diff", "-z", "--name-only", "--no-renames"]
+    if not include_deleted:
+        diff_args.append("--diff-filter=d")
+    tracked = _split_z(_run_git(worktree_path, [*diff_args, base_ref, "--"]).stdout)
+    untracked = _split_z(
+        _run_git(worktree_path, ["ls-files", "-z", "--others", "--exclude-standard"]).stdout
+    )
+    return sorted(set(tracked) | set(untracked))
+
+
+def changed_paths(worktree_path: Path, base_ref: str) -> list[str]:
+    """Return sorted repo-relative paths changed vs base_ref (tracked + untracked), no deletions."""
+    return _paths_vs_base(worktree_path, base_ref, include_deleted=False)
+
+
+def touched_paths(worktree_path: Path, base_ref: str) -> list[str]:
+    """Like changed_paths, but also includes deleted files (for the Docker guard)."""
+    return _paths_vs_base(worktree_path, base_ref, include_deleted=True)
+
+
+def ignored_paths(worktree_path: Path) -> list[str]:
+    """Return gitignored paths (ignored directories are listed once, without trailing slash)."""
+    proc = _run_git(
+        worktree_path,
+        ["ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--directory"],
+    )
+    return sorted(item.rstrip("/") for item in _split_z(proc.stdout))
+
+
 def diff_digest(diff: str) -> str:
     """Fingerprint patch content independently of tracked/untracked listing order."""
     sections = re.split(r"(?m)(?=^diff --git )", diff)

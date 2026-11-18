@@ -394,3 +394,57 @@ def test_symlinked_sandbox_claude_dir_is_refused(tmp_path: Path, monkeypatch: An
 
     with pytest.raises(RuntimeError, match="symlink"):
         prepare_sandbox_home(state_dir)
+
+
+def test_repo_masks_hide_folder_with_tmpfs(tmp_path: Path, monkeypatch: Any) -> None:
+    fake_home = tmp_path / "host_home"
+    fake_home.mkdir()
+    monkeypatch.setattr(Path, "home", lambda: fake_home)
+    tree = tmp_path / "PROJ-1"
+    (tree / "nginx-proxy" / "certs").mkdir(parents=True)
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    spec = SandboxSpec(
+        repo_dir=tree,
+        repo_access=RepoAccess.RW,
+        state_dir=state_dir,
+        skills_dirs=(),
+        kb_dir=None,
+        allow_network=False,
+        workdir=tree,
+        repo_masks=("nginx-proxy/certs", "absent", "../escape"),
+    )
+
+    cmd = build_bwrap_command(spec, ["true"])
+
+    masked = str(fake_home / "PROJ-1" / "nginx-proxy" / "certs")
+    assert _has_slice(cmd, "--tmpfs", masked)
+    assert cmd.index(masked) > cmd.index(str(tree))
+    assert str(fake_home / "PROJ-1" / "absent") not in cmd
+    assert not any("escape" in arg for arg in cmd)
+
+
+def test_cache_dir_is_bound_and_sets_tmpdir(tmp_path: Path, monkeypatch: Any) -> None:
+    fake_home = tmp_path / "host_home"
+    fake_home.mkdir()
+    monkeypatch.setattr(Path, "home", lambda: fake_home)
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    spec = replace(_minimal_spec(tmp_path), cache_dir=cache)
+
+    cmd = build_bwrap_command(spec, ["true"], env={"TMPDIR": "/host/tmp"})
+
+    assert _has_slice(cmd, "--bind", str(cache), "/tmp/cw-cache")
+    tmp_index = next(i for i in range(len(cmd) - 1) if cmd[i : i + 2] == ["--tmpfs", "/tmp"])
+    assert cmd.index(str(cache)) > tmp_index
+    assert _has_slice(cmd, "--setenv", "TMPDIR", "/tmp/cw-cache")
+    last_tmpdir = max(i for i, arg in enumerate(cmd) if arg == "TMPDIR")
+    assert cmd[last_tmpdir + 1] == "/tmp/cw-cache"
+
+
+def test_no_cache_dir_means_no_cache_mount(tmp_path: Path, monkeypatch: Any) -> None:
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+
+    cmd = build_bwrap_command(_minimal_spec(tmp_path), ["true"], env={})
+
+    assert "/tmp/cw-cache" not in cmd

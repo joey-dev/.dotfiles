@@ -24,6 +24,8 @@ class StageOutcome(str, Enum):
     BLOCKED_QUESTIONS = "blocked_questions"
     # Verify or Review found problems that Implement should fix.
     NEEDS_FIX = "needs_fix"
+    # Verify could not run the Docker tests safely; the human continues, retries or aborts.
+    NEEDS_HUMAN = "needs_human"
     FAILED = "failed"
 
 
@@ -94,6 +96,16 @@ def stage_skills(config: WorkflowConfig, stage: StageName) -> tuple[Path, ...]:
     )
 
 
+def stage_cache_dir(config: WorkflowConfig, ticket: str, stage: StageName) -> Path:
+    """Create and return the stage's cache folder (bound at /tmp/cw-cache, used as $TMPDIR).
+
+    It lives outside the ticket's notes folder, so one stage cannot write another's cache.
+    """
+    cache = config.state_base / ".cache" / ticket / stage.value
+    cache.mkdir(parents=True, exist_ok=True)
+    return cache
+
+
 def _home_ro_mounts(config: WorkflowConfig, stage: StageName) -> tuple[tuple[Path, str], ...]:
     """Read-only extras in the sandbox $HOME: your CLAUDE.md, and all skills for Retro."""
     mounts: list[tuple[Path, str]] = []
@@ -135,6 +147,14 @@ def build_stage_sandbox(
         overlays = resolve_shared_dependencies(
             ctx.config.repo_path, repo_dir, ctx.config.shared_dependencies
         )
+    # Host copies (e.g. certificates) are copied into the worktree for Docker; hide them.
+    docker = ctx.config.docker
+    masks = docker.host_copies if docker is not None and repo_dir is not None else ()
+    cache = (
+        stage_cache_dir(ctx.config, ctx.ticket_id, stage)
+        if stage in {StageName.IMPLEMENT, StageName.VERIFY}
+        else None
+    )
     return SandboxSpec(
         repo_dir=repo_dir,
         repo_access=stage_cfg.repo_access,
@@ -147,6 +167,8 @@ def build_stage_sandbox(
         flake_dir=flake,
         repo_ro_overlays=overlays,
         home_ro_mounts=home_mounts,
+        cache_dir=cache,
+        repo_masks=masks,
     )
 
 

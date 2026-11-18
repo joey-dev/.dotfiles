@@ -28,6 +28,7 @@ _SYSTEM_RO_PATHS: tuple[str, ...] = (
 )
 
 _SANDBOX_PROXY_SOCK = "/tmp/cw-proxy.sock"
+SANDBOX_CACHE_DIR = "/tmp/cw-cache"
 _PROXY_BRIDGE_SCRIPT = (
     f"socat TCP-LISTEN:3128,bind=127.0.0.1,fork,reuseaddr "
     f"UNIX-CONNECT:{_SANDBOX_PROXY_SOCK} >/dev/null 2>&1 & "
@@ -65,6 +66,10 @@ class SandboxSpec:
     home_ro_mounts: tuple[tuple[Path, str], ...] = ()
     # Generated Claude settings, mounted read-only as ~/.claude/settings.json.
     settings_file: Path | None = None
+    # Per-ticket, per-stage host folder bound at /tmp/cw-cache and used as $TMPDIR.
+    cache_dir: Path | None = None
+    # Repo-relative folders hidden behind an empty tmpfs (e.g. copied host secrets).
+    repo_masks: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -265,6 +270,20 @@ def _append_git_mask(cmd: list[str], host_repo: Path, sandbox_repo: Path) -> Non
         cmd.extend(["--tmpfs", str(sandbox_git)])
 
 
+def _append_repo_masks(
+    cmd: list[str], host_repo: Path, sandbox_repo: Path, masks: Sequence[str]
+) -> None:
+    """Hide existing repo folders with an empty tmpfs; skip unsafe paths and symlinks."""
+    for relative in masks:
+        rel = Path(relative)
+        if not relative or rel.is_absolute() or ".." in rel.parts:
+            continue
+        host = host_repo / rel
+        if host.is_symlink() or not host.is_dir():
+            continue
+        cmd.extend(["--tmpfs", str(sandbox_repo / rel)])
+
+
 def tiocsti_disabled() -> bool:
     """True when the kernel blocks TIOCSTI (typing into another process's terminal)."""
     try:
@@ -313,6 +332,8 @@ def build_bwrap_command(
         "--tmpfs",
         "/home",
     ]
+    if spec.cache_dir is not None:
+        cmd.extend(["--bind", str(spec.cache_dir), SANDBOX_CACHE_DIR])
 
     if not spec.allow_network:
         cmd.append("--unshare-net")
@@ -321,6 +342,8 @@ def build_bwrap_command(
     cmd.append("--clearenv")
     for name, value in env.items():
         cmd.extend(["--setenv", name, value])
+    if spec.cache_dir is not None:
+        cmd.extend(["--setenv", "TMPDIR", SANDBOX_CACHE_DIR])
 
     for sys_path in _SYSTEM_RO_PATHS:
         if Path(sys_path).exists():
@@ -354,6 +377,7 @@ def build_bwrap_command(
         _append_git_mask(cmd, spec.repo_dir, paths.repo_dir)
         for host_dir, relative in spec.repo_ro_overlays:
             cmd.extend(["--ro-bind", str(host_dir), str(paths.repo_dir / relative)])
+        _append_repo_masks(cmd, spec.repo_dir, paths.repo_dir, spec.repo_masks)
 
     if spec.kb_dir is not None and paths.kb_dir is not None:
         cmd.extend(["--ro-bind", str(spec.kb_dir), str(paths.kb_dir)])

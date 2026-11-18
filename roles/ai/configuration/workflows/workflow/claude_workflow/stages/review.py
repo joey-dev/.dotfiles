@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
+from pathlib import Path
+
 from claude_workflow.claude_runner import run_claude_headless
 from claude_workflow.config import StageName
 from claude_workflow.git_host import capture_diff, diff_digest
@@ -17,12 +20,15 @@ from claude_workflow.stages.base import (
     read_artifact,
     write_artifact,
 )
+from claude_workflow.tests_file import TESTS_FILE
 
 _LENSES: tuple[tuple[str, str], ...] = (
     (
         "correctness",
         "Review diff.patch strictly for logic bugs, edge cases, error handling, "
-        "missing tests, and regressions against 01-ticket.md and 04-plan.md.",
+        "missing tests, and regressions against 01-ticket.md and 04-plan.md. "
+        "If you think a test will fail, append it to {tests_file} under "
+        "'# suggested by review' and report it as a finding.",
     ),
     (
         "conventions",
@@ -30,6 +36,14 @@ _LENSES: tuple[tuple[str, str], ...] = (
         "maintainability, and unnecessary complexity.",
     ),
 )
+
+
+def _file_hash(path: Path) -> str | None:
+    """Hash a file's bytes; None when it is missing."""
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return None
 
 
 class ReviewStage:
@@ -56,16 +70,19 @@ class ReviewStage:
         )
         paths = sandbox_paths(sandbox)
         stage_cfg = ctx.config.stages[StageName.REVIEW]
+        tests_host = ctx.state_dir / TESTS_FILE
+        tests_before = _file_hash(tests_host)
         combined_sections: list[str] = ["# Automated Code Review\n"]
         blocking_findings = False
 
         for lens_name, focus in _LENSES:
             lens_host = ctx.state_dir / f"07-review-{lens_name}.md"
             lens_sandbox = paths.notes_dir / f"07-review-{lens_name}.md"
+            focus_text = focus.format(tests_file=paths.notes_dir / TESTS_FILE)
             prompt = (
                 f"Read {paths.notes_dir / 'diff.patch'}, "
                 f"{paths.notes_dir / '01-ticket.md'}, and "
-                f"{paths.notes_dir / '04-plan.md'}. Focus: {focus} "
+                f"{paths.notes_dir / '04-plan.md'}. Focus: {focus_text} "
                 f"Write findings to {lens_sandbox}. Start with CHANGES_REQUESTED if issues "
                 "need to be fixed before acceptance, or APPROVED otherwise."
             )
@@ -91,6 +108,10 @@ class ReviewStage:
 
         artifact = ctx.state_dir / "07-review.md"
         write_artifact(artifact, "\n".join(combined_sections))
+        if _file_hash(tests_host) != tests_before:
+            return StageResult(
+                StageOutcome.NEEDS_FIX, artifact, f"Review suggested tests in {TESTS_FILE}"
+            )
         if blocking_findings:
             return StageResult(
                 StageOutcome.NEEDS_FIX, artifact, f"Review requested changes; see {artifact}"

@@ -58,6 +58,42 @@ class StageConfig:
     allowed_tools: tuple[str, ...] = ()
 
 
+DEFAULT_PROTECTED_PATHS: tuple[str, ...] = (
+    "test_runner.sh",
+    ".env",
+    ".env.*",
+    "docker-compose.yml",
+    "docker-compose.*.yml",
+    "docker-compose.yaml",
+    "docker-compose.*.yaml",
+    "compose.yml",
+    "compose.yaml",
+    "compose.*.yml",
+    "compose.*.yaml",
+    "legacy/docker/*",
+    "nginx-proxy/*",
+    "*Dockerfile",
+    "*.Dockerfile",
+    ".gitattributes",
+    "*/.gitattributes",
+)
+
+
+@dataclass(frozen=True)
+class DockerConfig:
+    """Host-side Docker test stack settings (Claude never gets Docker access)."""
+
+    project_name: str
+    profile: str = "dyflexis"
+    test_runner: str = "test_runner.sh"
+    up_timeout: int = 900
+    protected_paths: tuple[str, ...] = DEFAULT_PROTECTED_PATHS
+    # Gitignored folders the stack mounts, copied from the main checkout before `up`.
+    host_copies: tuple[str, ...] = ()
+    # Gitignored folders the stack mounts that only need to exist (rebuilt by the app).
+    create_dirs: tuple[str, ...] = ()
+
+
 @dataclass(frozen=True)
 class WorkflowConfig:
     """Top-level configuration for the workflow orchestrator."""
@@ -77,6 +113,7 @@ class WorkflowConfig:
     headless_timeout: int = 3600  # seconds per headless Claude call
     verify_timeout: int = 1800  # seconds per verify command
     commit_no_verify: bool = True  # skip git hooks for the final commit
+    docker: DockerConfig | None = None
 
 
 def _default_state_base() -> Path:
@@ -251,6 +288,46 @@ def _load_shared_dependencies(raw: object) -> tuple[SharedDependency, ...]:
     return tuple(deps)
 
 
+def _string_list(raw: dict[str, Any], key: str, default: tuple[str, ...]) -> tuple[str, ...]:
+    if key not in raw:
+        return default
+    value = raw[key]
+    if not isinstance(value, list) or any(
+        not isinstance(item, str) or not item.strip() for item in cast(list[object], value)
+    ):
+        raise ValueError(f"docker.{key} must be a list of nonempty strings")
+    return tuple(str(item) for item in cast(list[str], value))
+
+
+def _load_docker(raw: object) -> DockerConfig | None:
+    """Parse the optional "docker" object."""
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise ValueError("docker must be null or a JSON object")
+    fields = cast(dict[str, Any], raw)
+    name = fields.get("project_name")
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("docker.project_name is required and must be a nonempty string")
+    defaults = DockerConfig(project_name=name)
+    for key in ("profile", "test_runner"):
+        value = fields.get(key, getattr(defaults, key))
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"docker.{key} must be a nonempty string")
+    timeout = fields.get("up_timeout", defaults.up_timeout)
+    if type(timeout) is not int or timeout <= 0:
+        raise ValueError("docker.up_timeout must be a positive integer")
+    return DockerConfig(
+        project_name=name,
+        profile=str(fields.get("profile", defaults.profile)),
+        test_runner=str(fields.get("test_runner", defaults.test_runner)),
+        up_timeout=timeout,
+        protected_paths=_string_list(fields, "protected_paths", defaults.protected_paths),
+        host_copies=_string_list(fields, "host_copies", defaults.host_copies),
+        create_dirs=_string_list(fields, "create_dirs", defaults.create_dirs),
+    )
+
+
 def load_config(config_path: Path | None) -> WorkflowConfig:
     """Load WorkflowConfig from JSON, falling back to XDG default or built-in defaults."""
     base = default_config()
@@ -345,4 +422,5 @@ def load_config(config_path: Path | None) -> WorkflowConfig:
         headless_timeout=timeouts["headless_timeout"],
         verify_timeout=timeouts["verify_timeout"],
         commit_no_verify=commit_no_verify,
+        docker=_load_docker(raw["docker"]) if "docker" in raw else base.docker,
     )

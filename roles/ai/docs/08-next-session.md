@@ -9,7 +9,9 @@ The other docs (`01`–`07`) hold the details. Read them only when a task needs 
 ## Where we are
 
 - The workflow `claude-workflow` lives in `roles/ai/configuration/workflows/workflow/`.
-- All fixes from `07-plan.md` are **implemented**. 123 unit tests pass, and so does the Nix build.
+- All fixes from `07-plan.md` are **implemented**.
+- The **tests + Docker phase is built** (Tasks 1-6): `tests.txt`, Verify with `flake:` and `docker:` lines, per-stage phpstan caches, config for `dyflexis-monorepo`. **189 unit tests pass.**
+- It is **built, not yet run on the real repo.** The next step is **Task 7: manual checks with the user** (see "Still to confirm" in `09-tests-and-docker.md`).
 - **Intake** uses the repo's `Atlassian-Rovo-MCP` server (`.mcp.json`) with a one-way copy of `~/.mcp-auth`. The user has **validated Intake** (commit `ec9fb7f`).
 - **Verified by hand:**
   - the Q&A sandbox (terminal, clean env, proxy);
@@ -20,16 +22,13 @@ The other docs (`01`–`07`) hold the details. Read them only when a task needs 
 
 ## What is next
 
-**Current phase: tests + Docker.** The design is approved and in **`09-tests-and-docker.md`** (facts, decisions, backlog). The step-by-step plan is **`10-plan-tests-docker.md`**. Nothing is built yet; start with Task 1 once the user has approved the plan.
+**Current phase: tests + Docker, Task 7 (manual checks with the user).** Design and facts are in **`09-tests-and-docker.md`**. The plan is **`10-plan-tests-docker.md`**.
 
-The topics are:
+What to do:
 
-1. **Run the real tests** of the main repo (`~/Code/Work/dyflexis-monorepo`) in Implement and Verify:
-   - set `verify_commands` and `flake_path` for that repo;
-   - check that the `vendor/` and `node_modules/` mounts work (`deps.py`).
-2. **Web server and database** for integration, API, e2e and manual browser testing.
-   - Verify has **no network at all** today, and Implement can only reach Anthropic hosts.
-   - So this needs a design decision first. **Don't build it before the user has explained the setup.**
+1. **Run the "Still to confirm" list** from `09` on the real repo (`~/Code/Work/dyflexis-monorepo`), together with the user.
+2. **Do a first real ticket** and read `06-verify.md`.
+3. Don't change the known limits in `09` without asking the user.
 
 ---
 
@@ -49,7 +48,7 @@ The topics are:
 Run the unit tests (from `roles/ai/configuration/workflows/workflow/`):
 
 ```sh
-nix shell nixpkgs#python312 nixpkgs#python312Packages.pytest -c python -m pytest -q
+nix shell nixpkgs#python312 nixpkgs#python312Packages.pytest -c env PYTHONPATH=. pytest -q
 ```
 
 Open a stage's sandbox by hand (from the repo you want to test):

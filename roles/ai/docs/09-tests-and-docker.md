@@ -1,6 +1,6 @@
 # 9. Tests, Docker stack and database (design notes)
 
-Status: **design approved, not built yet.** Plan: `10-plan-tests-docker.md`.
+Status: **built, not yet run on the real repo.** Plan: `10-plan-tests-docker.md`. Task 7 (manual checks) is still open.
 
 This doc holds the facts, the user's answers, the proposed design and the open questions. Update it when a question is answered.
 
@@ -108,7 +108,7 @@ docker: api SomeCest
   - `legacy/app/node_modules` ↔ `legacy/app/pnpm-lock.yaml`
   - `frontend/node_modules` ↔ `frontend/pnpm-lock.yaml`
   - `tools/vendor` ↔ `tools/composer.lock`
-- A **persistent phpstan cache per ticket** (a `$TMPDIR` kept across Implement, Verify and fix rounds).
+- A **persistent phpstan cache per ticket**, kept across fix rounds. **Implement and Verify each get their own cache**; `flake:` lines get none (see "Built").
 
 ### Why
 
@@ -133,7 +133,8 @@ docker: api SomeCest
 - **Same compose project name as the user's own stack** (config `docker.project_name`). Then `up -d` from another worktree just recreates the containers with the new mounts, and the database volume is shared. Side effect: after a ticket, the dev website shows the **worktree's** code until the user runs `up -d` from the main checkout again.
 - **`.env` comes from the main checkout, never from the worktree.** `.env` is gitignored and holds secrets (API tokens), so it is **not** copied into the worktree (Implement could read it). The host passes it with `--env-file` and `COMPOSE_ENV_FILES`.
 - **The guard also checks ignored files.** A gitignored `.env` or `docker-compose.override.yml` in the worktree would change what compose runs, and the normal diff does not show it.
-- **Separate phpstan caches for Implement and Verify**, outside the ticket's notes folder. Otherwise Implement could edit Verify's cache and make it pass falsely.
+- **Separate phpstan caches for Implement and Verify**, outside the ticket's notes folder. Implement cannot edit Verify's cache directly.
+  - This is **defence in depth**, not a full fix: `phpstan.neon.dist` and its bootstrap files live in the worktree, so Implement still controls how phpstan runs.
 - **Changed files for phpstan:** the host writes the list (`.git` is hidden in the sandbox) and passes its path as `$CW_CHANGED_FILES`.
 
 ### Still to confirm on the first real run
@@ -143,8 +144,40 @@ docker: api SomeCest
 - `COMPOSE_ENV_FILES` is read by `docker compose exec` (Compose 5.4.0 is installed).
 - Where `HOST_UID` / `HOST_GID` come from (not in `.env.dist`, not in the dotfiles).
 - `cd legacy/app && pnpm run test` works.
-- Untracked folders the stack mounts (`nginx-proxy/certs`, `legacy/cache`) are missing in a fresh worktree. Decision 4 ("no untracked files needed") may be wrong for these.
-- The compose **project name** of the user's own stack (to set `docker.project_name`).
+- Untracked folders the stack mounts are missing in a fresh worktree, so decision 4 was wrong for these:
+  - **`nginx-proxy/certs`** (user confirmed): the host copies it from the main checkout before `up`, and every sandbox hides it (it may hold a CA private key);
+  - **`legacy/cache`** (user not sure; the app rebuilds it on a branch switch): the host only creates the empty folder.
+- **Project name: `dyflexis-monorepo`** (confirmed with `docker compose ls`).
+
+---
+
+## Built (what the code does)
+
+- **Config** (`config.json`): flake, phpstan `verify_commands`, 4 shared dependencies, and `docker` with project `dyflexis-monorepo`, profile `dyflexis`, `host_copies` = `nginx-proxy/certs`, `create_dirs` = `legacy/cache`.
+- **The host runs the base commit's copy of `test_runner.sh`**, never the worktree's file.
+- **The guard is re-checked before every `docker:` line**, not only once.
+- **`flake:` lines get no persistent cache.** Only `verify_commands` (phpstan) use the Verify cache.
+- **A Docker stop asks the human.** When the guard trips, the guard check fails, or preparing the worktree fails, Verify returns **`NEEDS_HUMAN`**:
+  - `06-verify.md` is still written, with the sandbox and `flake:` results and a "Docker tests skipped" section;
+  - the pipeline asks **`[c]ontinue / [r]etry stage / [a]bort`**. Continue marks Verify done and goes on to Review;
+  - with **`--auto`** it stops (exit 1). Run again without `--auto` to continue or retry.
+- **`up` gets 10 extra minutes** on top of `up_timeout` (images build before `--wait-timeout` starts).
+- **The stack is left running** (user decision). After a ticket, the dev site shows the worktree's code until you run `docker compose --profile=dyflexis up -d` from the main checkout.
+
+---
+
+## Known limits
+
+- **Profiles `all` / `storybook` bind-mount the repo root read-write** (`dyflexis-storybook`). A container could change the compose file during a line. **Keep the profile `dyflexis`.**
+- **The `migrations` image builds from the worktree's `./legacy` context.** Dockerfiles are protected, but the files copied into the image are not. Build steps run in containers, not on the host.
+- **Containers run Claude-written code with network and secrets.** **Needs the user's OK.**
+  - The `dyflexis` profile starts **`dyflexis-webpack`** and **`dyflexis-frontend`**. They run `pnpm install` and scripts from the **worktree's `package.json`**, with network access, and bind-mount **`~/.npmrc`**.
+  - **`.env` values** (for example `POS_PLATFORM_API_KEY`, `VITE_MAPTILER_API_KEY`) are in the environment of containers that run Claude-written code.
+  - Container output can come back to Claude through **`06-verify.md`**.
+- **The cert copy fails on the real repo.** **User decision, check in Task 7.**
+  - The keys in `nginx-proxy/certs/*.key` are **`root:root 0600`**, so the host cannot read them and the copy fails. Verify then stops and asks the human (see "Built").
+  - Option **(a)**: copy the folder through a root Docker container.
+  - Option **(b)**: copy only the `*.crt` files.
 
 ---
 

@@ -68,7 +68,7 @@ All paths below are relative to `roles/ai/configuration/workflows/workflow/` unl
 - Produces:
   - `TESTS_FILE = "tests.txt"`
   - `DOCKER_TEST_TYPES: frozenset[str] = {"unit", "integration", "api", "mobile-api", "acceptance", "codecept-build"}`
-  - `@dataclass(frozen=True) class TestLine: kind: Literal["flake", "docker"]; text: str`
+  - `@dataclass(frozen=True) class TestLine: kind: Literal["flake", "docker"]; text: str` with class attribute `__test__ = False` (so pytest does not try to collect it)
   - `parse_tests_file(text: str) -> tuple[list[TestLine], list[str]]`: (valid lines, error messages). Blank lines and `#` comments are skipped. Each error names the line number.
   - `docker_args(text: str) -> list[str]`: raises `ValueError`.
 
@@ -166,17 +166,24 @@ class DockerConfig:
     test_runner: str = "test_runner.sh"
     up_timeout: int = 900
     protected_paths: tuple[str, ...] = DEFAULT_PROTECTED_PATHS
+    # Gitignored folders the stack mounts, copied from the main checkout before `up`.
+    host_copies: tuple[str, ...] = ()
+    # Gitignored folders the stack mounts that only need to exist (rebuilt by the app).
+    create_dirs: tuple[str, ...] = ()
 ```
+
+  - **Why `host_copies`:** `nginx-proxy/certs` is gitignored, so a fresh worktree lacks it, but the proxy mounts it. It may hold a **CA private key**, so Claude must never see it: every sandbox hides these folders with a `--tmpfs` (see Task 4).
 
   - `WorkflowConfig.docker: DockerConfig | None = None`.
   - JSON key `"docker"`: `null` or an object. `project_name` is required and nonempty. `up_timeout` is a positive int. `protected_paths` is a list of nonempty strings. Errors raise `ValueError` naming the field.
 
 - Produces (`docker_stack.py`):
-  - `guard_violations(worktree: Path, base_ref: str, patterns: tuple[str, ...]) -> list[str]`: sorted paths from `touched_paths` + `ignored_paths` that match a pattern (`fnmatch.fnmatch`).
+  - `guard_violations(worktree: Path, base_ref: str, patterns: tuple[str, ...], host_copies: tuple[str, ...] = ()) -> list[str]`: sorted paths from `touched_paths` + `ignored_paths` that match a pattern (`fnmatch.fnmatch`). Paths equal to or under a `host_copies` entry are skipped (the host overwrites them anyway).
+  - `prepare_worktree(cfg: DockerConfig, worktree: Path, repo: Path) -> None`: for each `host_copies` entry, delete the worktree copy and copy the main checkout's folder (`shutil.copytree`, `symlinks=True`; refuse if the source or target is a symlink). Then `mkdir(parents=True, exist_ok=True)` each `create_dirs` entry. Runs **after** the guard, right before `up`.
   - `compose_env(cfg: DockerConfig, worktree: Path, repo: Path) -> dict[str, str]`: `os.environ` plus `COMPOSE_PROJECT_NAME`, `COMPOSE_FILE=<worktree>/docker-compose.yml`, `COMPOSE_PROFILES=<profile>`, and `COMPOSE_ENV_FILES=<repo>/.env` (only if that file exists).
   - `up_command(cfg, worktree: Path, repo: Path) -> list[str]`: `["docker", "compose", "--project-name", P, "--project-directory", str(worktree), "--file", str(worktree / "docker-compose.yml"), *(["--env-file", str(repo / ".env")] if it exists), "--profile", profile, "up", "-d", "--wait", "--wait-timeout", str(up_timeout)]`.
   - `run_command(argv: list[str], *, cwd: Path, env: dict[str, str], timeout: int) -> tuple[str, str]`: returns `(status, output)`, same status strings as `verify._run_check`. **Move `_run_check` here** and import it in `verify.py`, so there is a single copy.
-  - `test_runner_command(cfg, worktree: Path, line: str) -> list[str]`: `["sh", str(worktree / cfg.test_runner), *docker_args(line)]`.
+  - `runner_command(cfg, worktree: Path, line: str) -> list[str]`: `["sh", str(worktree / cfg.test_runner), *docker_args(line)]`.
 
 - [ ] **Step 1: Write the failing tests**
   - `test_docker_config_defaults_to_none` and `test_docker_config_loads_project_name`: `{"docker": {"project_name": "dfs"}}` → `profile == "dyflexis"`, `up_timeout == 900`.
@@ -186,7 +193,10 @@ class DockerConfig:
   - `test_guard_flags_dockerfile_in_subfolder`: `legacy/docker/legacy-web/legacy-web.Dockerfile` changed → flagged.
   - `test_guard_ignores_normal_code`: only `legacy/src/Foo.php` changed → `[]`.
   - `test_compose_env_uses_main_env_file_not_worktree`: `repo/.env` exists → `COMPOSE_ENV_FILES == str(repo / ".env")`, and the up command contains `--env-file <repo>/.env`. No `.env` in repo → the key is absent.
-  - `test_test_runner_command_uses_argv`: `test_runner_command(cfg, wt, "api FooCest") == ["sh", str(wt / "test_runner.sh"), "api", "FooCest"]`.
+  - `test_guard_skips_host_copies`: ignored `nginx-proxy/certs/ca.key` exists, `host_copies=("nginx-proxy/certs",)` → `[]`. Without `host_copies` → flagged.
+  - `test_prepare_worktree_replaces_host_copy_and_creates_dirs`: the worktree has a stale `nginx-proxy/certs/x`; after the call it has exactly the main checkout's files, and `legacy/cache` exists.
+  - `test_prepare_worktree_refuses_symlinked_target`: the worktree's `nginx-proxy/certs` is a symlink → `ValueError`.
+  - `test_runner_command_builds_argv`: `runner_command(cfg, wt, "api FooCest") == ["sh", str(wt / "test_runner.sh"), "api", "FooCest"]`.
 - [ ] **Step 2: Run, expect FAIL.**
 - [ ] **Step 3: Implement** config + `docker_stack.py`.
 - [ ] **Step 4: Run all tests, expect PASS** (the existing verify tests still pass after moving `_run_check`; update their `patch(...)` target to `claude_workflow.docker_stack.subprocess.run`).
@@ -206,6 +216,7 @@ class DockerConfig:
   - `SandboxSpec.cache_dir: Path | None = None`. When set, `build_bwrap_command` adds `--bind <cache_dir> /tmp/cw-cache` **after** `--tmpfs /tmp`, and `--setenv TMPDIR /tmp/cw-cache`.
   - `stage_cache_dir(config: WorkflowConfig, ticket: str, stage: StageName) -> Path`: returns `config.state_base / ".cache" / ticket / stage.value` and creates it. It lives **outside** the ticket's notes folder, so Implement cannot write Verify's cache.
   - `build_stage_sandbox` sets `cache_dir` for Implement and Verify only.
+  - `SandboxSpec.repo_masks: tuple[str, ...] = ()`: repo-relative folders hidden with `--tmpfs <repo>/<path>` (only when the host folder exists, added after the repo bind). `build_stage_sandbox` fills it from `config.docker.host_copies` for **every** stage that mounts the worktree.
 
 **Verify flow (replaces the body of `VerifyStage.run`):**
 1. As today: refuse without a worktree or base; take `before = capture_diff(...)`.
@@ -216,15 +227,16 @@ class DockerConfig:
 4. In the sandbox, run every `verify_commands` entry, then every `flake:` line.
 5. If there are `docker:` lines:
    - `config.docker is None` → FAIL section "Docker not configured".
-   - `guard_violations(...)` not empty → write the artifact, set `verified_diff`, return **FAILED** with "Docker tests skipped: the diff touches <paths>. Run them by hand." (the human decides; "continue anyway" works).
-   - Else run `up_command`. If it fails → a FAIL section; skip the lines.
-   - Else run each line with `test_runner_command`, `cwd=worktree`, `env=compose_env(...)`, timeout `verify_timeout`.
+   - `guard_violations(..., host_copies=cfg.host_copies)` not empty → write the artifact, set `verified_diff`, return **FAILED** with "Docker tests skipped: the diff touches <paths>. Run them by hand." (the human decides; "continue anyway" works). **Changed in the final review:** this is now **NEEDS_HUMAN**, so the pipeline asks continue / retry / abort (see 09 "Built").
+   - Else run `prepare_worktree`, then `up_command`. If it fails → a FAIL section; skip the lines.
+   - Else run each line with `runner_command`, `cwd=worktree`, `env=compose_env(...)`, timeout `verify_timeout`.
 6. Every section shows **status and full output**, passing or failing (decision 3).
 7. Keep the existing "diff changed" check and the NEEDS_FIX / DONE logic.
 8. **No `docker:` lines → never start the stack.**
 9. **Empty `tests.txt`** → add a note "tests.txt lists no tests" to the artifact; not a failure.
 
 - [ ] **Step 1: Write the failing tests**
+  - `test_repo_masks_hide_folder_with_tmpfs` (sandbox): with `repo_masks=("nginx-proxy/certs",)` and that host folder present, the argv has `--tmpfs <sandbox repo>/nginx-proxy/certs` after the repo bind.
   - `test_cache_dir_is_bound_and_sets_tmpdir` (sandbox): the argv contains `--bind <cache> /tmp/cw-cache` after `--tmpfs /tmp`, and `--setenv TMPDIR /tmp/cw-cache`.
   - `test_stage_cache_dir_is_outside_state_dir`: the result is not inside `cfg.state_base / ticket`.
   - `test_verify_missing_tests_file_needs_fix`.
@@ -290,10 +302,15 @@ class DockerConfig:
   { "dir": "frontend/node_modules", "lockfile": "frontend/pnpm-lock.yaml" },
   { "dir": "tools/vendor", "lockfile": "tools/composer.lock" }
 ],
-"docker": { "project_name": "<ASK USER: their stack's project name>", "profile": "dyflexis" }
+"docker": {
+  "project_name": "dyflexis-monorepo",
+  "profile": "dyflexis",
+  "host_copies": ["nginx-proxy/certs"],
+  "create_dirs": ["legacy/cache"]
+}
 ```
 
-- [ ] **Step 1:** Fill in the config. **Ask the user** for `project_name` (the name their own stack runs under; `docker compose ls` shows it).
+- [ ] **Step 1:** Fill in the config (`project_name` confirmed by the user via `docker compose ls`).
 - [ ] **Step 2:** Add a test in `tests/test_config.py` that loads the real `config.json` without errors.
 - [ ] **Step 3:** Update the docs: new modules in `04`, status in `08`, "built" in `09`.
 - [ ] **Step 4:** Run all unit tests, then the Nix build the way the previous phase did (see `08-next-session.md`). Expect PASS.
@@ -308,6 +325,8 @@ These touch the user's real Docker stack. **Confirm each Docker step with the us
 - [ ] **Step 1: flake lines in the sandbox.** Open a sandbox shell as in `08-next-session.md`, then run `cd legacy/app && pnpm run test` and `cd frontend && pnpm run test:unit`. Expect both to run (pass or fail is fine; they must start).
 - [ ] **Step 2: phpstan cache.** Run phpstan twice with `TMPDIR` set to a kept folder. Expect `$TMPDIR/phpstan` to exist and the second run to be faster. If not: find phpstan's real cache path and change `TMPDIR` to a `tmpDir` approach.
 - [ ] **Step 3: compose.** Run `up_command` by hand for a worktree. Check that `--wait` returns with the one-shot services, that `test_runner.sh unit` works with `COMPOSE_ENV_FILES`, and where `HOST_UID` comes from.
-  - **Check for missing untracked files.** `nginx-proxy/certs` (proxy mount) and `legacy/cache` are probably gitignored, so a fresh worktree lacks them. If `up` fails on them, decide with the user: create them on the host, or bind the main checkout's folder. Note that the guard flags anything under `nginx-proxy/` in the worktree, so pattern changes may be needed.
+  - **Check the untracked folders.** `nginx-proxy/certs` is copied by `prepare_worktree` and `legacy/cache` is created by it. Confirm the proxy starts with the copied certs and the app rebuilds `legacy/cache`. Also confirm the certs are hidden in a sandbox shell (`ls nginx-proxy/certs` is empty).
+  - **Cert keys are `root:root 0600`**, so the copy fails today. **User decision:** copy through a root Docker container, or copy only `*.crt` (see 09 "Known limits").
+  - **Check `git status` stays clean after `up`** in a fresh worktree. The containers run `pnpm install` and webpack, which might touch tracked files. If they do, Verify stops with "Verification changed the worktree diff".
 - [ ] **Step 4:** Write the results in `09-tests-and-docker.md` ("Still to confirm"), and fix the code if a check failed.
 - [ ] **Step 5:** Ask the user whether to start a full run on a real ticket.

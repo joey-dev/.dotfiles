@@ -314,6 +314,28 @@ def _run_pipeline(
             idx = STAGE_ORDER.index(StageName.IMPLEMENT)
             continue
 
+        if result.outcome is StageOutcome.NEEDS_HUMAN:
+            print(f"{stage.value}: {result.message}")
+            if auto:
+                print(
+                    f"Stopped at {stage.value}. To continue anyway or retry, run: "
+                    f"claude-workflow {ticket_id} (without --auto)"
+                )
+                return 1
+            choice = _prompt_gate(stage)
+            if choice == "a":
+                print(f"Aborted at {stage.value}.")
+                return 1
+            if choice == "r":
+                state.session_ids.pop(stage.value, None)
+                continue
+            _mark_completed(state, stage)
+            save_state(state_dir, state)
+            if single_stage:
+                return 0
+            idx += 1
+            continue
+
         if result.outcome is StageOutcome.FAILED:
             print(f"Stage {stage.value} failed: {result.message}")
             return 1

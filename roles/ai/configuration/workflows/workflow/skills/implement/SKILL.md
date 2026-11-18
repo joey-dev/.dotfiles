@@ -9,3 +9,5 @@ description: Stage 5 — Implement 04-plan.md inside the isolated worktree.
 2. Reuse existing repo helpers and patterns; keep functions small, typed, and well-tested.
 3. If you hit a genuine unknown or contradiction in the codebase, write `blocked-questions.md` and stop instead of guessing.
 4. Write a concise summary of changes to `05-implement.md`. Do not run `git` commands.
+5. Run the `flake:` lines from `tests.txt` (format: `flake: <shell command>` or `docker: <test_runner.sh arguments>`). `docker:` lines run only in Verify. If you add or rename a test, update `tests.txt`.
+6. Never write or run a DB migration. For schema changes only edit or add table files in `legacy/app/atlas-migrations/customer/schema/tables`, and say in `05-implement.md` that the human runs the migration.

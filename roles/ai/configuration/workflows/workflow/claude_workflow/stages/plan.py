@@ -5,6 +5,7 @@ from __future__ import annotations
 from claude_workflow.claude_runner import run_claude_headless
 from claude_workflow.config import StageName
 from claude_workflow.sandbox import sandbox_paths
+from claude_workflow.tests_file import TESTS_FILE
 from claude_workflow.stages.base import (
     StageContext,
     StageOutcome,
@@ -40,13 +41,16 @@ class PlanStage:
         plan_md = paths.notes_dir / "04-plan.md"
         review_md = paths.notes_dir / "04-plan-review.md"
         blocked_md = paths.notes_dir / "blocked-questions.md"
+        tests_md = paths.notes_dir / TESTS_FILE
 
         draft_prompt = (
             f"Read {paths.notes_dir / '01-ticket.md'}, "
             f"{paths.notes_dir / '02-findings.md'}, and "
             f"{paths.notes_dir / '03-qa.md'}. Write a concrete, step-by-step implementation and "
             f"test plan to {plan_md}. Write the plan test-first: each step names the test to "
-            f"write before the code it covers. If you hit a genuine unknown, write {blocked_md} "
+            f"write before the code it covers. Also write {tests_md}: one line per test to run, "
+            f"'flake: <command>' or 'docker: <test_runner.sh arguments>'. List every test you "
+            f"plan to create or edit. If you hit a genuine unknown, write {blocked_md} "
             f"and stop instead of guessing."
         )
         draft_result = run_headless_with_escalation(
@@ -62,7 +66,8 @@ class PlanStage:
                 f"against {paths.notes_dir / '01-ticket.md'} and "
                 f"{paths.notes_dir / '03-qa.md'}. "
                 f"Write your review to {review_md}. Start the file with 'APPROVED' if the plan "
-                f"is ready, or 'CHANGES_REQUESTED' followed by concrete fixes."
+                f"is ready, or 'CHANGES_REQUESTED' followed by concrete fixes. Also check {tests_md}: "
+                f"it must list every test the plan creates or edits."
             )
             previous = artifact_stamp(review_md_host)
             rev = run_claude_headless(

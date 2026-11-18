@@ -78,13 +78,17 @@ class WorkflowRegressionTests(TestCase):
             path = Path(directory)
             worktree = path / "worktree"
             worktree.mkdir()
-            config = replace(default_config(), verify_commands=("printf verified",))
+            config = replace(
+                default_config(), verify_commands=("printf verified",), state_base=path / "base"
+            )
             state = TicketState("PROJ-1", worktree_path=worktree, base_commit="base")
             ctx = StageContext("PROJ-1", config, state, path)
+            (path / "tests.txt").write_text("")
             with (
                 patch("claude_workflow.stages.verify.capture_diff", return_value="patch"),
+                patch("claude_workflow.stages.verify.changed_paths", return_value=[]),
                 patch(
-                    "claude_workflow.stages.verify.subprocess.run",
+                    "claude_workflow.docker_stack.subprocess.run",
                     return_value=CompletedProcess([], 0, "verified", ""),
                 ) as launch,
             ):

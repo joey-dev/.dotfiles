@@ -11,11 +11,14 @@ from claude_workflow.git_host import (
     GitError,
     capture_diff,
     changed_files,
+    changed_paths,
     commit_stage,
     ensure_worktree,
+    ignored_paths,
     is_dirty,
     repo_root,
     rev_parse_head,
+    touched_paths,
 )
 
 
@@ -153,3 +156,44 @@ def test_commit_runs_hooks_by_default(tmp_path: Path) -> None:
 
     with pytest.raises(GitError):
         commit_stage(repo, "msg")
+
+
+def _commit_all(repo: Path, message: str = "files") -> None:
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", message], cwd=repo, check=True, capture_output=True)
+
+
+def test_changed_paths_lists_modified_and_untracked(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    (repo / "a.php").write_text("<?php\n", encoding="utf-8")
+    _commit_all(repo)
+    (repo / "a.php").write_text("<?php // changed\n", encoding="utf-8")
+    (repo / "b.php").write_text("<?php\n", encoding="utf-8")
+
+    assert changed_paths(repo, "HEAD") == ["a.php", "b.php"]
+
+
+def test_changed_paths_skips_deleted_files(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    (repo / "c.php").write_text("<?php\n", encoding="utf-8")
+    _commit_all(repo)
+    (repo / "c.php").unlink()
+
+    assert "c.php" not in changed_paths(repo, "HEAD")
+    assert "c.php" in touched_paths(repo, "HEAD")
+
+
+def test_ignored_paths_lists_gitignored_env(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    (repo / ".gitignore").write_text(".env\nvendor/\n", encoding="utf-8")
+    (repo / ".env").write_text("SECRET=1\n", encoding="utf-8")
+    (repo / "vendor").mkdir()
+    (repo / "vendor" / "x.php").write_text("<?php\n", encoding="utf-8")
+
+    result = ignored_paths(repo)
+
+    assert ".env" in result
+    assert "vendor" in result

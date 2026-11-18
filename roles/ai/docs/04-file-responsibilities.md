@@ -60,7 +60,9 @@ Paths are relative to `roles/ai/`.
 | `env.py` | **Environment**: allowlisted host variables plus the flake's dev shell variables. |
 | `deps.py` | **Shared dependencies**: mount `vendor/` / `node_modules/` from main when the lockfiles match. |
 | `net_proxy.py` | **Network allowlist**: `CONNECT` proxy for `api.anthropic.com` and `platform.claude.com`, with a log. |
-| `git_host.py` | **Git on the host**: repo root, worktree, diff, changed files, commit. Never pushes. |
+| `git_host.py` | **Git on the host**: repo root, worktree, diff, changed files, ignored/touched paths, commit. Never pushes. |
+| `tests_file.py` | **`tests.txt` parser**: `flake:` and `docker:` lines, strict validation of Docker args (allowed test types, no shell characters). |
+| `docker_stack.py` | **Host-side Docker**: the guard (protected files must equal base), worktree prep (`host_copies`, `create_dirs`), compose env and `up` command, base-commit copy of `test_runner.sh`, runner argv, command execution. Claude never calls it. |
 
 ### `claude_workflow/stages/`
 
@@ -73,7 +75,7 @@ Paths are relative to `roles/ai/`.
 | `qa.py` | Stage 3: interactive Q&A with a resumable session → `03-qa.md`. |
 | `plan.py` | Stage 4: test-first plan, review/revise loop → `04-plan.md`, `04-plan-review.md`. |
 | `implement.py` | Stage 5: test-first implementation, fix rounds → code + `05-implement.md`. |
-| `verify.py` | Stage 6: run `verify_commands` offline with timeouts → `06-verify.md`. |
+| `verify.py` | Stage 6: `verify_commands` + `flake:` lines in the offline sandbox, then `docker:` lines on the host → `06-verify.md`. |
 | `review.py` | Stage 7: `diff.patch`, two review lenses → `07-review*.md`. |
 | `retro.py` | Stage 8: interactive human check and proposals → `08-retro.md`. |
 
@@ -98,7 +100,9 @@ One `SKILL.md` per stage, plus `shared/`. Each stage gets **`shared` + its own**
 | `test_claude_runner.py` | CLI flags, session flags, system prompt, timeout. |
 | `test_sandbox.py` | bwrap mounts, no skills mount, clean env, terminal, settings, home mounts, safe login copy (symlink attacks). |
 | `test_net_proxy.py` | Allow/deny, tunnel, default hosts, log, log symlink attack. |
-| `test_git_host.py` | Worktree, diff, commit, repo root, changed files, `--no-verify`. |
+| `test_git_host.py` | Worktree, diff, commit, repo root, changed files, ignored/touched paths, `--no-verify`. |
+| `test_tests_file.py` | `tests.txt` parsing and Docker arg validation. |
+| `test_docker_stack.py` | Guard, worktree prep, compose env/command, base runner copy, runner argv. |
 | `test_workflow_regressions.py` | Older specific bugs. |
 
 ---
@@ -113,6 +117,8 @@ One `SKILL.md` per stage, plus `shared/`. Each stage gets **`shared` + its own**
 | `…/<TICKET>/proxy.log` | `net_proxy.py` | `ALLOW` / `DENY` / `REJECT` per connection |
 | `…/<TICKET>/01-ticket.md` … `08-retro.md` | stages | Stage artifacts |
 | `…/<TICKET>/blocked-questions.md` | Claude (Plan/Implement) | Questions; deleted after escalation |
+| `…/<TICKET>/tests.txt` | Claude (Plan writes it; Implement and Review may add lines) | The ticket's test list (`flake:` and `docker:` lines), read by Verify |
+| `~/.local/state/claude-workflow/.cache/<TICKET>/<stage>/` | `base.py` (`stage_cache_dir`) | Persistent `$TMPDIR` (phpstan cache) for Implement and Verify; one folder per stage, outside the ticket folder |
 | `…/<TICKET>/diff.patch` | `review.py` | The diff that was reviewed |
 | `…/<TICKET>/feedback.md` | **you** (optional) | Feedback read by Retro |
 | `~/.local/state/claude-workflow/worktrees/<TICKET>/` | `base.py` / `git_host.py` | The git worktree with the code changes |

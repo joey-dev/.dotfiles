@@ -291,3 +291,22 @@ def test_plan_draft_prompt_asks_for_test_first_steps(tmp_path: Path, monkeypatch
     PlanStage().run(StageContext("PROJ-17", cfg, TicketState("PROJ-17"), state_dir))
 
     assert "test-first" in prompts[0]
+
+
+def test_plan_prompt_asks_for_tests_file(tmp_path: Path, monkeypatch: Any) -> None:
+    cfg = _test_config(tmp_path)
+    _init_git_repo(cfg.repo_path)
+    state_dir = cfg.state_base / "PROJ-18"
+    state_dir.mkdir(parents=True)
+    prompts: list[str] = []
+
+    def fake_headless(stage: Any, sandbox: Any, prompt: str, **_: Any) -> ClaudeResult:
+        prompts.append(prompt)
+        return ClaudeResult(1, "", "stop", None)
+
+    monkeypatch.setattr(base_mod, "run_claude_headless", fake_headless)
+    PlanStage().run(StageContext("PROJ-18", cfg, TicketState("PROJ-18"), state_dir))
+
+    assert "tests.txt" in prompts[0]
+    assert "flake:" in prompts[0]
+    assert "docker:" in prompts[0]

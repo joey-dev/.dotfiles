@@ -1,11 +1,21 @@
 {
   "kb_path": "~/notes/work-kb",
-  "flake_path": null,
-  "verify_commands": [],
-  "shared_dependencies": [
-    { "dir": "vendor", "lockfile": "composer.lock" },
-    { "dir": "node_modules", "lockfile": "package-lock.json" }
+  "flake_path": "~/.dotfiles/templates/latest",
+  "verify_commands": [
+    "cd legacy && files=$(sed -n 's#^legacy/##p' \"$CW_CHANGED_FILES\" | grep '\\.php$' || true); if [ -z \"$files\" ]; then echo 'no changed PHP files'; else vendor/bin/phpstan analyze --memory-limit=-1 --no-progress -c phpstan.neon.dist $files; fi"
   ],
+  "shared_dependencies": [
+    { "dir": "legacy/vendor", "lockfile": "legacy/composer.lock" },
+    { "dir": "legacy/app/node_modules", "lockfile": "legacy/app/pnpm-lock.yaml" },
+    { "dir": "frontend/node_modules", "lockfile": "frontend/pnpm-lock.yaml" },
+    { "dir": "tools/vendor", "lockfile": "tools/composer.lock" }
+  ],
+  "docker": {
+    "project_name": "dyflexis-monorepo",
+    "profile": "dyflexis",
+    "host_copies": ["nginx-proxy/certs"],
+    "create_dirs": ["legacy/cache"]
+  },
   "max_plan_reviews": 2,
   "max_escalations": 3,
   "max_fix_rounds": 3,
