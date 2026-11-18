@@ -1,9 +1,5 @@
 {
-  "repo_path": ".",
-  "worktree_base": "~/.local/state/claude-workflow/worktrees",
-  "state_base": "~/.local/state/claude-workflow",
   "kb_path": "~/notes/work-kb",
-  "skills_base": "~/.config/claude-workflow/skills",
   "flake_path": null,
   "verify_commands": [],
   "max_plan_reviews": 2,
@@ -68,7 +64,7 @@
     "retro": {
       "model": "sonnet",
       "thinking": "medium",
-      "repo_access": "ro",
+      "repo_access": "none",
       "allow_network": false,
       "mcp_config": null,
       "allowed_tools": ["Read", "Write"]

@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from claude_workflow.config import StageName
 from claude_workflow.sandbox import sandbox_paths
 from claude_workflow.stages.base import (
     StageContext,
+    StageOutcome,
     StageResult,
     build_stage_sandbox,
     run_headless_with_escalation,
@@ -19,6 +23,20 @@ class IntakeStage:
     def run(self, ctx: StageContext) -> StageResult:
         """Execute Stage 1 (Intake) and write 01-ticket.md."""
         artifact = ctx.state_dir / "01-ticket.md"
+        if ctx.config.stages[StageName.INTAKE].mcp_config is None:
+            inherited = ctx.state_dir / "home" / ".claude.json"
+            if not inherited.is_file():
+                inherited = Path.home() / ".claude.json"
+            settings = (
+                json.loads(inherited.read_text(encoding="utf-8")) if inherited.is_file() else {}
+            )
+            servers = settings.get("mcpServers", {}) if isinstance(settings, dict) else {}
+            if not isinstance(servers, dict) or "atlassian" not in servers:
+                return StageResult(
+                    StageOutcome.FAILED,
+                    None,
+                    "Configure an atlassian MCP server or set stages.intake.mcp_config.",
+                )
         sandbox = build_stage_sandbox(
             ctx,
             StageName.INTAKE,

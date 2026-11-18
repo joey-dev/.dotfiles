@@ -91,7 +91,10 @@ def test_headless_builds_expected_claude_flags(
     assert "--model" in claude_args
     assert "sonnet" in claude_args
     assert "--permission-mode" in claude_args
-    assert "bypassPermissions" in claude_args
+    assert "dontAsk" in claude_args
+    assert claude_args[claude_args.index("--effort") + 1] == "medium"
+    assert claude_args[claude_args.index("--tools") + 1] == "Read,Write"
+    assert "--strict-mcp-config" in claude_args
     assert "--add-dir" in claude_args
     assert str(fake_home / "notes") in claude_args
     assert str(fake_home / "flake") in claude_args

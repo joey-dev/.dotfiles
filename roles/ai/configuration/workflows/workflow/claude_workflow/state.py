@@ -6,6 +6,7 @@ import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any
 
 from claude_workflow.config import STAGE_ORDER, StageName
@@ -23,6 +24,9 @@ class TicketState:
     branch_name: str = ""
     base_commit: str = ""
     escalation_counts: dict[str, int] = field(default_factory=dict)
+    approval_pending: bool = False
+    repo_path: Path | None = None
+    verified_diff: str | None = None
 
 
 def _state_file(state_dir: Path) -> Path:
@@ -41,6 +45,7 @@ def load_state(state_dir: Path, ticket_id: str) -> TicketState:
     completed = [StageName(item) for item in raw.get("completed_stages", [])]
     session_ids = {str(k): str(v) for k, v in raw.get("session_ids", {}).items()}
     wt_raw = raw.get("worktree_path")
+    repo_raw = raw.get("repo_path")
     worktree_path = Path(wt_raw) if wt_raw is not None else None
     escalation_counts = {
         str(k): int(v) for k, v in raw.get("escalation_counts", {}).items()
@@ -55,6 +60,9 @@ def load_state(state_dir: Path, ticket_id: str) -> TicketState:
         branch_name=str(raw.get("branch_name", "")),
         base_commit=str(raw.get("base_commit", "")),
         escalation_counts=escalation_counts,
+        approval_pending=bool(raw.get("approval_pending", False)),
+        repo_path=Path(repo_raw) if repo_raw is not None else None,
+        verified_diff=raw.get("verified_diff"),
     )
 
 
@@ -62,7 +70,6 @@ def save_state(state_dir: Path, state: TicketState) -> None:
     """Persist TicketState atomically via a temporary file and os.replace."""
     state_dir.mkdir(parents=True, exist_ok=True)
     target = _state_file(state_dir)
-    tmp_path = state_dir / "state.json.tmp"
 
     payload: dict[str, Any] = {
         "ticket_id": state.ticket_id,
@@ -73,10 +80,27 @@ def save_state(state_dir: Path, state: TicketState) -> None:
         "branch_name": state.branch_name,
         "base_commit": state.base_commit,
         "escalation_counts": state.escalation_counts,
+        "approval_pending": state.approval_pending,
+        "repo_path": str(state.repo_path) if state.repo_path is not None else None,
+        "verified_diff": state.verified_diff,
     }
 
-    tmp_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    os.replace(tmp_path, target)
+    with NamedTemporaryFile(
+        mode="w", encoding="utf-8", dir=state_dir, prefix=".checkpoint-", delete=False
+    ) as checkpoint:
+        tmp_path = Path(checkpoint.name)
+        try:
+            checkpoint.write(json.dumps(payload, indent=2) + "\n")
+            checkpoint.flush()
+            os.fsync(checkpoint.fileno())
+            os.replace(tmp_path, target)
+        finally:
+            tmp_path.unlink(missing_ok=True)
+    directory = os.open(state_dir, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(directory)
+    finally:
+        os.close(directory)
 
 
 def next_stage_to_run(

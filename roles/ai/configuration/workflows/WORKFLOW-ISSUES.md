@@ -1,6 +1,13 @@
 # Claude workflow issues
 
-These findings come from a static review of the workflow, its shipped configuration, and its tests. Runtime-dependent observations are marked below. See the [requirements inventory](WORKFLOW-REQUIREMENTS.md) for stage contracts and defaults.
+The numbered findings below record the original audit. See the [requirements inventory](WORKFLOW-REQUIREMENTS.md) for current stage contracts and defaults.
+
+## Changes after the audit
+
+- Checkpoints now keep pending approvals, invalidate downstream completion on explicit restart, and serialize runs by ticket. Artifact-producing stages check their output, and escalation keeps the blocker until Q&A adds answers.
+- Verification requires configured checks, runs them in Bubblewrap, and records the verified diff. Plan and code review can block progression. The host commits after Retro and checks that the changes still match verification.
+- The launcher passes stage effort and tool settings to Claude, checks for an Intake MCP configuration, and masks workflow metadata from the notes mount. The proxy has a readiness check, bounded header reads, and connection cleanup.
+- Jira credentials and project-specific verification commands still come from the user's configuration. Live Jira and installed end-to-end runs require those dependencies. The Git helper suite was excluded from the fix verification.
 
 ## Stage execution and output
 

@@ -11,6 +11,8 @@ from claude_workflow.stages.base import (
     StageContext,
     StageOutcome,
     StageResult,
+    artifact_result,
+    artifact_stamp,
     build_stage_sandbox,
     skill_prompt_prefix,
 )
@@ -39,12 +41,19 @@ class RetroStage:
             workdir=ctx.state_dir,
         )
         paths = sandbox_paths(sandbox)
+        print(f"Review the worktree at {ctx.state.worktree_path}")
+        print(f"Diff: {ctx.state_dir / 'diff.patch'}")
+        feedback = ctx.state_dir / "feedback.md"
+        print(f"Share feedback in this session or write it to {feedback}")
         prompt = skill_prompt_prefix(ctx, StageName.RETRO, paths) + (
             f"Review {paths.notes_dir / '06-verify.md'} and "
             f"{paths.notes_dir / '07-review.md'} "
-            f"with the user. Capture any human feedback and propose concrete diffs to skills "
+            f"with the user. Inspect {paths.notes_dir / 'diff.patch'} and read "
+            f"{paths.notes_dir / 'feedback.md'} if present. Capture human feedback before "
+            "proposing concrete diffs to skills "
             f"or the personal KB in {paths.notes_dir / '08-retro.md'}."
         )
+        previous = None if resume else artifact_stamp(artifact)
         rc = run_claude_interactive(
             ctx.config.stages[StageName.RETRO],
             sandbox,
@@ -53,13 +62,12 @@ class RetroStage:
             resume=resume,
         )
         if rc != 0:
+            if rc not in (-2, 130):
+                ctx.state.session_ids.pop(StageName.RETRO.value, None)
+                save_state(ctx.state_dir, ctx.state)
             return StageResult(
                 outcome=StageOutcome.FAILED,
                 artifact_path=None,
                 message=f"retro interactive session exited with code {rc}",
             )
-        return StageResult(
-            outcome=StageOutcome.DONE,
-            artifact_path=artifact,
-            message="retro completed",
-        )
+        return artifact_result(StageName.RETRO, artifact, previous)

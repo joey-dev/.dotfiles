@@ -9,6 +9,8 @@ from claude_workflow.stages.base import (
     StageContext,
     StageOutcome,
     StageResult,
+    artifact_result,
+    artifact_stamp,
     build_stage_sandbox,
     read_artifact,
     run_headless_with_escalation,
@@ -57,6 +59,7 @@ class PlanStage:
                 f"Write your review to {review_md}. Start the file with 'APPROVED' if the plan "
                 f"is ready, or 'CHANGES_REQUESTED' followed by concrete fixes."
             )
+            previous = artifact_stamp(review_md_host)
             rev = run_claude_headless(stage_cfg, sandbox, review_prompt)
             if rev.returncode != 0:
                 return StageResult(
@@ -65,8 +68,15 @@ class PlanStage:
                     message=f"plan review pass {pass_idx} failed: {rev.stderr.strip()}",
                 )
 
-            review_text = read_artifact(review_md_host).strip()
-            if review_text.startswith("APPROVED"):
+            report = artifact_result(StageName.PLAN, review_md_host, previous)
+            if report.outcome is StageOutcome.FAILED:
+                return report
+            verdict = read_artifact(review_md_host).strip().splitlines()[0].strip()
+            if verdict == "APPROVED":
+                return draft_result
+            if verdict != "CHANGES_REQUESTED":
+                return StageResult(StageOutcome.FAILED, review_md_host, "Invalid plan verdict")
+            if pass_idx == ctx.config.max_plan_reviews:
                 break
 
             revise_prompt = (
@@ -80,7 +90,7 @@ class PlanStage:
                 return revise_result
 
         return StageResult(
-            outcome=StageOutcome.DONE,
-            artifact_path=plan_md_host,
-            message="plan completed",
+            outcome=StageOutcome.FAILED,
+            artifact_path=review_md_host,
+            message="Plan review limit reached without approval",
         )

@@ -153,7 +153,7 @@ def default_stages() -> dict[StageName, StageConfig]:
             name=StageName.RETRO,
             model="sonnet",
             thinking="medium",
-            repo_access=RepoAccess.RO,
+            repo_access=RepoAccess.NONE,
             allow_network=False,
             allowed_tools=("Read", "Write"),
         ),
@@ -201,16 +201,25 @@ def _apply_stage_overrides(
             mcp_path = _expand_path(str(mcp_raw))
 
         tools_raw = patch.get("allowed_tools", current.allowed_tools)
-        allowed_tools = tuple(str(t) for t in tools_raw)
+        if not isinstance(tools_raw, (list, tuple)) or any(
+            not isinstance(tool, str) or not tool.strip() for tool in tools_raw
+        ):
+            raise ValueError(f"{key}.allowed_tools must contain nonempty strings")
+        allow_network = patch.get("allow_network", current.allow_network)
+        if not isinstance(allow_network, bool):
+            raise ValueError(f"{key}.allow_network must be a boolean")
+        thinking = patch.get("thinking", current.thinking)
+        if thinking not in ("low", "medium", "high", "xhigh", "max"):
+            raise ValueError(f"{key}.thinking has an unsupported level")
 
         stages[stage_name] = replace(
             current,
             model=str(patch.get("model", current.model)),
-            thinking=str(patch.get("thinking", current.thinking)),
+            thinking=thinking,
             repo_access=RepoAccess(patch.get("repo_access", current.repo_access)),
-            allow_network=bool(patch.get("allow_network", current.allow_network)),
+            allow_network=allow_network,
             mcp_config=mcp_path,
-            allowed_tools=allowed_tools,
+            allowed_tools=tuple(tools_raw),
         )
     return stages
 
@@ -237,6 +246,8 @@ def load_config(config_path: Path | None) -> WorkflowConfig:
         raise ValueError(f"Config file {resolved_path} must contain a JSON object")
 
     raw_stages = raw.get("stages")
+    if "stages" in raw and not isinstance(raw_stages, dict):
+        raise ValueError("stages must be a JSON object")
     stages = (
         _apply_stage_overrides(base.stages, raw_stages)
         if isinstance(raw_stages, dict)
@@ -244,11 +255,23 @@ def load_config(config_path: Path | None) -> WorkflowConfig:
     )
 
     verify_raw = raw.get("verify_commands")
+    if "verify_commands" in raw and (
+        not isinstance(verify_raw, list)
+        or any(not isinstance(cmd, str) or not cmd.strip() for cmd in verify_raw)
+    ):
+        raise ValueError("verify_commands must be a list of nonempty command strings")
     verify_commands = (
         tuple(str(cmd) for cmd in verify_raw)
         if isinstance(verify_raw, list)
         else base.verify_commands
     )
+
+    max_plan_reviews = raw.get("max_plan_reviews", base.max_plan_reviews)
+    max_escalations = raw.get("max_escalations", base.max_escalations)
+    if type(max_plan_reviews) is not int or max_plan_reviews < 1:
+        raise ValueError("max_plan_reviews must be a positive integer")
+    if type(max_escalations) is not int or max_escalations < 0:
+        raise ValueError("max_escalations must be a nonnegative integer")
 
     return WorkflowConfig(
         repo_path=_expand_path(str(raw["repo_path"])) if "repo_path" in raw else base.repo_path,
@@ -270,7 +293,7 @@ def load_config(config_path: Path | None) -> WorkflowConfig:
             else base.flake_path
         ),
         verify_commands=verify_commands,
-        max_plan_reviews=int(raw.get("max_plan_reviews", base.max_plan_reviews)),
-        max_escalations=int(raw.get("max_escalations", base.max_escalations)),
+        max_plan_reviews=max_plan_reviews,
+        max_escalations=max_escalations,
         stages=stages,
     )

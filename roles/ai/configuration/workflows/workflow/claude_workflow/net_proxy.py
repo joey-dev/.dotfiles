@@ -62,6 +62,9 @@ class ConnectAllowlistProxy:
         self._server: socket.socket | None = None
         self._stop_event = threading.Event()
         self._accept_thread: threading.Thread | None = None
+        self._clients: set[socket.socket] = set()
+        self._workers: set[threading.Thread] = set()
+        self._lock = threading.Lock()
         self.socket_path: Path = Path()
 
     def __enter__(self) -> ConnectAllowlistProxy:
@@ -89,6 +92,14 @@ class ConnectAllowlistProxy:
                 self._server.close()
         if self._accept_thread is not None:
             self._accept_thread.join(timeout=2.0)
+        with self._lock:
+            clients = tuple(self._clients)
+            workers = tuple(self._workers)
+        for client in clients:
+            with contextlib.suppress(OSError):
+                client.shutdown(socket.SHUT_RDWR)
+        for worker in workers:
+            worker.join(timeout=1.0)
         if self._tmpdir is not None:
             self._tmpdir.cleanup()
 
@@ -102,11 +113,15 @@ class ConnectAllowlistProxy:
             except OSError:
                 break
             t = threading.Thread(target=self._handle_client, args=(conn,), daemon=True)
+            with self._lock:
+                self._clients.add(conn)
+                self._workers.add(t)
             t.start()
 
     def _handle_client(self, conn: socket.socket) -> None:
         upstream: socket.socket | None = None
         try:
+            conn.settimeout(self._connect_timeout)
             buf = b""
             while b"\r\n\r\n" not in buf and len(buf) < _HEADER_LIMIT:
                 chunk = conn.recv(4096)
@@ -114,7 +129,12 @@ class ConnectAllowlistProxy:
                     return
                 buf += chunk
 
-            parsed = _parse_connect_target(buf)
+            header, delimiter, payload = buf.partition(b"\r\n\r\n")
+            parsed = (
+                _parse_connect_target(header)
+                if delimiter and len(header) + len(delimiter) <= _HEADER_LIMIT
+                else None
+            )
             if parsed is None:
                 conn.sendall(b"HTTP/1.1 400 Bad Request\r\n\r\n")
                 return
@@ -129,8 +149,15 @@ class ConnectAllowlistProxy:
                 return
 
             upstream = socket.create_connection((host, port), timeout=self._connect_timeout)
+            with self._lock:
+                self._clients.add(upstream)
+                if self._stop_event.is_set():
+                    return
+            if payload:
+                upstream.sendall(payload)
             upstream.settimeout(None)
             conn.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+            conn.settimeout(None)
 
             t1 = threading.Thread(target=_relay, args=(conn, upstream), daemon=True)
             t2 = threading.Thread(target=_relay, args=(upstream, conn), daemon=True)
@@ -142,6 +169,11 @@ class ConnectAllowlistProxy:
             with contextlib.suppress(OSError):
                 conn.sendall(b"HTTP/1.1 502 Bad Gateway\r\n\r\n")
         finally:
+            with self._lock:
+                self._clients.discard(conn)
+                if upstream is not None:
+                    self._clients.discard(upstream)
+                self._workers.discard(threading.current_thread())
             with contextlib.suppress(OSError):
                 conn.close()
             if upstream is not None:

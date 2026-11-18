@@ -30,10 +30,15 @@ _PROXY_BRIDGE_SCRIPT = (
     f"UNIX-CONNECT:{_SANDBOX_PROXY_SOCK} >/dev/null 2>&1 & "
     "SOCAT_PID=$!; "
     "trap 'kill $SOCAT_PID 2>/dev/null || true' EXIT; "
+    "tries=0; "
+    "until socat -T 1 /dev/null TCP:127.0.0.1:3128,connect-timeout=1 "
+    ">/dev/null 2>&1; do "
+    'tries=$((tries + 1)); if [ "$tries" -ge 20 ] || ! kill -0 "$SOCAT_PID"; then '
+    "echo 'Workflow proxy bridge failed to start' >&2; exit 1; fi; sleep 0.1; done; "
     "export HTTPS_PROXY=http://127.0.0.1:3128 "
     "HTTP_PROXY=http://127.0.0.1:3128 "
     "NODE_USE_ENV_PROXY=1; "
-    'exec "$@"'
+    '"$@"'
 )
 
 
@@ -75,7 +80,10 @@ def sandbox_paths(spec: SandboxSpec) -> SandboxPaths:
 
     repo_target: Path | None = None
     if spec.repo_dir is not None and spec.repo_access is not RepoAccess.NONE:
-        repo_target = home / spec.repo_dir.name
+        repo_name = spec.repo_dir.resolve().name
+        if repo_name in {"", "notes", "kb", "flake", ".claude", ".nix-profile"}:
+            repo_name = "repository"
+        repo_target = home / repo_name
 
     kb_target = home / "kb" if (spec.kb_dir is not None and spec.kb_dir.exists()) else None
     flake_target = (
@@ -90,6 +98,9 @@ def sandbox_paths(spec: SandboxSpec) -> SandboxPaths:
     )
 
     workdir = repo_target if repo_target is not None else notes_dir
+    if spec.repo_dir is not None and repo_target is not None:
+        relative_workdir = spec.workdir.resolve().relative_to(spec.repo_dir.resolve())
+        workdir = repo_target / relative_workdir
 
     add_dirs: list[Path] = [notes_dir]
     if repo_target is not None and repo_target != workdir:
@@ -177,12 +188,12 @@ def build_bwrap_command(spec: SandboxSpec, inner_cmd: Sequence[str]) -> list[str
         if Path(sys_path).exists():
             cmd.extend(["--ro-bind", sys_path, sys_path])
 
+    if sandbox_home_host.exists():
+        cmd.extend(["--bind", str(sandbox_home_host), str(paths.home_dir)])
+
     nix_profile = Path.home() / ".nix-profile"
     if nix_profile.exists():
         cmd.extend(["--ro-bind", str(nix_profile.resolve()), str(paths.home_dir / ".nix-profile")])
-
-    if sandbox_home_host.exists():
-        cmd.extend(["--bind", str(sandbox_home_host), str(paths.home_dir)])
 
     host_settings = Path.home() / ".claude" / "settings.json"
     if host_settings.is_file() and sandbox_home_host.exists():
@@ -195,6 +206,11 @@ def build_bwrap_command(spec: SandboxSpec, inner_cmd: Sequence[str]) -> list[str
         )
 
     cmd.extend(["--bind", str(spec.state_dir), str(paths.notes_dir)])
+    for name in ("state.json", ".lock"):
+        if (spec.state_dir / name).is_file():
+            cmd.extend(["--ro-bind", "/dev/null", str(paths.notes_dir / name)])
+    if sandbox_home_host.is_dir():
+        cmd.extend(["--tmpfs", str(paths.notes_dir / "home")])
 
     if spec.repo_dir is not None and paths.repo_dir is not None:
         bind_flag = "--bind" if spec.repo_access is RepoAccess.RW else "--ro-bind"

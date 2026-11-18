@@ -104,9 +104,11 @@ def test_pipeline_handles_blocked_questions_escalation_and_caps_retries(
 
     escalation_runs = 0
 
-    def fake_interactive(*_args: Any, **_kwargs: Any) -> int:
+    def fake_interactive(_stage: Any, sandbox: Any, *_args: Any, **_kwargs: Any) -> int:
         nonlocal escalation_runs
         escalation_runs += 1
+        with (sandbox.state_dir / "03-qa.md").open("a", encoding="utf-8") as answers:
+            answers.write("A confirmed answer.\n")
         return 0
 
     monkeypatch.setattr(pipeline_mod, "run_claude_interactive", fake_interactive)
@@ -176,7 +178,7 @@ def test_plan_stage_caps_review_loop_at_max_plan_reviews(
     )
     res = PlanStage().run(ctx)
 
-    assert res.outcome is StageOutcome.DONE
+    assert res.outcome is StageOutcome.FAILED
     review_calls = [c for c in calls if "Review " in c]
     assert len(review_calls) == 2
 

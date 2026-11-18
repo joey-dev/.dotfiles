@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 from collections.abc import Sequence
+from hashlib import sha256
 from pathlib import Path
 
 
@@ -42,6 +44,14 @@ def ensure_worktree(
 ) -> Path:
     """Create a git worktree for branch_name if it does not already exist."""
     if worktree_path.exists() and (worktree_path / ".git").exists():
+        source = _run_git(repo_path, ["rev-parse", "--path-format=absolute", "--git-common-dir"])
+        target = _run_git(worktree_path, ["rev-parse", "--path-format=absolute", "--git-common-dir"])
+        if Path(source.stdout.strip()).resolve() != Path(target.stdout.strip()).resolve():
+            raise GitError(f"Worktree belongs to another repository: {worktree_path}")
+        branch = _run_git(worktree_path, ["symbolic-ref", "--short", "HEAD"]).stdout.strip()
+        if branch != branch_name:
+            raise GitError(f"Expected branch {branch_name} in {worktree_path}, found {branch}")
+        _run_git(worktree_path, ["merge-base", "--is-ancestor", base_ref, "HEAD"])
         return worktree_path
 
     worktree_path.parent.mkdir(parents=True, exist_ok=True)
@@ -51,6 +61,7 @@ def ensure_worktree(
         allowed_returncodes=(0, 1),
     )
     if ref_check.returncode == 0:
+        _run_git(repo_path, ["merge-base", "--is-ancestor", base_ref, branch_name])
         _run_git(repo_path, ["worktree", "add", str(worktree_path), branch_name])
     else:
         _run_git(
@@ -73,11 +84,12 @@ def is_dirty(worktree_path: Path) -> bool:
 
 def capture_diff(worktree_path: Path, base_ref: str = "HEAD") -> str:
     """Capture a unified diff of tracked changes and untracked files."""
-    tracked = _run_git(worktree_path, ["diff", base_ref]).stdout
+    options = ("--no-color", "--no-ext-diff", "--no-textconv", "--binary", "--full-index")
+    tracked = _run_git(worktree_path, ["diff", *options, "--no-renames", base_ref, "--"]).stdout
     untracked_list = _run_git(
         worktree_path,
-        ["ls-files", "--others", "--exclude-standard"],
-    ).stdout.splitlines()
+        ["ls-files", "-z", "--others", "--exclude-standard"],
+    ).stdout.split("\0")
 
     parts: list[str] = [tracked] if tracked else []
     for rel_path in untracked_list:
@@ -85,12 +97,18 @@ def capture_diff(worktree_path: Path, base_ref: str = "HEAD") -> str:
             continue
         untracked_diff = _run_git(
             worktree_path,
-            ["diff", "--no-index", "--", "/dev/null", rel_path],
+            ["diff", "--no-index", *options, "--", "/dev/null", rel_path],
             allowed_returncodes=(0, 1),
         ).stdout
         if untracked_diff:
             parts.append(untracked_diff)
     return "".join(parts)
+
+
+def diff_digest(diff: str) -> str:
+    """Fingerprint patch content independently of tracked/untracked listing order."""
+    sections = re.split(r"(?m)(?=^diff --git )", diff)
+    return sha256("".join(sorted(sections)).encode()).hexdigest()
 
 
 def commit_stage(worktree_path: Path, message: str) -> bool:

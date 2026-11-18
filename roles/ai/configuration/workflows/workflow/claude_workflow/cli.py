@@ -18,16 +18,22 @@ def build_parser() -> argparse.ArgumentParser:
         description="Crash-safe Jira-to-branch Claude Code orchestrator.",
     )
     parser.add_argument("ticket", help="Jira ticket ID (e.g. PROJ-123)")
-    parser.add_argument(
+    stages = parser.add_mutually_exclusive_group()
+    stages.add_argument(
         "--from-stage",
         choices=[s.value for s in STAGE_ORDER],
         default=None,
-        help="Start or re-run from a specific pipeline stage",
+        help="Re-run a stage and continue through the remaining stages",
+    )
+    stages.add_argument(
+        "--only-stage",
+        choices=[s.value for s in STAGE_ORDER],
+        help="Re-run one stage and stop after its approval gate",
     )
     parser.add_argument(
         "--auto",
         action="store_true",
-        help="Skip --step approval gates (still pauses for interactive Q&A and Retro)",
+        help="Skip approval gates (Q&A and Retro remain interactive)",
     )
     parser.add_argument(
         "--config",
@@ -42,13 +48,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Parse CLI arguments and run the workflow pipeline."""
     parser = build_parser()
     args = parser.parse_args(argv)
-    config = load_config(args.config)
+    try:
+        config = load_config(args.config)
+    except (OSError, ValueError, TypeError) as exc:
+        parser.error(str(exc))
     from_stage = StageName(args.from_stage) if args.from_stage is not None else None
     return run_pipeline(
         ticket_id=args.ticket,
         config=config,
         from_stage=from_stage,
         auto=bool(args.auto),
+        only_stage=StageName(args.only_stage) if args.only_stage is not None else None,
     )
 
 

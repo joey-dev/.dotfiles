@@ -31,8 +31,12 @@ def _common_claude_flags(stage: StageConfig, sandbox: SandboxSpec) -> list[str]:
     flags: list[str] = [
         "--model",
         stage.model,
+        "--effort",
+        stage.thinking,
         "--permission-mode",
-        "bypassPermissions",
+        "dontAsk",
+        "--tools",
+        ",".join(tool for tool in stage.allowed_tools if not tool.startswith("mcp__")),
     ]
     for extra_dir in paths.add_dirs:
         flags.extend(["--add-dir", str(extra_dir)])
@@ -40,6 +44,10 @@ def _common_claude_flags(stage: StageConfig, sandbox: SandboxSpec) -> list[str]:
         flags.extend(["--allowedTools", ",".join(stage.allowed_tools)])
     if paths.mcp_config is not None:
         flags.extend(["--mcp-config", str(paths.mcp_config)])
+    if paths.mcp_config is not None or not any(
+        tool.startswith("mcp__") for tool in stage.allowed_tools
+    ):
+        flags.append("--strict-mcp-config")
     return flags
 
 

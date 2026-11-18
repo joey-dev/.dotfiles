@@ -11,6 +11,8 @@ from claude_workflow.stages.base import (
     StageContext,
     StageOutcome,
     StageResult,
+    artifact_result,
+    artifact_stamp,
     build_stage_sandbox,
     skill_prompt_prefix,
 )
@@ -45,6 +47,7 @@ class QaStage:
             f"Ask batched clarifying questions and record all Q&A incrementally to "
             f"{paths.notes_dir / '03-qa.md'}."
         )
+        previous = None if resume else artifact_stamp(artifact)
         rc = run_claude_interactive(
             ctx.config.stages[StageName.QA],
             sandbox,
@@ -53,13 +56,12 @@ class QaStage:
             resume=resume,
         )
         if rc != 0:
+            if rc not in (-2, 130):
+                ctx.state.session_ids.pop(StageName.QA.value, None)
+                save_state(ctx.state_dir, ctx.state)
             return StageResult(
                 outcome=StageOutcome.FAILED,
                 artifact_path=None,
                 message=f"qa interactive session exited with code {rc}",
             )
-        return StageResult(
-            outcome=StageOutcome.DONE,
-            artifact_path=artifact,
-            message="qa completed",
-        )
+        return artifact_result(StageName.QA, artifact, previous)
