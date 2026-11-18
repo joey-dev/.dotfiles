@@ -2,7 +2,7 @@
 
 How to install, configure, and run the workflow. Each item says **what it does**.
 
-**Tested:** the unit tests (116), the Nix build, the Q&A sandbox (via `tools/sandbox_shell.py`), and the dev shell environment with a test flake. **Not tested:** a full run on a real ticket.
+**Tested:** the unit tests (123), the Nix build, the Q&A sandbox (via `tools/sandbox_shell.py`), and the dev shell environment with a test flake. **Not tested:** a full run on a real ticket.
 
 ---
 
@@ -195,7 +195,7 @@ File: `configuration/workflows/config.json`. Loader: `config.py:259`.
 | `XDG_CONFIG_HOME` | Base for the config file (default `~/.config`) |
 | `CLAUDE_WORKFLOW_SKILLS` | Skills folder. **Set by the Nix wrapper** |
 
-**Inside the sandbox**, only these host variables are kept: `HOME USER LOGNAME PATH SHELL LANG LC_ALL LC_CTYPE TERM COLORTERM TZ NIX_SSL_CERT_FILE SSL_CERT_FILE`. The flake's dev shell variables are added on top. Tokens and other secrets are **not** passed.
+**Inside the sandbox**, only these host variables are kept: `HOME USER LOGNAME PATH SHELL LANG LC_ALL LC_CTYPE LOCALE_ARCHIVE TERM TERMINFO TERMINFO_DIRS COLORTERM TZ NIX_SSL_CERT_FILE SSL_CERT_FILE`. The flake's dev shell variables are added on top. Tokens and other secrets are **not** passed.
 
 For no-network stages, the sandbox also sets `HTTPS_PROXY`, `HTTP_PROXY` and `NODE_USE_ENV_PROXY=1`, so traffic goes through the allowlist proxy.
 
