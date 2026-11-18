@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import contextlib
+import os
 import socket
 import tempfile
 import threading
 from pathlib import Path
 from types import TracebackType
 
-DEFAULT_ALLOWED_HOSTS: tuple[str, ...] = ("api.anthropic.com",)
+# api.anthropic.com: the Claude API. platform.claude.com: login token refresh.
+DEFAULT_ALLOWED_HOSTS: tuple[str, ...] = ("api.anthropic.com", "platform.claude.com")
 _BUFFER_SIZE = 65536
 _HEADER_LIMIT = 8192
 
@@ -54,6 +56,7 @@ class ConnectAllowlistProxy:
         *,
         allowed_port: int = 443,
         connect_timeout: float = 15.0,
+        log_path: Path | None = None,
     ) -> None:
         self._allowed_hosts = frozenset(h.lower() for h in allowed_hosts)
         self._allowed_port = allowed_port
@@ -65,6 +68,7 @@ class ConnectAllowlistProxy:
         self._clients: set[socket.socket] = set()
         self._workers: set[threading.Thread] = set()
         self._lock = threading.Lock()
+        self._log_path = log_path
         self.socket_path: Path = Path()
 
     def __enter__(self) -> ConnectAllowlistProxy:
@@ -102,6 +106,18 @@ class ConnectAllowlistProxy:
             worker.join(timeout=1.0)
         if self._tmpdir is not None:
             self._tmpdir.cleanup()
+
+    def _log(self, line: str) -> None:
+        """Append one decision to the log file, if there is one."""
+        if self._log_path is None:
+            return
+        # O_NOFOLLOW: the log lives where the sandbox can write, so it may be a planted
+        # symlink. Then opening fails and the line is skipped.
+        flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW
+        with self._lock, contextlib.suppress(OSError):
+            fd = os.open(self._log_path, flags, 0o600)
+            with os.fdopen(fd, "a") as log:
+                log.write(line + "\n")
 
     def _accept_loop(self) -> None:
         assert self._server is not None
@@ -141,12 +157,16 @@ class ConnectAllowlistProxy:
 
             method, host, port = parsed
             if method != "CONNECT":
+                self._log(f"REJECT {method}")
                 conn.sendall(b"HTTP/1.1 405 Method Not Allowed\r\n\r\n")
                 return
 
             if host not in self._allowed_hosts or port != self._allowed_port:
+                self._log(f"DENY {host}:{port}")
                 conn.sendall(b"HTTP/1.1 403 Forbidden\r\n\r\n")
                 return
+
+            self._log(f"ALLOW {host}:{port}")
 
             upstream = socket.create_connection((host, port), timeout=self._connect_timeout)
             with self._lock:

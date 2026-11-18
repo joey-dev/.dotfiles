@@ -14,7 +14,7 @@ from claude_workflow.stages.base import (
     artifact_result,
     artifact_stamp,
     build_stage_sandbox,
-    skill_prompt_prefix,
+    ensure_ticket_worktree,
 )
 from claude_workflow.state import save_state
 
@@ -33,15 +33,16 @@ class QaStage:
             ctx.state.session_ids[StageName.QA.value] = session_id
             save_state(ctx.state_dir, ctx.state)
 
+        worktree = ensure_ticket_worktree(ctx)
         sandbox = build_stage_sandbox(
             ctx,
             StageName.QA,
-            repo_dir=ctx.config.repo_path,
+            repo_dir=worktree,
             kb_dir=ctx.config.kb_path,
-            workdir=ctx.config.repo_path,
+            workdir=worktree,
         )
         paths = sandbox_paths(sandbox)
-        prompt = skill_prompt_prefix(ctx, StageName.QA, paths) + (
+        prompt = (
             f"Read {paths.notes_dir / '01-ticket.md'} and "
             f"{paths.notes_dir / '02-findings.md'}. "
             f"Ask batched clarifying questions and record all Q&A incrementally to "

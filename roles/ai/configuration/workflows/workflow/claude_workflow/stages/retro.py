@@ -14,7 +14,6 @@ from claude_workflow.stages.base import (
     artifact_result,
     artifact_stamp,
     build_stage_sandbox,
-    skill_prompt_prefix,
 )
 from claude_workflow.state import save_state
 
@@ -45,12 +44,12 @@ class RetroStage:
         print(f"Diff: {ctx.state_dir / 'diff.patch'}")
         feedback = ctx.state_dir / "feedback.md"
         print(f"Share feedback in this session or write it to {feedback}")
-        prompt = skill_prompt_prefix(ctx, StageName.RETRO, paths) + (
+        prompt = (
             f"Review {paths.notes_dir / '06-verify.md'} and "
             f"{paths.notes_dir / '07-review.md'} "
             f"with the user. Inspect {paths.notes_dir / 'diff.patch'} and read "
             f"{paths.notes_dir / 'feedback.md'} if present. Capture human feedback before "
-            "proposing concrete diffs to skills "
+            "proposing concrete diffs to the workflow skills in ~/skills "
             f"or the personal KB in {paths.notes_dir / '08-retro.md'}."
         )
         previous = None if resume else artifact_stamp(artifact)

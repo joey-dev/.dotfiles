@@ -27,6 +27,10 @@ class TicketState:
     approval_pending: bool = False
     repo_path: Path | None = None
     verified_diff: str | None = None
+    # How often Verify/Review sent the ticket back to Implement.
+    fix_rounds: int = 0
+    # Artifact (e.g. "07-review.md") with the problems Implement must fix next.
+    fix_feedback: str | None = None
 
 
 def _state_file(state_dir: Path) -> Path:
@@ -63,6 +67,8 @@ def load_state(state_dir: Path, ticket_id: str) -> TicketState:
         approval_pending=bool(raw.get("approval_pending", False)),
         repo_path=Path(repo_raw) if repo_raw is not None else None,
         verified_diff=raw.get("verified_diff"),
+        fix_rounds=int(raw.get("fix_rounds", 0)),
+        fix_feedback=raw.get("fix_feedback"),
     )
 
 
@@ -83,6 +89,8 @@ def save_state(state_dir: Path, state: TicketState) -> None:
         "approval_pending": state.approval_pending,
         "repo_path": str(state.repo_path) if state.repo_path is not None else None,
         "verified_diff": state.verified_diff,
+        "fix_rounds": state.fix_rounds,
+        "fix_feedback": state.fix_feedback,
     }
 
     with NamedTemporaryFile(

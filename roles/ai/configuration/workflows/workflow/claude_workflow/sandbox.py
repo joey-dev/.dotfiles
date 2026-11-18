@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import json
 import os
-import shutil
-from collections.abc import Sequence
+import tempfile
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 from claude_workflow.config import RepoAccess
+from claude_workflow.env import sandbox_env
 
 _SYSTEM_RO_PATHS: tuple[str, ...] = (
     "/nix/store",
@@ -56,6 +59,12 @@ class SandboxSpec:
     mcp_config: Path | None = None
     flake_dir: Path | None = None
     proxy_socket: Path | None = None
+    # (host folder, path relative to the repo) mounted read-only on top of the repo.
+    repo_ro_overlays: tuple[tuple[Path, str], ...] = ()
+    # (host path, path relative to $HOME) mounted read-only, e.g. CLAUDE.md.
+    home_ro_mounts: tuple[tuple[Path, str], ...] = ()
+    # Generated Claude settings, mounted read-only as ~/.claude/settings.json.
+    settings_file: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -67,7 +76,6 @@ class SandboxPaths:
     repo_dir: Path | None
     kb_dir: Path | None
     flake_dir: Path | None
-    skills_dir: Path | None
     mcp_config: Path | None
     workdir: Path
     add_dirs: tuple[Path, ...]
@@ -89,8 +97,6 @@ def sandbox_paths(spec: SandboxSpec) -> SandboxPaths:
     flake_target = (
         home / "flake" if (spec.flake_dir is not None and spec.flake_dir.exists()) else None
     )
-    has_skills = any(s.exists() for s in spec.skills_dirs)
-    skills_target = home / ".claude" / "skills" if has_skills else None
     mcp_target = (
         home / ".claude" / "mcp.json"
         if (spec.mcp_config is not None and spec.mcp_config.exists())
@@ -109,8 +115,9 @@ def sandbox_paths(spec: SandboxSpec) -> SandboxPaths:
         add_dirs.append(kb_target)
     if flake_target is not None:
         add_dirs.append(flake_target)
-    if skills_target is not None:
-        add_dirs.append(skills_target)
+    for host_path, relative in spec.home_ro_mounts:
+        if host_path.is_dir():
+            add_dirs.append(home / relative)
 
     return SandboxPaths(
         home_dir=home,
@@ -118,37 +125,134 @@ def sandbox_paths(spec: SandboxSpec) -> SandboxPaths:
         repo_dir=repo_target,
         kb_dir=kb_target,
         flake_dir=flake_target,
-        skills_dir=skills_target,
         mcp_config=mcp_target,
         workdir=workdir,
         add_dirs=tuple(add_dirs),
     )
 
 
+def _refuse_symlinks(*paths: Path) -> None:
+    """The sandbox can write in its own $HOME, so it could plant symlinks there."""
+    for path in paths:
+        if path.is_symlink():
+            raise RuntimeError(f"Refusing to use a symlink in the sandbox home: {path}")
+
+
+def _safe_copy(source: Path, target: Path) -> None:
+    """Copy source to target as a new 0600 file, never following links at the target.
+
+    mkstemp creates a fresh file with a random name (O_EXCL), and os.replace swaps
+    the target's directory entry, so a planted symlink is replaced, not written through.
+    """
+    fd, temporary = tempfile.mkstemp(dir=target.parent, prefix=".cw-copy-")
+    try:
+        with os.fdopen(fd, "wb") as output:
+            output.write(source.read_bytes())
+        os.replace(temporary, target)
+    except BaseException:
+        Path(temporary).unlink(missing_ok=True)
+        raise
+
+
+def _token_expiry(path: Path) -> float | None:
+    """Return claudeAiOauth.expiresAt from a credentials file, or None if unreadable."""
+    try:
+        data: object = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    oauth = cast(dict[str, object], data).get("claudeAiOauth")
+    if not isinstance(oauth, dict):
+        return None
+    expires = cast(dict[str, object], oauth).get("expiresAt")
+    return float(expires) if isinstance(expires, (int, float)) else None
+
+
+def _copy_login_in(host: Path, sandbox: Path) -> None:
+    """Give the sandbox the host login when it is missing or the host's lasts longer.
+
+    One way only: the sandbox never writes back to the host, so a compromised
+    stage cannot change your real login.
+    """
+    if not host.is_file():
+        return
+    if not sandbox.is_file():
+        _safe_copy(host, sandbox)
+        return
+    host_expiry, sandbox_expiry = _token_expiry(host), _token_expiry(sandbox)
+    if host_expiry is None:
+        return  # unknown format: keep what the sandbox has
+    if sandbox_expiry is None or host_expiry > sandbox_expiry:
+        _safe_copy(host, sandbox)
+
+
+def copy_mcp_auth_in(state_dir: Path) -> None:
+    """Copy the mcp-remote login (~/.mcp-auth) into the sandbox home, one way.
+
+    Per file: copied when it is missing in the sandbox or newer on the host.
+    Host symlinks are skipped; symlinked folders in the sandbox are refused.
+    The sandbox never writes back, so your host login can't be changed by a stage.
+    """
+    host_root = Path.home() / ".mcp-auth"
+    sandbox_root = state_dir / "home" / ".mcp-auth"
+    if host_root.is_symlink() or not host_root.is_dir():
+        return
+    for folder, _subfolders, files in os.walk(host_root):  # does not follow symlinks
+        target_dir = sandbox_root / Path(folder).relative_to(host_root)
+        _refuse_symlinks(state_dir / "home", sandbox_root, target_dir)
+        target_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+        for name in files:
+            source, target = Path(folder) / name, target_dir / name
+            if source.is_symlink() or not source.is_file():
+                continue
+            source_time = source.stat().st_mtime
+            sandbox_is_current = (
+                target.is_file()
+                and not target.is_symlink()
+                and target.stat().st_mtime >= source_time
+            )
+            if sandbox_is_current:
+                continue  # the sandbox has the same or a newer (refreshed) copy
+            _safe_copy(source, target)
+            os.utime(target, (source_time, source_time))
+
+
 def prepare_sandbox_home(state_dir: Path) -> Path:
-    """Create an isolated per-ticket $HOME and copy only .credentials.json (0600)."""
+    """Create an isolated per-ticket $HOME with your Claude login (0600)."""
     sandbox_home = state_dir / "home"
     claude_dir = sandbox_home / ".claude"
-    (claude_dir / "skills").mkdir(parents=True, exist_ok=True)
+    sandbox_creds = claude_dir / ".credentials.json"
+    sandbox_claude_json = sandbox_home / ".claude.json"
+    _refuse_symlinks(sandbox_home, claude_dir, sandbox_creds)
+    claude_dir.mkdir(parents=True, exist_ok=True)
     os.chmod(claude_dir, 0o700)
 
-    sandbox_creds = claude_dir / ".credentials.json"
-    if sandbox_creds.is_symlink():
-        raise RuntimeError(f"Sandbox credentials must not be a symlink: {sandbox_creds}")
-
     host_home = Path.home()
-    host_creds = host_home / ".claude" / ".credentials.json"
-    if not sandbox_creds.exists() and host_creds.is_file():
-        shutil.copy2(host_creds, sandbox_creds)
-        os.chmod(sandbox_creds, 0o600)
+    _copy_login_in(host_home / ".claude" / ".credentials.json", sandbox_creds)
 
     host_claude_json = host_home / ".claude.json"
-    sandbox_claude_json = sandbox_home / ".claude.json"
-    if not sandbox_claude_json.exists() and host_claude_json.is_file():
-        shutil.copy2(host_claude_json, sandbox_claude_json)
-        os.chmod(sandbox_claude_json, 0o600)
+    if host_claude_json.is_file() and (
+        sandbox_claude_json.is_symlink() or not sandbox_claude_json.exists()
+    ):
+        _safe_copy(host_claude_json, sandbox_claude_json)
 
     return sandbox_home
+
+
+def sandbox_settings(host_settings: Path) -> dict[str, object]:
+    """Return the host Claude settings without hooks.
+
+    The hooks call notify-send, which cannot work inside the sandbox (no D-Bus).
+    Everything else, such as the permission deny rules, is kept.
+    """
+    if not host_settings.is_file():
+        return {}
+    settings = json.loads(host_settings.read_text(encoding="utf-8"))
+    if not isinstance(settings, dict):
+        return {}
+    all_settings = cast(dict[str, object], settings)
+    return {key: value for key, value in all_settings.items() if key != "hooks"}
 
 
 def _append_git_mask(cmd: list[str], host_repo: Path, sandbox_repo: Path) -> None:
@@ -161,15 +265,44 @@ def _append_git_mask(cmd: list[str], host_repo: Path, sandbox_repo: Path) -> Non
         cmd.extend(["--tmpfs", str(sandbox_git)])
 
 
-def build_bwrap_command(spec: SandboxSpec, inner_cmd: Sequence[str]) -> list[str]:
-    """Build a bubblewrap command line wrapping inner_cmd with isolated $HOME and mounts."""
+def tiocsti_disabled() -> bool:
+    """True when the kernel blocks TIOCSTI (typing into another process's terminal)."""
+    try:
+        return Path("/proc/sys/dev/tty/legacy_tiocsti").read_text().strip() == "0"
+    except OSError:
+        return False
+
+
+def build_bwrap_command(
+    spec: SandboxSpec,
+    inner_cmd: Sequence[str],
+    *,
+    env: Mapping[str, str] | None = None,
+    interactive: bool = False,
+) -> list[str]:
+    """Build a bubblewrap command line wrapping inner_cmd with isolated $HOME and mounts.
+
+    env: the complete environment inside the sandbox. None means: build it from the
+    host allowlist plus the flake's dev shell (see env.sandbox_env).
+
+    interactive: keep the controlling terminal (no --new-session), so resizing and
+    Ctrl-C work. Only done when the kernel already blocks TIOCSTI, the attack that
+    --new-session protects against.
+    """
     paths = sandbox_paths(spec)
+    if env is None:
+        flake = spec.flake_dir if spec.flake_dir and spec.flake_dir.exists() else None
+        env = sandbox_env(flake)
     sandbox_home_host = spec.state_dir / "home"
 
-    cmd: list[str] = [
-        "bwrap",
-        "--die-with-parent",
-        "--new-session",
+    keep_terminal = interactive and tiocsti_disabled()
+    if interactive and not keep_terminal:
+        print("Warning: TIOCSTI enabled; interactive sandbox has no controlling terminal.")
+
+    cmd: list[str] = ["bwrap", "--die-with-parent"]
+    if not keep_terminal:
+        cmd.append("--new-session")
+    cmd += [
         "--unshare-pid",
         "--dev",
         "/dev",
@@ -184,6 +317,11 @@ def build_bwrap_command(spec: SandboxSpec, inner_cmd: Sequence[str]) -> list[str
     if not spec.allow_network:
         cmd.append("--unshare-net")
 
+    # Start from an empty environment, so host secrets never reach the sandbox.
+    cmd.append("--clearenv")
+    for name, value in env.items():
+        cmd.extend(["--setenv", name, value])
+
     for sys_path in _SYSTEM_RO_PATHS:
         if Path(sys_path).exists():
             cmd.extend(["--ro-bind", sys_path, sys_path])
@@ -195,15 +333,13 @@ def build_bwrap_command(spec: SandboxSpec, inner_cmd: Sequence[str]) -> list[str
     if nix_profile.exists():
         cmd.extend(["--ro-bind", str(nix_profile.resolve()), str(paths.home_dir / ".nix-profile")])
 
-    host_settings = Path.home() / ".claude" / "settings.json"
-    if host_settings.is_file() and sandbox_home_host.exists():
-        cmd.extend(
-            [
-                "--ro-bind",
-                str(host_settings),
-                str(paths.home_dir / ".claude" / "settings.json"),
-            ]
-        )
+    if spec.settings_file is not None and sandbox_home_host.exists():
+        target = paths.home_dir / ".claude" / "settings.json"
+        cmd.extend(["--ro-bind", str(spec.settings_file), str(target)])
+
+    for host_path, relative in spec.home_ro_mounts:
+        if host_path.exists():
+            cmd.extend(["--ro-bind", str(host_path), str(paths.home_dir / relative)])
 
     cmd.extend(["--bind", str(spec.state_dir), str(paths.notes_dir)])
     for name in ("state.json", ".lock"):
@@ -216,17 +352,14 @@ def build_bwrap_command(spec: SandboxSpec, inner_cmd: Sequence[str]) -> list[str
         bind_flag = "--bind" if spec.repo_access is RepoAccess.RW else "--ro-bind"
         cmd.extend([bind_flag, str(spec.repo_dir), str(paths.repo_dir)])
         _append_git_mask(cmd, spec.repo_dir, paths.repo_dir)
+        for host_dir, relative in spec.repo_ro_overlays:
+            cmd.extend(["--ro-bind", str(host_dir), str(paths.repo_dir / relative)])
 
     if spec.kb_dir is not None and paths.kb_dir is not None:
         cmd.extend(["--ro-bind", str(spec.kb_dir), str(paths.kb_dir)])
 
     if spec.flake_dir is not None and paths.flake_dir is not None:
         cmd.extend(["--ro-bind", str(spec.flake_dir), str(paths.flake_dir)])
-
-    if paths.skills_dir is not None:
-        for skill_dir in spec.skills_dirs:
-            if skill_dir.exists():
-                cmd.extend(["--ro-bind", str(skill_dir), str(paths.skills_dir / skill_dir.name)])
 
     if spec.mcp_config is not None and paths.mcp_config is not None:
         cmd.extend(["--ro-bind", str(spec.mcp_config), str(paths.mcp_config)])

@@ -5,9 +5,11 @@ from __future__ import annotations
 import argparse
 import sys
 from collections.abc import Sequence
+from dataclasses import replace
 from pathlib import Path
 
 from claude_workflow.config import STAGE_ORDER, StageName, load_config
+from claude_workflow.git_host import GitError, repo_root
 from claude_workflow.pipeline import run_pipeline
 
 
@@ -50,7 +52,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         config = load_config(args.config)
-    except (OSError, ValueError, TypeError) as exc:
+        # Always work on the repository root, even when started in a subfolder.
+        config = replace(config, repo_path=repo_root(config.repo_path))
+    except (OSError, ValueError, TypeError, GitError) as exc:
         parser.error(str(exc))
     from_stage = StageName(args.from_stage) if args.from_stage is not None else None
     return run_pipeline(

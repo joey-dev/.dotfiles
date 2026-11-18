@@ -8,7 +8,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from claude_workflow.config import StageName
-from claude_workflow.git_host import capture_diff, diff_digest
+from claude_workflow.git_host import capture_diff, changed_files, diff_digest
 from claude_workflow.sandbox import build_bwrap_command
 from claude_workflow.stages.base import (
     StageContext,
@@ -17,6 +17,16 @@ from claude_workflow.stages.base import (
     build_stage_sandbox,
     write_artifact,
 )
+
+
+def _run_check(argv: list[str], timeout: int) -> tuple[str, str]:
+    """Run one verify command; return (status, output)."""
+    try:
+        proc = subprocess.run(argv, check=False, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return f"FAIL (timeout after {timeout}s)", ""
+    status = "PASS" if proc.returncode == 0 else f"FAIL (exit {proc.returncode})"
+    return status, (proc.stdout + proc.stderr).rstrip()
 
 
 class VerifyStage:
@@ -43,35 +53,35 @@ class VerifyStage:
         )
         sections: list[str] = ["# Verification\n"]
         all_passed = True
-        flake = ctx.config.flake_path
-        use_flake = flake is not None and flake.exists()
         before = capture_diff(workdir, ctx.state.base_commit)
 
         with TemporaryDirectory(prefix="cw-verify-") as scratch:
             sandbox = replace(sandbox, state_dir=Path(scratch), skills_dirs=(), mcp_config=None)
             for cmd in ctx.config.verify_commands:
                 argv = build_bwrap_command(sandbox, ["sh", "-c", cmd])
-                if use_flake:
-                    argv = ["nix", "develop", str(flake), "--command", *argv]
-                proc = subprocess.run(argv, check=False, capture_output=True, text=True)
-                status = "PASS" if proc.returncode == 0 else f"FAIL (exit {proc.returncode})"
-                if proc.returncode != 0:
+                status, output = _run_check(argv, ctx.config.verify_timeout)
+                if status != "PASS":
                     all_passed = False
-                output = (proc.stdout + proc.stderr).rstrip()
                 sections.append(f"## `{cmd}` — {status}\n\n```text\n{output}\n```\n")
 
         write_artifact(artifact, "\n".join(sections))
+        after = capture_diff(workdir, ctx.state.base_commit)
+        if after != before:
+            files = ", ".join(changed_files(before, after)) or "unknown files"
+            return StageResult(
+                StageOutcome.FAILED,
+                artifact,
+                f"Verification changed the worktree diff: {files}. "
+                "Add generated files to .gitignore.",
+            )
+        # Remember what was checked, also on failure, so "continue anyway" can go on.
+        ctx.state.verified_diff = diff_digest(before)
         if not all_passed:
             return StageResult(
-                outcome=StageOutcome.FAILED,
+                outcome=StageOutcome.NEEDS_FIX,
                 artifact_path=artifact,
                 message=f"verification failed; see {artifact}",
             )
-        if capture_diff(workdir, ctx.state.base_commit) != before:
-            return StageResult(
-                StageOutcome.FAILED, artifact, "Verification changed the worktree diff."
-            )
-        ctx.state.verified_diff = diff_digest(before)
         return StageResult(
             outcome=StageOutcome.DONE,
             artifact_path=artifact,

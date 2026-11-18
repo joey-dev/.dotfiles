@@ -8,6 +8,7 @@ import subprocess
 import uuid
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Literal
 
 from claude_workflow.claude_runner import run_claude_interactive
 from claude_workflow.config import STAGE_ORDER, StageName, WorkflowConfig
@@ -16,10 +17,12 @@ from claude_workflow.sandbox import sandbox_paths
 from claude_workflow.stages import STAGE_REGISTRY, StageOutcome, StageProtocol
 from claude_workflow.stages.base import (
     StageContext,
-    StageResult,
     artifact_stamp,
     blocked_questions_path,
+    blocked_result,
     build_stage_sandbox,
+    ensure_ticket_worktree,
+    has_blocker,
     read_artifact,
 )
 from claude_workflow.state import (
@@ -50,6 +53,38 @@ def _prompt_gate(stage: StageName) -> str:
             return "a"
 
 
+def _prompt_fix(stage: StageName, rounds: int, max_rounds: int) -> Literal["f", "c", "a"]:
+    """Ask what to do when Verify or Review found problems."""
+    can_fix = rounds < max_rounds
+    fix_option = "[f]ix in Implement / " if can_fix else ""
+    question = (
+        f"[{stage.value}] needs fixes (round {rounds}/{max_rounds}): "
+        f"{fix_option}[c]ontinue anyway / [a]bort: "
+    )
+    while True:
+        choice = input(question).strip().lower()
+        if can_fix and choice in {"f", "fix"}:
+            return "f"
+        if choice in {"c", "continue"}:
+            return "c"
+        if choice in {"a", "abort"}:
+            return "a"
+
+
+def _send_back_to_implement(state: TicketState, feedback: Path | None) -> None:
+    """Re-open Implement and the stages after it, with the problems to fix."""
+    reopened = STAGE_ORDER[STAGE_ORDER.index(StageName.IMPLEMENT) :]
+    state.completed_stages = [s for s in state.completed_stages if s not in reopened]
+    for stage in reopened:
+        state.session_ids.pop(stage.value, None)
+        state.escalation_counts.pop(stage.value, None)
+    state.verified_diff = None
+    state.fix_rounds += 1
+    state.fix_feedback = feedback.name if feedback is not None else None
+    state.current_stage = StageName.IMPLEMENT
+    state.approval_pending = False
+
+
 def _run_escalation_qa(ctx: StageContext, blocked_stage: StageName) -> bool:
     """Run a short interactive Q&A turn for blocked-questions.md and clear the blocker."""
     bq_path = blocked_questions_path(ctx.state_dir)
@@ -64,12 +99,13 @@ def _run_escalation_qa(ctx: StageContext, blocked_stage: StageName) -> bool:
         f"{blocked_stage.value} needs human input (blocked-questions.md)",
     )
 
+    worktree = ensure_ticket_worktree(ctx)
     sandbox = build_stage_sandbox(
         ctx,
         StageName.QA,
-        repo_dir=ctx.config.repo_path,
+        repo_dir=worktree,
         kb_dir=ctx.config.kb_path,
-        workdir=ctx.config.repo_path,
+        workdir=worktree,
     )
     paths = sandbox_paths(sandbox)
     prompt = (
@@ -95,17 +131,19 @@ def _run_escalation_qa(ctx: StageContext, blocked_stage: StageName) -> bool:
 def _mark_completed(state: TicketState, stage: StageName) -> None:
     if stage not in state.completed_stages:
         state.completed_stages.append(stage)
+    if stage is StageName.IMPLEMENT:
+        state.fix_feedback = None  # handled
     state.current_stage = None
     state.approval_pending = False
 
 
-def _finalize(state: TicketState, ticket_id: str) -> None:
+def _finalize(state: TicketState, ticket_id: str, *, no_verify: bool) -> None:
     worktree = state.worktree_path
     if worktree is None or not state.base_commit:
         raise ValueError("Completing Retro requires a ticket worktree.")
     if diff_digest(capture_diff(worktree, state.base_commit)) != state.verified_diff:
         raise ValueError("Worktree changed after review. Restart from Verify.")
-    if commit_stage(worktree, f"{ticket_id}: implement plan"):
+    if commit_stage(worktree, f"{ticket_id}: implement plan", no_verify=no_verify):
         if is_dirty(worktree):
             raise ValueError("Worktree is dirty after commit. Inspect it and restart from Verify.")
         if diff_digest(capture_diff(worktree, state.base_commit)) != state.verified_diff:
@@ -125,6 +163,8 @@ def run_pipeline(
     if re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*-[0-9]+", ticket_id) is None:
         print("Error: expected a Jira ticket key such as PROJ-123.")
         return 1
+    # One spelling per ticket, so state folder and branch never split.
+    ticket_id = ticket_id.upper()
 
     state_dir = config.state_base / ticket_id
     try:
@@ -188,6 +228,10 @@ def _run_pipeline(
             state.escalation_counts.pop(stage.value, None)
         if StageName.VERIFY in downstream:
             state.verified_diff = None
+        if StageName.IMPLEMENT in downstream:
+            state.fix_rounds = 0
+        if StageName.IMPLEMENT in downstream and from_stage is not StageName.IMPLEMENT:
+            state.fix_feedback = None  # a new plan makes old feedback stale
         state.approval_pending = False
 
     while idx < len(STAGE_ORDER):
@@ -199,7 +243,7 @@ def _run_pipeline(
                 return 1
             if action == "c":
                 if stage is StageName.RETRO and stage_runners is None:
-                    _finalize(state, ticket_id)
+                    _finalize(state, ticket_id, no_verify=config.commit_no_verify)
                 _mark_completed(state, stage)
                 save_state(state_dir, state)
                 if single_stage:
@@ -220,8 +264,8 @@ def _run_pipeline(
             state_dir=state_dir,
         )
         blocker = blocked_questions_path(state_dir)
-        if stage in {StageName.PLAN, StageName.IMPLEMENT} and artifact_stamp(blocker):
-            result = StageResult(StageOutcome.BLOCKED_QUESTIONS, blocker, "Pending clarification")
+        if stage in {StageName.PLAN, StageName.IMPLEMENT} and has_blocker(state_dir):
+            result = blocked_result(stage, state_dir)
         else:
             result = runners[stage].run(ctx)
 
@@ -238,6 +282,36 @@ def _run_pipeline(
             state.escalation_counts[stage.value] = count + 1
             save_state(state_dir, state)
             blocker.unlink(missing_ok=True)
+            continue
+
+        if result.outcome is StageOutcome.NEEDS_FIX:
+            print(f"{stage.value}: {result.message}")
+            if auto:
+                if state.fix_rounds >= config.max_fix_rounds:
+                    print(f"Error: {stage.value} still needs fixes after "
+                          f"{config.max_fix_rounds} rounds.")
+                    return 1
+                choice = "f"
+            else:
+                choice = _prompt_fix(stage, state.fix_rounds, config.max_fix_rounds)
+
+            if choice == "a":
+                print(f"Aborted at {stage.value}.")
+                return 1
+            if choice == "c":
+                _mark_completed(state, stage)
+                save_state(state_dir, state)
+                if single_stage:
+                    return 0
+                idx += 1
+                continue
+
+            _send_back_to_implement(state, result.artifact_path)
+            save_state(state_dir, state)
+            if single_stage:
+                print(f"Run: claude-workflow {ticket_id} --from-stage implement")
+                return 0
+            idx = STAGE_ORDER.index(StageName.IMPLEMENT)
             continue
 
         if result.outcome is StageOutcome.FAILED:

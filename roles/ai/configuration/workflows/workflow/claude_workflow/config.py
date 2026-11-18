@@ -7,7 +7,9 @@ import os
 from dataclasses import dataclass, replace
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
+
+from claude_workflow.deps import SharedDependency
 
 
 class StageName(str, Enum):
@@ -70,6 +72,11 @@ class WorkflowConfig:
     max_plan_reviews: int
     max_escalations: int
     stages: dict[StageName, StageConfig]
+    shared_dependencies: tuple[SharedDependency, ...] = ()
+    max_fix_rounds: int = 3
+    headless_timeout: int = 3600  # seconds per headless Claude call
+    verify_timeout: int = 1800  # seconds per verify command
+    commit_no_verify: bool = True  # skip git hooks for the final commit
 
 
 def _default_state_base() -> Path:
@@ -99,7 +106,8 @@ def default_stages() -> dict[StageName, StageConfig]:
             thinking="medium",
             repo_access=RepoAccess.NONE,
             allow_network=True,
-            allowed_tools=("Read", "Write", "mcp__atlassian__*"),
+            # The company's Atlassian server from the repo's .mcp.json.
+            allowed_tools=("Read", "Write", "mcp__Atlassian-Rovo-MCP__*"),
         ),
         StageName.EXPLORE: StageConfig(
             name=StageName.EXPLORE,
@@ -224,6 +232,25 @@ def _apply_stage_overrides(
     return stages
 
 
+def _load_shared_dependencies(raw: object) -> tuple[SharedDependency, ...]:
+    """Parse [{"dir": "vendor", "lockfile": "composer.lock"}, ...]."""
+    error = 'shared_dependencies must be a list of {"dir": ..., "lockfile": ...} objects'
+    if not isinstance(raw, list):
+        raise ValueError(error)
+    deps: list[SharedDependency] = []
+    for item in cast(list[object], raw):
+        if not isinstance(item, dict):
+            raise ValueError(error)
+        fields = cast(dict[str, object], item)
+        folder, lockfile = fields.get("dir"), fields.get("lockfile")
+        if not isinstance(folder, str) or not folder.strip():
+            raise ValueError(error)
+        if not isinstance(lockfile, str) or not lockfile.strip():
+            raise ValueError(error)
+        deps.append(SharedDependency(dir=folder, lockfile=lockfile))
+    return tuple(deps)
+
+
 def load_config(config_path: Path | None) -> WorkflowConfig:
     """Load WorkflowConfig from JSON, falling back to XDG default or built-in defaults."""
     base = default_config()
@@ -241,9 +268,10 @@ def load_config(config_path: Path | None) -> WorkflowConfig:
     if resolved_path is None:
         return base
 
-    raw = json.loads(resolved_path.read_text(encoding="utf-8"))
-    if not isinstance(raw, dict):
+    loaded = json.loads(resolved_path.read_text(encoding="utf-8"))
+    if not isinstance(loaded, dict):
         raise ValueError(f"Config file {resolved_path} must contain a JSON object")
+    raw = cast(dict[str, Any], loaded)
 
     raw_stages = raw.get("stages")
     if "stages" in raw and not isinstance(raw_stages, dict):
@@ -272,6 +300,18 @@ def load_config(config_path: Path | None) -> WorkflowConfig:
         raise ValueError("max_plan_reviews must be a positive integer")
     if type(max_escalations) is not int or max_escalations < 0:
         raise ValueError("max_escalations must be a nonnegative integer")
+    timeouts = {
+        key: raw.get(key, getattr(base, key)) for key in ("headless_timeout", "verify_timeout")
+    }
+    for key, value in timeouts.items():
+        if type(value) is not int or value <= 0:
+            raise ValueError(f"{key} must be a positive number of seconds")
+    commit_no_verify = raw.get("commit_no_verify", base.commit_no_verify)
+    if not isinstance(commit_no_verify, bool):
+        raise ValueError("commit_no_verify must be true or false")
+    max_fix_rounds = raw.get("max_fix_rounds", base.max_fix_rounds)
+    if type(max_fix_rounds) is not int or max_fix_rounds < 0:
+        raise ValueError("max_fix_rounds must be a nonnegative integer")
 
     return WorkflowConfig(
         repo_path=_expand_path(str(raw["repo_path"])) if "repo_path" in raw else base.repo_path,
@@ -296,4 +336,13 @@ def load_config(config_path: Path | None) -> WorkflowConfig:
         max_plan_reviews=max_plan_reviews,
         max_escalations=max_escalations,
         stages=stages,
+        shared_dependencies=(
+            _load_shared_dependencies(raw["shared_dependencies"])
+            if "shared_dependencies" in raw
+            else base.shared_dependencies
+        ),
+        max_fix_rounds=max_fix_rounds,
+        headless_timeout=timeouts["headless_timeout"],
+        verify_timeout=timeouts["verify_timeout"],
+        commit_no_verify=commit_no_verify,
     )

@@ -2,8 +2,16 @@
   "kb_path": "~/notes/work-kb",
   "flake_path": null,
   "verify_commands": [],
+  "shared_dependencies": [
+    { "dir": "vendor", "lockfile": "composer.lock" },
+    { "dir": "node_modules", "lockfile": "package-lock.json" }
+  ],
   "max_plan_reviews": 2,
   "max_escalations": 3,
+  "max_fix_rounds": 3,
+  "headless_timeout": 3600,
+  "verify_timeout": 1800,
+  "commit_no_verify": true,
   "stages": {
     "intake": {
       "model": "sonnet",
@@ -11,7 +19,7 @@
       "repo_access": "none",
       "allow_network": true,
       "mcp_config": null,
-      "allowed_tools": ["Read", "Write", "mcp__atlassian__*"]
+      "allowed_tools": ["Read", "Write", "mcp__Atlassian-Rovo-MCP__*"]
     },
     "explore": {
       "model": "opus",

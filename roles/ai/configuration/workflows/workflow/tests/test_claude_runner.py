@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+import claude_workflow.env as env_mod
 from claude_workflow.claude_runner import (
     run_claude_headless,
     run_claude_interactive,
+    skills_system_prompt,
 )
 from claude_workflow.config import RepoAccess, StageConfig, StageName
 from claude_workflow.sandbox import SandboxSpec
@@ -47,6 +50,11 @@ def test_headless_builds_expected_claude_flags(
 
     monkeypatch.setattr(subprocess, "run", fake_run)
 
+    def fake_dev_shell(_flake: Path) -> dict[str, str]:
+        return {"PHP_INI_SCAN_DIR": "/x"}
+
+    monkeypatch.setattr(env_mod, "dev_shell_env", fake_dev_shell)
+
     mcp = tmp_path / "mcp.json"
     mcp.write_text("{}", encoding="utf-8")
     flake_dir = tmp_path / "flake"
@@ -79,7 +87,9 @@ def test_headless_builds_expected_claude_flags(
     assert res.returncode == 0
     assert res.stdout == "ok"
     cmd = captured[0]
-    assert cmd[:4] == ["nix", "develop", str(flake_dir), "--command"]
+    assert cmd[0] == "bwrap"
+    assert "--clearenv" in cmd
+    assert cmd[cmd.index("PHP_INI_SCAN_DIR") - 1] == "--setenv"
     assert "--unshare-net" in cmd
     assert "--unshare-pid" in cmd
     assert "/tmp/cw-proxy.sock" in cmd
@@ -141,3 +151,83 @@ def test_interactive_uses_session_id_or_resume(
     claude2 = inner2[inner2.index("claude") :]
     assert claude1[1:3] == ["--session-id", "uuid-1"]
     assert claude2[1:3] == ["--resume", "uuid-1"]
+
+
+def test_skills_system_prompt_strips_front_matter(tmp_path: Path) -> None:
+    shared, plan = tmp_path / "shared", tmp_path / "plan"
+    shared.mkdir()
+    plan.mkdir()
+    (shared / "SKILL.md").write_text("---\nname: shared\n---\n\n# Shared\nrule\n")
+    (plan / "SKILL.md").write_text("---\nname: plan\n---\n# Plan\nstep\n")
+
+    prompt = skills_system_prompt((shared, plan, tmp_path / "missing"))
+
+    assert prompt.startswith("# Shared")
+    assert "name: shared" not in prompt
+    assert prompt.index("# Shared") < prompt.index("# Plan")
+
+
+def test_headless_passes_skills_as_append_system_prompt(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    fake_home = tmp_path / "host_home"
+    fake_home.mkdir()
+    monkeypatch.setattr(Path, "home", lambda: fake_home)
+    captured: list[list[str]] = []
+
+    def fake_run(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        captured.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    skill = tmp_path / "plan"
+    skill.mkdir()
+    (skill / "SKILL.md").write_text("# Plan rules\n")
+    sandbox = replace(_make_sandbox(tmp_path), skills_dirs=(skill,), allow_network=True)
+    stage = StageConfig(StageName.PLAN, "opus", "high", RepoAccess.RO, True)
+
+    run_claude_headless(stage, sandbox, "plan it")
+
+    cmd = captured[0]
+    assert cmd[cmd.index("--append-system-prompt") + 1] == "# Plan rules"
+
+
+def test_headless_timeout_returns_124(tmp_path: Path, monkeypatch: Any) -> None:
+    fake_home = tmp_path / "host_home"
+    fake_home.mkdir()
+    monkeypatch.setattr(Path, "home", lambda: fake_home)
+
+    def slow(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        assert kwargs["timeout"] == 5
+        raise subprocess.TimeoutExpired(cmd, 5)
+
+    monkeypatch.setattr(subprocess, "run", slow)
+    sandbox = replace(_make_sandbox(tmp_path), allow_network=True)
+    stage = StageConfig(StageName.PLAN, "opus", "high", RepoAccess.RO, True)
+
+    result = run_claude_headless(stage, sandbox, "plan", timeout=5)
+
+    assert result.returncode == 124
+    assert "timed out after 5s" in result.stderr
+
+
+def test_stage_with_mcp_config_gets_mcp_auth_copied(tmp_path: Path, monkeypatch: Any) -> None:
+    fake_home = tmp_path / "host_home"
+    auth = fake_home / ".mcp-auth" / "mcp-remote-v1" / "x_tokens.json"
+    auth.parent.mkdir(parents=True)
+    auth.write_text("token")
+    monkeypatch.setattr(Path, "home", lambda: fake_home)
+
+    def fake_run(cmd: list[str], **_: Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    mcp = tmp_path / "mcp.json"
+    mcp.write_text("{}")
+    sandbox = replace(_make_sandbox(tmp_path), mcp_config=mcp, allow_network=True)
+    stage = StageConfig(StageName.INTAKE, "sonnet", "medium", RepoAccess.NONE, True)
+
+    run_claude_headless(stage, sandbox, "fetch")
+
+    copied = tmp_path / "state" / "home" / ".mcp-auth" / "mcp-remote-v1" / "x_tokens.json"
+    assert copied.read_text() == "token"

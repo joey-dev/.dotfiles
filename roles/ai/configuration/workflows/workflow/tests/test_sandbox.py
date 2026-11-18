@@ -2,11 +2,22 @@
 
 from __future__ import annotations
 
+import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+import pytest
+
+import claude_workflow.sandbox as sandbox_mod
 from claude_workflow.config import RepoAccess
-from claude_workflow.sandbox import SandboxSpec, build_bwrap_command, prepare_sandbox_home
+from claude_workflow.sandbox import (
+    SandboxSpec,
+    build_bwrap_command,
+    prepare_sandbox_home,
+    sandbox_paths,
+    sandbox_settings,
+)
 
 
 def _has_slice(args: list[str], *items: str) -> bool:
@@ -97,7 +108,7 @@ def test_bwrap_hides_git_worktree_file(tmp_path: Path, monkeypatch: Any) -> None
     assert not _has_slice(cmd, "--tmpfs", str(fake_home / "wt" / ".git"))
 
 
-def test_bwrap_mounts_only_stage_skills_kb_and_flake(
+def test_bwrap_mounts_kb_and_flake_but_not_skills(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
@@ -130,23 +141,13 @@ def test_bwrap_mounts_only_stage_skills_kb_and_flake(
         workdir=repo,
         flake_dir=flake_dir,
     )
-    cmd = build_bwrap_command(spec, ["claude"])
+    cmd = build_bwrap_command(spec, ["claude"], env={})
 
     assert _has_slice(cmd, "--ro-bind", str(kb_dir), str(fake_home / "kb"))
     assert _has_slice(cmd, "--ro-bind", str(flake_dir), str(fake_home / "flake"))
-    assert _has_slice(
-        cmd,
-        "--ro-bind",
-        str(shared_skill),
-        str(fake_home / ".claude" / "skills" / "shared"),
-    )
-    assert _has_slice(
-        cmd,
-        "--ro-bind",
-        str(explore_skill),
-        str(fake_home / ".claude" / "skills" / "explore"),
-    )
-    assert str(plan_skill) not in cmd
+    # Skills reach Claude as a system prompt, so they are not mounted.
+    assert not any(arg.startswith(str(fake_home / ".claude" / "skills")) for arg in cmd)
+    assert str(shared_skill) not in cmd
 
 
 def test_prepare_sandbox_home_and_proxy_bridge(
@@ -168,6 +169,8 @@ def test_prepare_sandbox_home_and_proxy_bridge(
     mcp_cfg.write_text("{}", encoding="utf-8")
     sock = tmp_path / "proxy.sock"
     sock.write_text("", encoding="utf-8")
+    settings_file = tmp_path / "generated-settings.json"
+    settings_file.write_text("{}", encoding="utf-8")
 
     spec = SandboxSpec(
         repo_dir=None,
@@ -179,6 +182,7 @@ def test_prepare_sandbox_home_and_proxy_bridge(
         workdir=state_dir,
         mcp_config=mcp_cfg,
         proxy_socket=sock,
+        settings_file=settings_file,
     )
     cmd = build_bwrap_command(spec, ["claude", "-p", "hi"])
 
@@ -186,7 +190,7 @@ def test_prepare_sandbox_home_and_proxy_bridge(
     assert _has_slice(
         cmd,
         "--ro-bind",
-        str(fake_home / ".claude" / "settings.json"),
+        str(settings_file),
         str(fake_home / ".claude" / "settings.json"),
     )
     assert _has_slice(cmd, "--ro-bind", str(mcp_cfg), str(fake_home / ".claude" / "mcp.json"))
@@ -194,3 +198,199 @@ def test_prepare_sandbox_home_and_proxy_bridge(
     inner = cmd[cmd.index("--") + 1 :]
     assert inner[:2] == ["sh", "-c"]
     assert inner[3:] == ["cw-bridge", "claude", "-p", "hi"]
+
+
+def test_bwrap_ro_binds_repo_overlays_after_repo(tmp_path: Path, monkeypatch: Any) -> None:
+    fake_home = tmp_path / "host_home"
+    fake_home.mkdir()
+    monkeypatch.setattr(Path, "home", lambda: fake_home)
+    main_vendor = tmp_path / "main" / "vendor"
+    main_vendor.mkdir(parents=True)
+    tree = tmp_path / "PROJ-1"
+    tree.mkdir()
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+
+    spec = SandboxSpec(
+        repo_dir=tree,
+        repo_access=RepoAccess.RW,
+        state_dir=state_dir,
+        skills_dirs=(),
+        kb_dir=None,
+        allow_network=False,
+        workdir=tree,
+        repo_ro_overlays=((main_vendor, "vendor"),),
+    )
+    cmd = build_bwrap_command(spec, ["true"])
+
+    assert _has_slice(cmd, "--ro-bind", str(main_vendor), str(fake_home / "PROJ-1" / "vendor"))
+    assert cmd.index(str(main_vendor)) > cmd.index(str(tree))
+
+
+def test_bwrap_clears_env_and_sets_given_vars(tmp_path: Path, monkeypatch: Any) -> None:
+    fake_home = tmp_path / "host_home"
+    fake_home.mkdir()
+    monkeypatch.setattr(Path, "home", lambda: fake_home)
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    spec = SandboxSpec(
+        repo_dir=None,
+        repo_access=RepoAccess.NONE,
+        state_dir=state_dir,
+        skills_dirs=(),
+        kb_dir=None,
+        allow_network=True,
+        workdir=state_dir,
+    )
+
+    cmd = build_bwrap_command(spec, ["true"], env={"TERM": "xterm"})
+
+    assert "--clearenv" in cmd
+    assert _has_slice(cmd, "--setenv", "TERM", "xterm")
+    assert cmd.index("--clearenv") < cmd.index("--setenv")
+
+
+def _minimal_spec(tmp_path: Path) -> SandboxSpec:
+    state_dir = tmp_path / "state"
+    state_dir.mkdir(exist_ok=True)
+    return SandboxSpec(
+        repo_dir=None,
+        repo_access=RepoAccess.NONE,
+        state_dir=state_dir,
+        skills_dirs=(),
+        kb_dir=None,
+        allow_network=True,
+        workdir=state_dir,
+    )
+
+
+def test_interactive_omits_new_session_when_tiocsti_disabled(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    monkeypatch.setattr(sandbox_mod, "tiocsti_disabled", lambda: True)
+
+    cmd = build_bwrap_command(_minimal_spec(tmp_path), ["true"], env={}, interactive=True)
+
+    assert "--new-session" not in cmd
+
+
+def test_interactive_keeps_new_session_when_tiocsti_enabled(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    monkeypatch.setattr(sandbox_mod, "tiocsti_disabled", lambda: False)
+
+    cmd = build_bwrap_command(_minimal_spec(tmp_path), ["true"], env={}, interactive=True)
+
+    assert "--new-session" in cmd
+
+
+def test_headless_keeps_new_session(tmp_path: Path, monkeypatch: Any) -> None:
+    monkeypatch.setattr(sandbox_mod, "tiocsti_disabled", lambda: True)
+
+    cmd = build_bwrap_command(_minimal_spec(tmp_path), ["true"], env={})
+
+    assert "--new-session" in cmd
+
+
+def test_sandbox_settings_drops_hooks(tmp_path: Path) -> None:
+    host = tmp_path / "settings.json"
+    host.write_text(
+        json.dumps({"hooks": {"Stop": []}, "permissions": {"deny": ["Read(~/.ssh/**)"]}})
+    )
+
+    settings = sandbox_settings(host)
+
+    assert "hooks" not in settings
+    assert settings["permissions"] == {"deny": ["Read(~/.ssh/**)"]}
+
+
+def test_sandbox_settings_missing_file_is_empty(tmp_path: Path) -> None:
+    assert sandbox_settings(tmp_path / "absent.json") == {}
+
+
+def test_home_ro_mounts_are_read_only_and_readable(tmp_path: Path, monkeypatch: Any) -> None:
+    fake_home = tmp_path / "host_home"
+    fake_home.mkdir()
+    monkeypatch.setattr(Path, "home", lambda: fake_home)
+    claude_md = tmp_path / "CLAUDE.md"
+    claude_md.write_text("# me")
+    skills = tmp_path / "skills"
+    skills.mkdir()
+    spec = replace(
+        _minimal_spec(tmp_path),
+        home_ro_mounts=((claude_md, ".claude/CLAUDE.md"), (skills, "skills")),
+    )
+
+    cmd = build_bwrap_command(spec, ["true"], env={})
+
+    assert _has_slice(cmd, "--ro-bind", str(claude_md), str(fake_home / ".claude" / "CLAUDE.md"))
+    assert _has_slice(cmd, "--ro-bind", str(skills), str(fake_home / "skills"))
+    assert fake_home / "skills" in sandbox_paths(spec).add_dirs
+
+
+def _token(expires_at: int) -> str:
+    return json.dumps({"claudeAiOauth": {"accessToken": f"t{expires_at}", "expiresAt": expires_at}})
+
+
+def _creds_setup(tmp_path: Path, monkeypatch: Any) -> tuple[Path, Path, Path]:
+    fake_home = tmp_path / "host_home"
+    (fake_home / ".claude").mkdir(parents=True)
+    monkeypatch.setattr(Path, "home", lambda: fake_home)
+    host = fake_home / ".claude" / ".credentials.json"
+    host.write_text(_token(100))
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    sandbox = prepare_sandbox_home(state_dir) / ".claude" / ".credentials.json"
+    return host, sandbox, state_dir
+
+
+def test_host_token_that_expires_later_is_copied_in(tmp_path: Path, monkeypatch: Any) -> None:
+    host, sandbox, state_dir = _creds_setup(tmp_path, monkeypatch)
+    host.write_text(_token(200))
+
+    prepare_sandbox_home(state_dir)
+
+    assert sandbox.read_text() == _token(200)
+    assert sandbox.stat().st_mode & 0o777 == 0o600
+
+
+def test_newer_sandbox_token_is_kept_and_host_untouched(tmp_path: Path, monkeypatch: Any) -> None:
+    host, sandbox, state_dir = _creds_setup(tmp_path, monkeypatch)
+    sandbox.write_text(_token(300))
+
+    prepare_sandbox_home(state_dir)
+
+    assert sandbox.read_text() == _token(300)
+    assert host.read_text() == _token(100)
+
+
+def test_credentials_copy_never_follows_planted_symlink(tmp_path: Path, monkeypatch: Any) -> None:
+    # A sandbox could plant a symlink where a fixed temp name would be.
+    _host, sandbox, state_dir = _creds_setup(tmp_path, monkeypatch)
+    victim = tmp_path / "victim.txt"
+    victim.write_text("keep me")
+    victim.chmod(0o644)
+    for name in (".credentials.json.tmp", "..credentials.json.tmp"):
+        (sandbox.parent / name).symlink_to(victim)
+    sandbox.unlink()
+
+    prepare_sandbox_home(state_dir)
+
+    assert victim.read_text() == "keep me"
+    assert victim.stat().st_mode & 0o777 == 0o644
+    assert not sandbox.is_symlink()
+    assert sandbox.read_text() == _token(100)
+
+
+def test_symlinked_sandbox_claude_dir_is_refused(tmp_path: Path, monkeypatch: Any) -> None:
+    _host, sandbox, state_dir = _creds_setup(tmp_path, monkeypatch)
+    claude_dir = sandbox.parent
+    for child in claude_dir.iterdir():
+        child.unlink()
+    claude_dir.rmdir()
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    claude_dir.symlink_to(elsewhere)
+
+    with pytest.raises(RuntimeError, match="symlink"):
+        prepare_sandbox_home(state_dir)

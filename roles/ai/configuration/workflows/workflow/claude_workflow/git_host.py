@@ -71,6 +71,11 @@ def ensure_worktree(
     return worktree_path
 
 
+def repo_root(path: Path) -> Path:
+    """Return the top-level folder of the git repository that contains path."""
+    return Path(_run_git(path, ["rev-parse", "--show-toplevel"]).stdout.strip()).resolve()
+
+
 def rev_parse_head(repo_path: Path) -> str:
     """Return the full commit SHA of HEAD in repo_path."""
     return _run_git(repo_path, ["rev-parse", "HEAD"]).stdout.strip()
@@ -111,10 +116,30 @@ def diff_digest(diff: str) -> str:
     return sha256("".join(sorted(sections)).encode()).hexdigest()
 
 
-def commit_stage(worktree_path: Path, message: str) -> bool:
-    """Stage all worktree changes and commit; return False cleanly if worktree is clean."""
+def _sections_by_file(diff: str) -> dict[str, str]:
+    sections = re.split(r"(?m)(?=^diff --git )", diff)
+    by_file: dict[str, str] = {}
+    for section in sections:
+        header = section.split("\n", 1)[0]
+        if header.startswith("diff --git a/"):
+            by_file[header.split(" b/", 1)[0].removeprefix("diff --git a/")] = section
+    return by_file
+
+
+def changed_files(before: str, after: str) -> list[str]:
+    """Return the files whose patch differs between two captured diffs, sorted."""
+    old, new = _sections_by_file(before), _sections_by_file(after)
+    return sorted(path for path in old.keys() | new.keys() if old.get(path) != new.get(path))
+
+
+def commit_stage(worktree_path: Path, message: str, *, no_verify: bool = False) -> bool:
+    """Stage all worktree changes and commit; return False cleanly if worktree is clean.
+
+    no_verify skips the repo's git hooks (they could fail or reformat files).
+    """
     if not is_dirty(worktree_path):
         return False
     _run_git(worktree_path, ["add", "-A"])
-    _run_git(worktree_path, ["commit", "-m", message])
+    extra = ["--no-verify"] if no_verify else []
+    _run_git(worktree_path, ["commit", *extra, "-m", message])
     return True

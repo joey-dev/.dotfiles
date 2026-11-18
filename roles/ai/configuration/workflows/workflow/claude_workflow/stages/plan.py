@@ -11,10 +11,13 @@ from claude_workflow.stages.base import (
     StageResult,
     artifact_result,
     artifact_stamp,
+    blocked_result,
     build_stage_sandbox,
+    ensure_ticket_worktree,
+    has_blocker,
+    parse_verdict,
     read_artifact,
     run_headless_with_escalation,
-    skill_prompt_prefix,
 )
 
 
@@ -25,23 +28,25 @@ class PlanStage:
         """Execute Stage 4 (Plan) and write 04-plan.md."""
         plan_md_host = ctx.state_dir / "04-plan.md"
         review_md_host = ctx.state_dir / "04-plan-review.md"
+        worktree = ensure_ticket_worktree(ctx)
         sandbox = build_stage_sandbox(
             ctx,
             StageName.PLAN,
-            repo_dir=ctx.config.repo_path,
+            repo_dir=worktree,
             kb_dir=ctx.config.kb_path,
-            workdir=ctx.config.repo_path,
+            workdir=worktree,
         )
         paths = sandbox_paths(sandbox)
         plan_md = paths.notes_dir / "04-plan.md"
         review_md = paths.notes_dir / "04-plan-review.md"
         blocked_md = paths.notes_dir / "blocked-questions.md"
 
-        draft_prompt = skill_prompt_prefix(ctx, StageName.PLAN, paths) + (
+        draft_prompt = (
             f"Read {paths.notes_dir / '01-ticket.md'}, "
             f"{paths.notes_dir / '02-findings.md'}, and "
             f"{paths.notes_dir / '03-qa.md'}. Write a concrete, step-by-step implementation and "
-            f"test plan to {plan_md}. If you hit a genuine unknown, write {blocked_md} "
+            f"test plan to {plan_md}. Write the plan test-first: each step names the test to "
+            f"write before the code it covers. If you hit a genuine unknown, write {blocked_md} "
             f"and stop instead of guessing."
         )
         draft_result = run_headless_with_escalation(
@@ -60,7 +65,9 @@ class PlanStage:
                 f"is ready, or 'CHANGES_REQUESTED' followed by concrete fixes."
             )
             previous = artifact_stamp(review_md_host)
-            rev = run_claude_headless(stage_cfg, sandbox, review_prompt)
+            rev = run_claude_headless(
+                stage_cfg, sandbox, review_prompt, timeout=ctx.config.headless_timeout
+            )
             if rev.returncode != 0:
                 return StageResult(
                     outcome=StageOutcome.FAILED,
@@ -68,13 +75,16 @@ class PlanStage:
                     message=f"plan review pass {pass_idx} failed: {rev.stderr.strip()}",
                 )
 
+            # The reviewer may also need an answer from the human.
+            if has_blocker(ctx.state_dir):
+                return blocked_result(StageName.PLAN, ctx.state_dir)
             report = artifact_result(StageName.PLAN, review_md_host, previous)
             if report.outcome is StageOutcome.FAILED:
                 return report
-            verdict = read_artifact(review_md_host).strip().splitlines()[0].strip()
+            verdict = parse_verdict(read_artifact(review_md_host))
             if verdict == "APPROVED":
                 return draft_result
-            if verdict != "CHANGES_REQUESTED":
+            if verdict is None:
                 return StageResult(StageOutcome.FAILED, review_md_host, "Invalid plan verdict")
             if pass_idx == ctx.config.max_plan_reviews:
                 break

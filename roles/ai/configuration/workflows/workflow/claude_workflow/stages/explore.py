@@ -8,8 +8,8 @@ from claude_workflow.stages.base import (
     StageContext,
     StageResult,
     build_stage_sandbox,
+    ensure_ticket_worktree,
     run_headless_with_escalation,
-    skill_prompt_prefix,
 )
 
 
@@ -19,16 +19,17 @@ class ExploreStage:
     def run(self, ctx: StageContext) -> StageResult:
         """Execute Stage 2 (Explore) and write 02-findings.md."""
         artifact = ctx.state_dir / "02-findings.md"
+        worktree = ensure_ticket_worktree(ctx)
         sandbox = build_stage_sandbox(
             ctx,
             StageName.EXPLORE,
-            repo_dir=ctx.config.repo_path,
+            repo_dir=worktree,
             kb_dir=ctx.config.kb_path,
-            workdir=ctx.config.repo_path,
+            workdir=worktree,
         )
         paths = sandbox_paths(sandbox)
         kb_hint = f" (plus any relevant notes in {paths.kb_dir})" if paths.kb_dir else ""
-        prompt = skill_prompt_prefix(ctx, StageName.EXPLORE, paths) + (
+        prompt = (
             f"Read {paths.notes_dir / '01-ticket.md'} and explore the repository at "
             f"{paths.repo_dir}{kb_hint}. Identify relevant files, legacy quirks, and open "
             f"questions, then write {paths.notes_dir / '02-findings.md'}."

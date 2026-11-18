@@ -13,8 +13,8 @@ from claude_workflow.stages.base import (
     artifact_result,
     artifact_stamp,
     build_stage_sandbox,
+    parse_verdict,
     read_artifact,
-    skill_prompt_prefix,
     write_artifact,
 )
 
@@ -57,13 +57,12 @@ class ReviewStage:
         paths = sandbox_paths(sandbox)
         stage_cfg = ctx.config.stages[StageName.REVIEW]
         combined_sections: list[str] = ["# Automated Code Review\n"]
-        prefix = skill_prompt_prefix(ctx, StageName.REVIEW, paths)
         blocking_findings = False
 
         for lens_name, focus in _LENSES:
             lens_host = ctx.state_dir / f"07-review-{lens_name}.md"
             lens_sandbox = paths.notes_dir / f"07-review-{lens_name}.md"
-            prompt = prefix + (
+            prompt = (
                 f"Read {paths.notes_dir / 'diff.patch'}, "
                 f"{paths.notes_dir / '01-ticket.md'}, and "
                 f"{paths.notes_dir / '04-plan.md'}. Focus: {focus} "
@@ -71,7 +70,9 @@ class ReviewStage:
                 "need to be fixed before acceptance, or APPROVED otherwise."
             )
             previous = artifact_stamp(lens_host)
-            res = run_claude_headless(stage_cfg, sandbox, prompt)
+            res = run_claude_headless(
+                stage_cfg, sandbox, prompt, timeout=ctx.config.headless_timeout
+            )
             if res.returncode != 0:
                 return StageResult(
                     outcome=StageOutcome.FAILED,
@@ -82,8 +83,8 @@ class ReviewStage:
             if report.outcome is StageOutcome.FAILED:
                 return report
             body = read_artifact(lens_host)
-            verdict = body.strip().splitlines()[0].strip()
-            if verdict not in {"APPROVED", "CHANGES_REQUESTED"}:
+            verdict = parse_verdict(body)
+            if verdict is None:
                 return StageResult(StageOutcome.FAILED, lens_host, "Invalid review verdict")
             blocking_findings |= verdict == "CHANGES_REQUESTED"
             combined_sections.append(f"## Lens: {lens_name.title()}\n\n{body.strip()}\n")
@@ -92,7 +93,7 @@ class ReviewStage:
         write_artifact(artifact, "\n".join(combined_sections))
         if blocking_findings:
             return StageResult(
-                StageOutcome.FAILED, artifact, f"Review requested changes; see {artifact}"
+                StageOutcome.NEEDS_FIX, artifact, f"Review requested changes; see {artifact}"
             )
         return StageResult(
             outcome=StageOutcome.DONE,

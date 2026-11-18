@@ -5,11 +5,16 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from claude_workflow.git_host import (
+    GitError,
     capture_diff,
+    changed_files,
     commit_stage,
     ensure_worktree,
     is_dirty,
+    repo_root,
     rev_parse_head,
 )
 
@@ -101,3 +106,50 @@ def test_capture_diff_against_base_commit_includes_committed_changes(tmp_path: P
     diff = capture_diff(wt, base_ref=base_sha)
     assert "feature.py" in diff
     assert "+def x() -> int:" in diff
+
+
+def test_repo_root_returns_toplevel_from_subdir(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    (repo / "sub").mkdir()
+
+    assert repo_root(repo / "sub") == repo.resolve()
+
+
+def test_repo_root_outside_git_raises(tmp_path: Path) -> None:
+    with pytest.raises(GitError):
+        repo_root(tmp_path)
+
+
+def test_changed_files_between_diffs() -> None:
+    before = "diff --git a/a.php b/a.php\n+one\ndiff --git a/b.php b/b.php\n+two\n"
+    after = (
+        "diff --git a/a.php b/a.php\n+one\n"
+        "diff --git a/b.php b/b.php\n+two formatted\n"
+        "diff --git a/coverage.xml b/coverage.xml\n+x\n"
+    )
+
+    assert changed_files(before, after) == ["b.php", "coverage.xml"]
+
+
+def _repo_with_failing_hook(tmp_path: Path) -> Path:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    hook = repo / ".git" / "hooks" / "pre-commit"
+    hook.write_text("#!/bin/sh\nexit 1\n")
+    hook.chmod(0o755)
+    (repo / "new.txt").write_text("x\n")
+    return repo
+
+
+def test_commit_no_verify_skips_failing_hook(tmp_path: Path) -> None:
+    repo = _repo_with_failing_hook(tmp_path)
+
+    assert commit_stage(repo, "msg", no_verify=True) is True
+
+
+def test_commit_runs_hooks_by_default(tmp_path: Path) -> None:
+    repo = _repo_with_failing_hook(tmp_path)
+
+    with pytest.raises(GitError):
+        commit_stage(repo, "msg")
