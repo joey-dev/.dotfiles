@@ -144,3 +144,55 @@ def test_changed_files_from_tests_file_is_refused() -> None:
 
     with pytest.raises(ValueError, match="cmd.*files"):
         render(cmd, {"files": ChangedFiles()}, ["a"], from_tests_file=True)
+
+
+def test_double_space_filename_stays_intact() -> None:
+    cmd = make("lint {{files}}", {"files": Parameter()})
+
+    out = line(render(cmd, {"files": ChangedFiles()}, ["a  b.php"], from_tests_file=False))
+
+    assert out == "lint 'a  b.php'"
+
+
+def test_double_space_in_trusted_text_is_kept() -> None:
+    cmd = make("printf '%s  %s' {{x}}", {"x": Parameter()})
+
+    assert line(render(cmd, {"x": "a"}, [], from_tests_file=False)) == "printf '%s  %s' a"
+
+
+@pytest.mark.parametrize("name", ["--configuration=evil.php", "-c.php"])
+def test_changed_file_starting_with_dash_gets_dot_slash(name: str) -> None:
+    cmd = make("phpstan {{files}}", {"files": Parameter()})
+
+    out = line(render(cmd, {"files": ChangedFiles()}, [name], from_tests_file=False))
+
+    assert out == f"phpstan ./{name}"
+
+
+def test_dash_file_under_working_directory_gets_dot_slash() -> None:
+    cmd = make("phpstan {{files}}", {"files": Parameter()}, wd="app")
+
+    out = line(render(cmd, {"files": ChangedFiles()}, ["app/-c.php"], from_tests_file=False))
+
+    assert out == "phpstan ./-c.php"
+
+
+@pytest.mark.parametrize("text", ['run "{{x}}"', "--f='{{x}}'", "run \"a $(b) '{{x}}'\""])
+def test_placeholder_inside_quotes_is_refused(text: str) -> None:
+    cmd = make(text, {"x": Parameter()})
+
+    with pytest.raises(ValueError, match="cmd.*inside quotes"):
+        render(cmd, {"x": "v"}, [], from_tests_file=False)
+
+
+def test_format_value_inside_quotes_is_refused() -> None:
+    cmd = make("run {{x}}", {"x": Parameter(format="'{{value}}'")})
+
+    with pytest.raises(ValueError, match="cmd.*x.*inside quotes"):
+        render(cmd, {"x": "v"}, [], from_tests_file=False)
+
+
+def test_placeholder_outside_quotes_next_to_quoted_text_is_ok() -> None:
+    cmd = make("run 'a b' {{x}} \"c\" \\\"{{x}}", {"x": Parameter()})
+
+    assert line(render(cmd, {"x": "v"}, [], from_tests_file=False)) == "run 'a b' v \"c\" \\\"v"

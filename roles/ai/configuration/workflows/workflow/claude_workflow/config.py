@@ -14,9 +14,12 @@ from typing import Any, NamedTuple, cast
 from claude_workflow.commands import (
     Command,
     VerifyEntry,
+    _VALUE,
+    _PLACEHOLDER as _CMD_PLACEHOLDER,
     parse_commands,
     parse_duration,
     parse_verify,
+    tokens_inside_quotes,
 )
 from claude_workflow.deps import SharedDependency
 
@@ -324,6 +327,20 @@ def _cross_check(raw: dict[str, Any]) -> list[tuple[list[PathPart], str]]:
                             f"placeholder '{{{{{placeholder}}}}}' has no parameter '{placeholder}'",
                         )
                     )
+        if isinstance(line, str):
+            for tok in tokens_inside_quotes(line, _CMD_PLACEHOLDER):
+                errors.append(
+                    (["commands", name, "command"], f"placeholder '{tok}' sits inside quotes")
+                )
+        for pname, praw in params.items():
+            fmt = praw.get("format") if isinstance(praw, dict) else None
+            if isinstance(fmt, str) and tokens_inside_quotes(fmt, _VALUE):
+                errors.append(
+                    (
+                        ["commands", name, "parameters", pname, "format"],
+                        "'{{value}}' sits inside quotes",
+                    )
+                )
         is_container = cmd.get("run-in") == "container"
         if is_container and "container" not in cmd:
             errors.append((["commands", name], "run-in 'container' needs 'container'"))

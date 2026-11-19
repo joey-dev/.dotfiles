@@ -354,3 +354,22 @@ def test_bad_name_in_repo_commands_names_the_repo_file(tmp_path: Path, schema_pa
 
     assert len(errors) == 1
     assert errors[0].startswith(f"{config_dir / 'repository' / 'my-repo.config.json'}: $.commands:")
+
+
+def test_placeholder_inside_quotes_is_reported(schema_path: Path) -> None:
+    raw = {
+        "commands": {
+            "a": {
+                "run-in": "sandbox",
+                "command": 'run "{{x}}"',
+                "parameters": {"x": {"format": "--f='{{value}}'"}},
+            }
+        }
+    }
+
+    errors = validate_raw(raw, schema_path)
+
+    assert errors == [
+        "$.commands.a.command: placeholder '{{x}}' sits inside quotes",
+        "$.commands.a.parameters.x.format: '{{value}}' sits inside quotes",
+    ]

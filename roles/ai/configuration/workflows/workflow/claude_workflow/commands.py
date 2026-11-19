@@ -141,6 +141,8 @@ class Skip(Exception):
 
 
 _PLACEHOLDER = re.compile(r"\{\{([A-Za-z0-9_-]+)\}\}")
+_SLOT = re.compile(r"( ?)\{\{([A-Za-z0-9_-]+)\}\}")
+_VALUE = re.compile(r"\{\{value\}\}")
 
 
 def _select_changed(
@@ -156,7 +158,7 @@ def _select_changed(
             continue
         if any(fnmatch.fnmatchcase(rel, g) for g in spec.exclude):
             continue
-        picked.append(rel)
+        picked.append("./" + rel if rel.startswith("-") else rel)
     return picked
 
 
@@ -175,6 +177,14 @@ def render(
     for name in values:
         if name not in cmd.parameters:
             raise ValueError(f"command {cmd.name!r}: unknown parameter {name!r}")
+
+    for tok in tokens_inside_quotes(cmd.command, _PLACEHOLDER):
+        raise ValueError(f"command {cmd.name!r}: placeholder {tok} sits inside quotes")
+    for pname, p in cmd.parameters.items():
+        if p.format is not None and tokens_inside_quotes(p.format, _VALUE):
+            raise ValueError(
+                f"command {cmd.name!r}, parameter {pname!r}: {{{{value}}}} in format sits inside quotes"
+            )
 
     def fail(name: str, why: str) -> ValueError:
         return ValueError(f"command {cmd.name!r}, parameter {name!r}: {why}")
@@ -212,7 +222,7 @@ def render(
         return words
 
     def replace(match: re.Match[str]) -> str:
-        name = match.group(1)
+        lead, name = match.group(1), match.group(2)
         param = cmd.parameters.get(name)
         if param is None:
             raise ValueError(f"command {cmd.name!r}: placeholder {{{{{name}}}}} has no parameter")
@@ -221,12 +231,42 @@ def render(
             return ""
         quoted = " ".join(shlex.quote(w) for w in words)
         if param.format is None:
-            return quoted
-        return param.format.replace("{{value}}", quoted)
+            return lead + quoted
+        return lead + param.format.replace("{{value}}", quoted)
 
-    rendered = _PLACEHOLDER.sub(replace, cmd.command)
+    rendered = _SLOT.sub(replace, cmd.command)
     # Parameters not used in the command still get their required/pattern checks.
     for name, param in cmd.parameters.items():
         if f"{{{{{name}}}}}" not in cmd.command:
             words_for(name, param)
-    return ["sh", "-c", re.sub(r" {2,}", " ", rendered).strip()]
+    return ["sh", "-c", rendered.strip()]
+
+
+def tokens_inside_quotes(text: str, token: re.Pattern[str]) -> list[str]:
+    """Return the `{{...}}` tokens of `text` that sit inside '...' or "..." quotes.
+
+    Simple shell-quote scan: backslash escapes the next char outside quotes and inside
+    double quotes; single quotes take everything literally. Inserted values are quoted by
+    render(), so a token inside quotes would break that quoting.
+    """
+    found: list[str] = []
+    quote = ""
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if ch == "\\" and quote != "'":
+            i += 2
+            continue
+        if quote:
+            if ch == quote:
+                quote = ""
+        elif ch in "'\"":
+            quote = ch
+        if quote and ch not in "'\"":
+            match = token.match(text, i)
+            if match:
+                found.append(match.group(0))
+                i = match.end()
+                continue
+        i += 1
+    return found
