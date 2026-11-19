@@ -306,7 +306,8 @@ def run_command(
     env: dict[str, str] | None,
     timeout: int,
 ) -> tuple[str, str]:
-    """Run one command; return (status, output)."""
+    """Run one command; return (status, output). Never raises for a command that
+    cannot start: that is a FAIL too, so Verify keeps going."""
     try:
         proc = subprocess.run(
             argv,
@@ -319,5 +320,7 @@ def run_command(
         )
     except subprocess.TimeoutExpired:
         return f"FAIL (timeout after {timeout}s)", ""
+    except OSError as exc:  # missing program or cwd, ENOEXEC, permission denied, ...
+        return f"FAIL (could not start: {exc})", ""
     status = "PASS" if proc.returncode == 0 else f"FAIL (exit {proc.returncode})"
     return status, (proc.stdout + proc.stderr).rstrip()

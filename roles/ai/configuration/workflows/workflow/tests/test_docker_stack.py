@@ -382,3 +382,17 @@ def test_symlinks_clean_repo(tmp_path: Path) -> None:
     repo, base = _make_repo(tmp_path)
     (repo / "legacy/src/Bar.php").write_text("<?php\n")
     assert symlink_violations(repo, base) == []
+
+
+def test_run_command_reports_start_errors(tmp_path: Path) -> None:
+    missing = run_command([str(tmp_path / "no-such-tool")], cwd=None, env=None, timeout=5)
+    assert missing[0].startswith("FAIL (could not start: ")
+    assert "No such file" in missing[0]
+    assert missing[1] == ""
+    noexec = tmp_path / "script"
+    noexec.write_bytes(b"\x00\x01garbage")
+    noexec.chmod(0o755)
+    status, output = run_command([str(noexec)], cwd=None, env=None, timeout=5)
+    assert status.startswith("FAIL (could not start: ") and output == ""
+    gone = run_command(["true"], cwd=tmp_path / "gone", env=None, timeout=5)
+    assert gone[0].startswith("FAIL (could not start: ")
