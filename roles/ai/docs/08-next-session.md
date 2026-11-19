@@ -14,7 +14,8 @@ This is the **only status page**. The other docs hold details; their checkboxes 
 | `07-plan.md` | Fixes for those bugs (15 tasks) | **Done** (checkboxes never ticked). Intake validated by the user (`ec9fb7f`) |
 | `09-tests-and-docker.md` | Design: tests, Docker stack, security rules | **Built**; the format parts are replaced by `11` |
 | `10-plan-tests-docker.md` | Tests + Docker plan | **Tasks 1-6 done** (commit `f1b50ed`, 199 tests). **Task 7 not done** → moved into `11`, Task 6 |
-| `11-plan-commands-config.md` | Named commands, kebab-case config (global + per repo), `full-configs/` render, new `tests.txt` | **Tasks 1-5 done**, incl. the final-review fixes (config, commands, runners, `tests.txt`, final config + docs). **Task 6 next**; all decisions made (2026-11-19) |
+| `11-plan-commands-config.md` | Named commands, kebab-case config (global + per repo), `full-configs/` render, new `tests.txt` | **Tasks 1-5 done** (296 tests). Docker parts **unsafe** (bind-mount escape) → see `12` |
+| `12-docker-isolation-options.md` | Option 1 (no Docker for Claude) vs option 2 (separate user + rootless Docker) | **Waiting for the user's choice** |
 
 **Not yet verified anywhere:** a full run on a real ticket, stages Explore → Retro on the real repo, and anything with the real Docker stack.
 
