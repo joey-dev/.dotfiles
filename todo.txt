@@ -1,9 +1,4 @@
 - able to find all templates here with 1 command
-- when loading claude walled, check the template wanting to use. save the name in its home (start with template of flake.nix)
-- remove template placeholder reference, just say to check existing templates
-- 'readme.md#New project from a template'. update to mention the 'remote flakes'
-- 'remote flake'. link the templates to ~/.flakes/*. can allow ai sandboxes to read the flakes. 
-- improve Claude-walled. want an easy way to create new worktrees, for any project, only for the agent to use. see 'agent management'. and a or multiple scripts to run command which is not fully allowed. like nix. to block it
 
 - fix global phpstan (in nvim)
 - currently we use mason + nix for nvim packages. prob want to choose one
@@ -12,25 +7,19 @@
 - add syncthing (for task)
 
 
-.envrc:`use flake ~/devshells/rust`
-or bash: `nix develop ~/devshells/rust --command cargo --version`
-rust is a flake https://jeffkreeftmeijer.com/nix-devshells/
+# create sandbox from pwd using command
+- Command to create a brwap from current position 
+- with claude files added
+- starts by default in the same shell ($SHELL)
+- startup can be changed with the --startup flag:
+  - example: --startup="bash"
+  - any executable file can be added here, including parameters.
+- for agents, it's reccomended to use --agent-claude, instead of --startup, as this will make sure the model, permissions, etc is set as expected
+- flag --network-access is required:
+    - `--network-access false`, disables all internet access to the outside world, except to specific endpoints: ("api.anthropic.com", "platform.claude.com"), on port 443, as these are required
+    - `--network-access true`, enables all internet access. making it a bit less secure
+- look at workflow for a starting point (and almost finish point) for the bwrap, etc
 
+# work on improving skills in workflow:
 
-https://github.com/hercules-ci/flake-parts
-https://nix.dev/manual/nix/2.34/store/types/#store-url-formatc
-
-
-# agent management
-
-## setup new
-command: agent-setup
-where to run: in the main repo
-what it does when it runs:
-- if exists (likely untracked): .profile. read all answers, if all are there create. otherwise do the things. 
-- creates a new workspace from current repo in ~/.agents/worktrees/{repositoryName}/{randomUniqueName}/{repoRootHere}
-- asks for template, or requirements:
-  - template: can be like 'lastest'
-  - requirements (nice to have): php: 7.5, MySQL: latest
-- if exists in repo: '.worktreeignore', copy all .gitignore, except those. otherwise ask which ones to copy from the .gitignore
-- ask wich ones to copy from .git/info/exclude
+## qa, look at brainstorming of superpowers

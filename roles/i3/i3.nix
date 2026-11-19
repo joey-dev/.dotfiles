@@ -12,6 +12,14 @@
     # i3 itself is installed by ./system.nix. The Home Manager i3 module is not used,
     # because it writes i3/config itself and the folder below is linked as a whole.
     services.picom.enable = true;
+    # The picom package also ships an XDG autostart entry, which started a second
+    # picom next to the service above. Hide it so only the service runs.
+    xdg.configFile."autostart/picom.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=picom
+      Hidden=true
+    '';
     services.dunst.enable = true;
 
     home.packages = with pkgs; [

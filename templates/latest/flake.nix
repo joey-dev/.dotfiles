@@ -10,7 +10,6 @@
 
   outputs =
     {
-      self,
       nixpkgs,
       flake-utils,
       nix-phps,
@@ -47,13 +46,13 @@
         };
 
         # 1. Force the exact Node.js version
-        myNode = pkgs.nodejs_24.overrideAttrs (old: rec {
+        myNode = pkgs.nodejs_24.overrideAttrs rec {
           version = "24.21.0";
           src = pkgs.fetchurl {
             url = "https://nodejs.org/dist/v${version}/node-v${version}.tar.xz";
             hash = "sha256-pvVN77b9fIT0HboT1h546bTglhcSz2HylxXAX1ztlPw=";
           };
-        });
+        };
 
         # 2. Build pnpm natively using npm
         myPnpm = pkgs.stdenv.mkDerivation rec {
@@ -88,7 +87,7 @@
         php82 = nix-phps.packages.${system}.php82;
 
         myPhp = php82.buildEnv {
-          extensions = (
+          extensions =
             { enabled, all }:
             enabled
             ++ (with all; [
@@ -101,8 +100,7 @@
               gd
               pdo
               zip
-            ])
-          );
+            ]);
         };
 
         ansibleEnv = pkgs.python3.withPackages (
