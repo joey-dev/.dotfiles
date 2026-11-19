@@ -17,6 +17,7 @@ from claude_workflow.docker_stack import (
     guard_violations,
     prepare_worktree,
     run_command,
+    symlink_violations,
     up_command,
 )
 
@@ -304,3 +305,80 @@ def test_up_command_appends_services(tmp_path: Path) -> None:
     assert up_command(cfg, wt, repo)[-5:] == ["--wait", "--wait-timeout", "900", "db", "redis"]
     assert up_command(cfg, wt, repo)[-2:] == ["db", "redis"]
     assert up_command(DockerConfig(project_name="dfs"), wt, repo)[-1] == "900"
+
+
+# --- symlinks (a symlinked bind-mount source would make root Docker mount its target) --
+
+
+def test_symlinks_flag_tracked_dir_replaced_by_symlink(tmp_path: Path) -> None:
+    repo, base = _make_repo(tmp_path)
+    outside = tmp_path / "home"
+    outside.mkdir()
+    shutil.rmtree(repo / "legacy/src")
+    (repo / "legacy/src").symlink_to(outside)
+    assert symlink_violations(repo, base) == ["legacy/src"]
+
+
+def test_symlinks_flag_ignored_dir_that_is_a_symlink(tmp_path: Path) -> None:
+    repo, base = _make_repo(tmp_path)
+    outside = tmp_path / "home"
+    outside.mkdir()
+    (repo / "legacy/docker/cache").symlink_to(outside)
+    assert symlink_violations(repo, base) == ["legacy/docker/cache"]
+
+
+def test_symlinks_flag_symlinked_parent_of_a_listed_path(tmp_path: Path) -> None:
+    repo, base = _make_repo(tmp_path)
+    outside = tmp_path / "home"
+    outside.mkdir()
+    (outside / "new.txt").write_text("x")
+    (repo / "data").symlink_to(outside)
+    # git itself never lists files behind a symlink; the parent check must still hold.
+    with (
+        patch("claude_workflow.docker_stack.touched_paths", return_value=["data/new.txt"]),
+        patch("claude_workflow.docker_stack.ignored_paths", return_value=[]),
+    ):
+        assert symlink_violations(repo, base) == ["data"]
+
+
+def test_symlinks_allow_identical_symlink_from_base(tmp_path: Path) -> None:
+    repo, base = _make_repo(tmp_path)
+    (repo / "link").symlink_to("legacy/src")
+    _git(repo, "add", "link")
+    _git(repo, "commit", "-m", "link")
+    base2 = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=repo, check=True, capture_output=True, text=True
+    ).stdout.strip()
+    with patch(
+        "claude_workflow.docker_stack.touched_paths", return_value=["link/Foo.php", "link"]
+    ):
+        assert symlink_violations(repo, base2) == []
+    # Same path, other target: flagged.
+    (repo / "link").unlink()
+    (repo / "link").symlink_to(tmp_path)
+    assert symlink_violations(repo, base2) == ["link"]
+
+
+def test_symlinks_skip_paths_inside_host_copies(tmp_path: Path) -> None:
+    repo, base = _make_repo(tmp_path)
+    (repo / "nginx-proxy/certs").mkdir()
+    (repo / "nginx-proxy/certs/a.crt").symlink_to(tmp_path)
+    with patch(
+        "claude_workflow.docker_stack.ignored_paths",
+        return_value=["nginx-proxy/certs/a.crt"],
+    ):
+        assert symlink_violations(repo, base) == ["nginx-proxy/certs/a.crt"]
+        # The host replaces everything under a host-copies entry before `up`.
+        assert symlink_violations(repo, base, host_copies=("nginx-proxy/certs",)) == []
+    # The entry itself is still checked.
+    shutil.rmtree(repo / "nginx-proxy/certs")
+    (repo / "nginx-proxy/certs").symlink_to(tmp_path)
+    assert symlink_violations(repo, base, host_copies=("nginx-proxy/certs",)) == [
+        "nginx-proxy/certs"
+    ]
+
+
+def test_symlinks_clean_repo(tmp_path: Path) -> None:
+    repo, base = _make_repo(tmp_path)
+    (repo / "legacy/src/Bar.php").write_text("<?php\n")
+    assert symlink_violations(repo, base) == []

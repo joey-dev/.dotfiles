@@ -28,6 +28,7 @@ from claude_workflow.docker_stack import (
     guard_violations,
     prepare_worktree,
     run_command,
+    symlink_violations,
     up_command,
 )
 from claude_workflow.git_host import GitError
@@ -86,16 +87,22 @@ def _host_scripts(config: WorkflowConfig, cmd: Command | None = None) -> tuple[s
 
 
 def _check_guard(ctx: RunContext, cmd: Command) -> None:
-    """Raise HostStop when a protected file (or a host script) differs from base."""
+    """Raise HostStop when a protected file (or a host script) differs from base, or
+    when the worktree has a symlink the base commit does not have (fail closed)."""
     docker = ctx.config.docker
     patterns = guard_patterns(docker, _host_scripts(ctx.config, cmd))
     host_copies = docker.host_copies if docker is not None else ()
     try:
         paths = guard_violations(ctx.worktree, ctx.base_commit, patterns, host_copies)
-    except (ValueError, GitError) as exc:
+        links = symlink_violations(ctx.worktree, ctx.base_commit, host_copies)
+    except (ValueError, GitError, OSError) as exc:
         raise HostStop(f"the guard could not check the worktree ({exc})") from exc
     if paths:
         raise HostStop(f"the diff touches protected files: {', '.join(paths)}")
+    if links:
+        raise HostStop(
+            f"symlink in the worktree that is not in the base commit: {', '.join(links)}"
+        )
 
 
 def _subdir(root: Path, working_directory: str | None) -> Path:

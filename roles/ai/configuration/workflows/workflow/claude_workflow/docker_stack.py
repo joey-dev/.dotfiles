@@ -2,7 +2,8 @@
 
 Claude never gets Docker access. The host starts the compose stack from the ticket's
 worktree and runs host commands, but only after `guard_violations` confirms that no
-Docker-related file differs from the base commit.
+Docker-related file differs from the base commit, and `symlink_violations` confirms
+that the worktree has no new symlinks (root Docker follows symlinked mount sources).
 """
 
 from __future__ import annotations
@@ -108,6 +109,70 @@ def guard_violations(
             continue
         if any(fnmatch(path, pat) or fnmatch(path + "/", pat) for pat in patterns):
             flagged.add(path)
+    return sorted(flagged)
+
+
+def _base_symlinks(worktree: Path, base_ref: str) -> dict[str, bytes]:
+    """Symlinks in the base commit: path -> link target (raw blob bytes)."""
+    listing = _git_bytes(worktree, ["ls-tree", "-r", "-z", base_ref]).split(b"\0")
+    links: dict[str, bytes] = {}
+    for entry in listing:
+        if not entry:
+            continue
+        meta, _, raw_path = entry.partition(b"\t")
+        mode, kind, sha = meta.decode().split()
+        if mode == "120000" and kind == "blob":
+            path = raw_path.decode("utf-8", errors="surrogateescape")
+            links[path] = _git_bytes(worktree, ["cat-file", "blob", sha])
+    return links
+
+
+def _is_symlink_or_unsure(path: Path) -> bool:
+    """lstat says symlink, or lstat fails for any reason but "not there" (fail closed)."""
+    try:
+        return stat.S_ISLNK(path.lstat().st_mode)
+    except (FileNotFoundError, NotADirectoryError):
+        return False
+    except OSError:
+        return True
+
+
+def symlink_violations(
+    worktree: Path, base_ref: str, host_copies: tuple[str, ...] = ()
+) -> list[str]:
+    """Return sorted worktree paths that are symlinks the base commit does not have.
+
+    Root Docker follows a symlinked bind-mount source (`./api-documentation` ->
+    `$HOME`), so no new symlink may sit on any touched or gitignored path, nor on any
+    parent folder of one. A symlink that the base commit has at the same path with the
+    same target is allowed. Paths strictly inside a host_copies entry are skipped (the
+    host replaces them before `up`); the entry itself is still checked. Any doubt
+    (an odd path, an lstat error) counts as a violation.
+    """
+    candidates = set(touched_paths(worktree, base_ref)) | set(ignored_paths(worktree))
+    to_check: set[str] = set()
+    flagged: set[str] = set()
+    for path in candidates:
+        parts = Path(path).parts
+        if not parts or Path(path).is_absolute() or ".." in parts:
+            flagged.add(path)
+            continue
+        for depth in range(1, len(parts) + 1):
+            to_check.add("/".join(parts[:depth]))
+    to_check = {
+        p for p in to_check if not any(p != entry and _under(p, entry) for entry in host_copies)
+    }
+    links = [p for p in to_check if _is_symlink_or_unsure(worktree / p)]
+    if links:
+        base_links = _base_symlinks(worktree, base_ref)
+        for rel in links:
+            try:
+                target = os.readlink(worktree / rel).encode("utf-8", errors="surrogateescape")
+            except OSError:
+                flagged.add(rel)
+                continue
+            if base_links.get(rel) != target:
+                flagged.add(rel)
     return sorted(flagged)
 
 

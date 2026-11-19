@@ -438,3 +438,55 @@ def test_non_script_host_command_is_refused_at_run_time(tmp_path: Path) -> None:
         ):
             run(_cmd(run_in="host", command=command), _sh(command), ctx)
     assert rec.calls == []
+
+
+# --- symlinks -------------------------------------------------------------------------
+
+
+def test_compose_up_refused_for_new_symlink(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    home = tmp_path / "home"
+    home.mkdir()
+    (wt / "legacy/Foo.php").unlink()
+    (wt / "legacy").rmdir()
+    (wt / "legacy").symlink_to(home)  # e.g. ./api-documentation -> $HOME
+    ctx = _ctx(tmp_path, wt, base)
+    cmd = _cmd(run_in="container", container="web-1", needs_compose_stack=True)
+    rec = _Recorder()
+    with (
+        patch("claude_workflow.runners.run_command", rec),
+        pytest.raises(
+            HostStop, match="symlink in the worktree that is not in the base commit: legacy"
+        ),
+    ):
+        run(cmd, _sh("true"), ctx)
+    assert rec.calls == []
+    assert ctx.stack.result is None
+
+
+def test_host_run_refused_for_new_symlink(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    (wt / "cache").symlink_to(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    rec = _Recorder()
+    with (
+        patch("claude_workflow.runners.run_command", rec),
+        pytest.raises(HostStop, match="symlink.*: cache"),
+    ):
+        run(_cmd(run_in="host", command="bin/run.sh"), _sh("bin/run.sh"), ctx)
+    assert rec.calls == []
+
+
+def test_symlink_appearing_after_up_stops_the_host_run(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    cmd = _cmd(run_in="host", command="./bin/run.sh", needs_compose_stack=True)
+    rec = _Recorder()
+    # A container (running Claude's code) plants a symlink in a bind-mounted folder.
+    rec.on_call = lambda argv: (wt / "planted").symlink_to(tmp_path)
+    with (
+        patch("claude_workflow.runners.run_command", rec),
+        pytest.raises(HostStop, match="planted"),
+    ):
+        run(cmd, _sh("./bin/run.sh"), ctx)
+    assert len(rec.calls) == 1 and _is_up(rec.calls[0]["argv"])
