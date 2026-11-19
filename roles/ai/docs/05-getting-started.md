@@ -8,7 +8,7 @@ How to install, configure, and run the workflow. Each item says **what it does**
 
 ## 5.1 Install (once per machine)
 
-**What it does:** puts `claude-workflow`, `claude`, `bwrap`, `socat` on your `PATH`, and links the config folder to `~/.config/claude-workflow/` (`global.config.json`, `repository/`, the schema).
+**What it does:** puts `claude-workflow`, `create-sandbox`, `claude`, `bwrap`, `socat` on your `PATH`, and links the config folder to `~/.config/claude-workflow/` (`global.config.json`, `repository/`, the schema).
 
 1. `"ai"` is already in `hosts/roles.nix`.
 2. Rebuild home-manager the way you normally do. The build **runs the tests**.
@@ -18,6 +18,29 @@ claude-workflow --help
 ```
 
 ---
+
+### Standalone sandbox
+
+Run these from the directory you want to work in.
+
+```sh
+create-sandbox --network-access false
+create-sandbox --network-access true --startup='bash -c "pwd; ls"'
+create-sandbox --network-access false --agent-claude
+```
+
+The sandbox mounts the current directory read-write and starts in it. It uses
+a temporary home with a copy of your Claude login and the workflow's sandbox
+settings. It also mounts your `~/.claude/CLAUDE.md` read-only if present.
+The default command is `$SHELL` (or `sh` if unset). Quote executable arguments
+inside `--startup`, or use `--agent-claude` for the implementation stage's
+default Claude model, effort, and tool permissions.
+
+Choose a network mode on every launch. `false` isolates networking and provides
+an HTTPS CONNECT proxy to `api.anthropic.com:443` and `platform.claude.com:443`.
+Programs must use the proxy to reach those endpoints. `true` uses the host
+network. Files in the selected directory are visible to sandboxed programs, so
+choose the directory with that access in mind.
 
 ## 5.2 First-time setup (once per machine)
 

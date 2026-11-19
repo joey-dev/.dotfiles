@@ -45,20 +45,23 @@
           cp ${./configuration/workflows/config/config.schema.json} $out/share/claude-workflow/config.schema.json
         '';
 
-        postFixup = ''
-          wrapProgram $out/bin/claude-workflow \
-            --prefix PATH : ${
-              lib.makeBinPath [
-                bubblewrap
-                git
-                libnotify
-                claude-code
-                socat
-              ]
-            } \
-            --set-default CLAUDE_WORKFLOW_SKILLS $out/share/claude-workflow/skills \
-            --set-default CLAUDE_WORKFLOW_SCHEMA $out/share/claude-workflow/config.schema.json
-        '';
+        postFixup =
+          let
+            runtimePath = lib.makeBinPath [
+              bubblewrap
+              git
+              libnotify
+              claude-code
+              socat
+            ];
+          in
+          ''
+            wrapProgram $out/bin/create-sandbox --prefix PATH : ${runtimePath}
+            wrapProgram $out/bin/claude-workflow \
+              --prefix PATH : ${runtimePath} \
+              --set-default CLAUDE_WORKFLOW_SKILLS $out/share/claude-workflow/skills \
+              --set-default CLAUDE_WORKFLOW_SCHEMA $out/share/claude-workflow/config.schema.json
+          '';
       })
     ];
 

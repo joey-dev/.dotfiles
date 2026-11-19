@@ -131,8 +131,8 @@ Each `run(ctx)` follows the same pattern: worktree (if needed) → sandbox → p
 
 ## 3.7 `claude_runner.py` — starting Claude
 
-1. `_common_claude_flags()` (`:49`): `--model`, `--effort`, `--permission-mode dontAsk`, `--tools`, **`--append-system-prompt <skills>`**, `--add-dir …`, `--allowedTools`, MCP flags.
-2. `_sandboxed_command()` is a context manager that:
+1. `claude_flags()` (`:49`): `--model`, `--effort`, `--permission-mode dontAsk`, `--tools`, **`--append-system-prompt <skills>`**, `--add-dir …`, `--allowedTools`, MCP flags.
+2. `sandboxed_command()` is a context manager that:
    - copies the login in (`prepare_sandbox_home`);
    - writes the hook-free `settings.json` to a temp folder;
    - starts the proxy for no-network stages, logging to `proxy.log`;

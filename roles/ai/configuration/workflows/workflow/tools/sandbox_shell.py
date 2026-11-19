@@ -33,7 +33,7 @@ from tempfile import TemporaryDirectory
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from claude_workflow.claude_runner import _proxy_context, _sandboxed_command  # noqa: E402
+from claude_workflow.claude_runner import _proxy_context, sandboxed_command  # noqa: E402
 from claude_workflow.config import (  # noqa: E402
     STAGE_ORDER,
     StageName,
@@ -110,7 +110,7 @@ def main() -> int:
         elif args.copy_credentials:
             # Exactly the real path: login copied in, settings file, proxy.
             argv = stack.enter_context(
-                _sandboxed_command(
+                sandboxed_command(
                     sandbox, args.cmd, DEFAULT_ALLOWED_HOSTS, interactive=args.interactive
                 )
             )

@@ -46,7 +46,7 @@ def skills_system_prompt(skill_dirs: Sequence[Path]) -> str:
     return "\n\n".join(parts)
 
 
-def _common_claude_flags(stage: StageConfig, sandbox: SandboxSpec) -> list[str]:
+def claude_flags(stage: StageConfig, sandbox: SandboxSpec) -> list[str]:
     paths = sandbox_paths(sandbox)
     flags: list[str] = [
         "--model",
@@ -86,7 +86,7 @@ def _proxy_context(
 
 
 @contextmanager
-def _sandboxed_command(
+def sandboxed_command(
     sandbox: SandboxSpec,
     claude_cmd: list[str],
     allowed_hosts: tuple[str, ...],
@@ -135,11 +135,11 @@ def run_claude_headless(
 
     On timeout the result has return code 124 (like the `timeout` command).
     """
-    claude_cmd: list[str] = ["claude", "-p", prompt, *_common_claude_flags(stage, sandbox)]
+    claude_cmd: list[str] = ["claude", "-p", prompt, *claude_flags(stage, sandbox)]
     if session_id is not None:
         claude_cmd.extend(["--session-id", session_id])
 
-    with _sandboxed_command(
+    with sandboxed_command(
         sandbox, claude_cmd, allowed_proxy_hosts, interactive=False
     ) as bwrap_cmd:
         try:
@@ -171,12 +171,12 @@ def run_claude_interactive(
         "claude",
         session_flag,
         session_id,
-        *_common_claude_flags(stage, sandbox),
+        *claude_flags(stage, sandbox),
     ]
     if prompt:
         claude_cmd.append(prompt)
 
-    with _sandboxed_command(
+    with sandboxed_command(
         sandbox, claude_cmd, allowed_proxy_hosts, interactive=True
     ) as bwrap_cmd:
         proc = subprocess.run(bwrap_cmd, check=False)

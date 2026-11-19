@@ -11,6 +11,7 @@ dependencies = ["jsonschema"]
 
 [project.scripts]
 claude-workflow = "claude_workflow.cli:main"
+create-sandbox = "claude_workflow.create_sandbox:main"
 
 [tool.setuptools.packages.find]
 include = ["claude_workflow*"]
