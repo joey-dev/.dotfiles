@@ -33,7 +33,10 @@ All code paths are relative to `roles/ai/configuration/workflows/workflow/`.
 6. **`timeout`** per command. Slow suites get `required: true` on their filter, so Claude can never start a full run.
 7. **`tests.txt`** lists command names with parameters. Only parameters that have a `pattern` can be set there.
 8. **`phpstan:changed`** is a separate command (changed PHP files, tests excluded). It is **not** in `verify`.
-9. **`cs-check` (`bin/cs verify`):** the user preferred option (b), running it on the host. **The controller recommends a sandbox variant instead** (see Task 3, `needs-git`). **The user must pick before Task 3.**
+9. **`cs-check` runs in the sandbox** with `needs-git: true`: a throwaway `git init` dir replaces the `.git` mask (user, 2026-11-19).
+10. **`full-configs/<repo>.config.json`** (gitignored): `claude-workflow config render [--repo PATH] [--watch]` writes the merged config and validates it. Errors name the **source file** each key came from. `--watch` polls the two sources every second. **The workflow never reads this file**; it always merges itself. No 2-way sync.
+11. **Certs: copy only `*.crt`** from `nginx-proxy/certs` (the least data). `proxy-companion` makes the keys; Task 6 checks that the proxy starts.
+12. **Secrets:** `~/.npmrc` must not reach any container. Recommended: `docker-compose.services` = the services the tests need (only those plus their `depends_on` start; this also skips the untrusted `pnpm install` containers). The repo `.env` may reach containers. The sandbox Claude settings get a **deny rule** on reading `.env` (defence in depth; it is not mounted anyway).
 
 ### Why not option (b), running `bin/cs` on the host
 
@@ -102,7 +105,8 @@ On the host, that is **code execution as the user** (SSH keys, `~/.claude`, `.en
   - each `{{x}}` in a command has a parameter `x`;
   - `container` is set exactly when `run-in` is `container`.
 - `WorkflowConfig` gains `commands: dict[str, Command]` and `verify: tuple[VerifyEntry, ...]` (models from Task 2), and drops `verify_commands`.
-- CLI: `claude-workflow check-config [--repo PATH]` prints the errors (or `ok`) and exits 1 on errors. `--config` is replaced by `--config-dir`.
+- CLI: `claude-workflow config check [--repo PATH]` prints the errors (or `ok`) and exits 1 on errors. `claude-workflow config render [--repo PATH] [--watch]` writes `full-configs/<repo-name>.config.json` (decision 10). Each error names its source file (global or repo). `--config` is replaced by `--config-dir`.
+- Add `full-configs/` to the dotfiles `.gitignore`.
 
 **Steps:**
 - [ ] Tests first:
@@ -114,6 +118,7 @@ On the host, that is **code execution as the user** (SSH keys, `~/.claude`, `.en
   - `test_placeholder_without_parameter_is_reported`;
   - `test_real_config_dir_validates`: loads `../config/` for `dyflexis-monorepo`, skipped when absent in the Nix build.
 - [ ] Implement. Keep the old snake_case loader out: there is one user and one config.
+- [ ] Trim `repository/dyflexis-monorepo.config.json` to repo keys and real overrides (user: do it together with the merging).
 - [ ] `ai.nix`: add `python3Packages.jsonschema` to `dependencies`, and copy `config.schema.json` next to the package as a fallback. The `xdg.configFile` line is already fixed.
 - [ ] Commit.
 
@@ -147,7 +152,6 @@ On the host, that is **code execution as the user** (SSH keys, `~/.claude`, `.en
 
 ### Task 3: Runners
 
-**Decision needed first:** decision 9 (`cs-check` in the sandbox with `needs-git`, or on the host).
 
 **Interfaces** (`runners.py`):
 - `run(cmd: Command, argv: list[str], ctx: RunContext) -> tuple[str, str]` (status, output), dispatching on `run_in`:
@@ -188,8 +192,9 @@ On the host, that is **code execution as the user** (SSH keys, `~/.claude`, `.en
 
 ### Task 5: Final config files and docs
 
-- [ ] `repository/dyflexis-monorepo.config.json`: only `$schema`, `commands`, `verify`, `docker-compose`, `shared-dependencies` and real overrides. Remove the copied global keys and stages.
-- [ ] Add `phpstan:changed` (default = changed PHP files, tests excluded). Set `cs-check` per decision 9 (`needs-git: true` in the sandbox variant, command `bin/cs verify`).
+- [ ] Check the repo file is still minimal after the new keys.
+- [ ] Add `phpstan:changed` (default = changed PHP files, tests excluded). `cs-check`: `run-in: sandbox`, `needs-git: true`, command `bin/cs verify {{files}}`.
+- [ ] `docker-compose`: `host-copies` becomes crt-only (e.g. a `host-copies` entry with an `include: ["*.crt"]` filter; schema + `prepare_worktree` + test), and add `services` (schema + `up_command` + test). Add the `.env` read deny rule to the generated sandbox settings (+ test).
 - [ ] Schema: add `needs-git`, allow `ChangedFiles` as a `default`, and document the merge rule. `example.config.json` follows the repo file.
 - [ ] Docs: `04-file-responsibilities.md` (new modules), `09` (commands replace prefixes), `08` (status).
 - [ ] `check-config` passes on the real files; the Nix build passes. Commit.
@@ -201,5 +206,6 @@ This **replaces Task 7 of plan 10** and includes it. Ask before every Docker ste
 - [ ] Run the commands from `verify` in a sandbox on the monorepo; check that they start and that the phpstan cache is reused.
 - [ ] `cs-check` with real changed files: hooks run, and a style error fails.
 - [ ] Compose: `up` from a worktree, `--wait`, `git status` stays clean, the `tests:api` filter works, and `HOST_UID` is found.
-- [ ] Certs and secrets: apply the user's decisions (see `09`, "Known limits").
+- [ ] Certs: only `*.crt` copied (decision 11); the proxy starts and the dev site loads.
+- [ ] Secrets (decision 12): only the listed services start; `~/.npmrc` is mounted in none of them (`docker inspect`); a sandbox Claude cannot read `.env`.
 - [ ] First real ticket end to end; read `06-verify.md`.

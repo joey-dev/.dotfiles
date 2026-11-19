@@ -14,7 +14,7 @@ This is the **only status page**. The other docs hold details; their checkboxes 
 | `07-plan.md` | Fixes for those bugs (15 tasks) | **Done** (checkboxes never ticked). Intake validated by the user (`ec9fb7f`) |
 | `09-tests-and-docker.md` | Design: tests, Docker stack, security rules | **Built**; the format parts are replaced by `11` |
 | `10-plan-tests-docker.md` | Tests + Docker plan | **Tasks 1-6 done** (commit `f1b50ed`, 199 tests). **Task 7 not done** → moved into `11`, Task 6 |
-| `11-plan-commands-config.md` | Named commands, kebab-case config (global + per repo), new `tests.txt` | **Not started**. Decision 9 (cs-check) is open |
+| `11-plan-commands-config.md` | Named commands, kebab-case config (global + per repo), `full-configs/` render, new `tests.txt` | **Not started**; all decisions made (2026-11-19) |
 
 **Not yet verified anywhere:** a full run on a real ticket, stages Explore → Retro on the real repo, and anything with the real Docker stack.
 
@@ -22,15 +22,12 @@ This is the **only status page**. The other docs hold details; their checkboxes 
 
 ## What is next
 
-1. **The user picks decision 9 in `11`** (`cs-check` in the sandbox with a throwaway git dir, or on the host).
-2. **Build plan `11`, Tasks 1-5** (subagent-driven worked well for `10`).
-3. **Task 6 of `11`:** real-repo checks with the user, then a first real ticket.
+1. **Build plan `11`, Tasks 1-5** (subagent-driven worked well for `10`).
+2. **Task 6 of `11`:** real-repo checks with the user, then a first real ticket.
 
 ### Open user decisions
 
-- **Decision 9 in `11`:** `cs-check` in the sandbox (recommended) or on the host.
-- **Certs:** `nginx-proxy/certs/*.key` are root-owned → copy through a root container, or copy only `*.crt` (`09`, "Known limits").
-- **Secrets in the compose stack:** `~/.npmrc` and `.env` values reach containers that run Claude's code. OK or limit? (`09`, "Known limits").
+None. Decided 2026-11-19: cs-check in the sandbox with a throwaway git dir; certs crt-only; `~/.npmrc` kept out of containers (start only the needed services); `.env` may reach containers, with a sandbox deny rule. Details: `11`, decisions 9-12.
 
 ---
 
