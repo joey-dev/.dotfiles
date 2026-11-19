@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "claude-workflow/config.schema.json",
+  "title": "claude-workflow config",
+  "description": "Configuration for one repository. Copy example.config.json to configs/<repo-name>.json and edit it.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Path to this schema, for editor autocomplete and validation."
+    },
+    "kb-path": {
+      "type": "string",
+      "description": "Knowledge-base folder, mounted read-only for Explore, Plan and Review. '~' is expanded."
+    },
+    "flake-path": {
+      "type": ["string", "null"],
+      "description": "Folder with the flake.nix whose dev shell is used by commands with run-in 'sandbox' (Implement and Verify). null: no dev shell."
+    },
+    "commands": {
+      "type": "object",
+      "description": "Named commands. Verify runs them (see 'verify'), and Plan/Review list them by name in tests.txt as '<name> [parameter=value ...]'.",
+      "propertyNames": { "$ref": "#/$defs/name" },
+      "additionalProperties": { "$ref": "#/$defs/command" }
+    },
+    "verify": {
+      "type": "array",
+      "description": "Commands that Verify always runs, in this order, before the tests listed in tests.txt.",
+      "items": { "$ref": "#/$defs/verifyEntry" }
+    },
+    "shared-dependencies": {
+      "type": "array",
+      "description": "Dependency folders shared read-only from the main checkout into the worktree, only when the lockfile is identical.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["dir", "lockfile"],
+        "properties": {
+          "dir": { "type": "string", "minLength": 1, "description": "Folder, relative to the repository root, e.g. 'legacy/vendor'." },
+          "lockfile": { "type": "string", "minLength": 1, "description": "Lockfile that decides the folder's content, e.g. 'legacy/composer.lock'." }
+        }
+      }
+    },
+    "docker-compose": {
+      "description": "The Docker Compose project of this repository: 'the compose stack'. Commands with needs-compose-stack: true make the workflow run 'docker compose up' for it first (from the worktree). null or absent: no compose stack.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["project-name"],
+          "properties": {
+            "project-name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Compose project name (docker compose -p). Use the same name as your own stack, so a worktree takes over its containers and volumes. 'docker compose ls' shows it."
+            },
+            "profile": { "type": "string", "default": "dyflexis", "description": "Compose profile passed to 'docker compose --profile'." },
+            "up-timeout": { "$ref": "#/$defs/duration", "default": "15m", "description": "How long 'docker compose up --wait' may take. Image builds get 10 minutes extra." },
+            "protected-paths": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "description": "Extra glob patterns (fnmatch; '*' also matches '/') of files that must equal the base commit before the stack starts. The defaults (compose files, .env*, Dockerfiles, .gitattributes, ...) and the scripts of 'host' commands are always protected."
+            },
+            "host-copies": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "description": "Gitignored folders the stack mounts, copied from the main checkout before 'up'. They are hidden from every sandbox (they may hold keys)."
+            },
+            "create-dirs": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "description": "Gitignored folders the stack mounts that only need to exist (the app fills them)."
+            }
+          }
+        }
+      ]
+    },
+    "max-plan-reviews": { "type": "integer", "minimum": 1, "default": 2, "description": "Review passes for the plan." },
+    "max-escalations": { "type": "integer", "minimum": 0, "default": 3, "description": "How often Plan/Implement may ask the human a question." },
+    "max-fix-rounds": { "type": "integer", "minimum": 0, "default": 3, "description": "How often Verify/Review may send the ticket back to Implement." },
+    "headless-timeout": { "$ref": "#/$defs/duration", "default": "60m", "description": "Time limit for one headless Claude call." },
+    "commit-no-verify": { "type": "boolean", "default": true, "description": "Skip git hooks for the final commit." },
+    "stages": {
+      "type": "object",
+      "description": "Per-stage settings. Only list what differs from the defaults.",
+      "propertyNames": { "enum": ["intake", "explore", "qa", "plan", "implement", "verify", "review", "retro"] },
+      "additionalProperties": { "$ref": "#/$defs/stage" }
+    }
+  },
+  "$defs": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9:-]*$",
+      "description": "kebab-case name; ':' allowed for groups, e.g. 'tests:api'."
+    },
+    "duration": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*(s|m|h)$",
+      "description": "A duration with its unit: '90s', '15m' or '2h'."
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run-in", "command"],
+      "properties": {
+        "description": { "type": "string", "description": "What the command does. Shown to Claude when it picks tests." },
+        "run-in": {
+          "enum": ["sandbox", "host", "container"],
+          "description": "Where the command runs. 'sandbox': in bubblewrap with the flake dev shell and no network (like the agent). 'host': on your machine, outside the sandbox; the script it starts is protected like the compose files and the base-commit copy is run. 'container': 'docker exec' into an already running container (it does not need docker compose)."
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The command line. '{{parameter-name}}' is replaced by the parameter's value (with 'format' applied), or removed when the parameter is empty."
+        },
+        "working-directory": { "type": "string", "description": "Folder relative to the repository root to run in. Default: the repository root. Changed files given to this command are made relative to it." },
+        "timeout": { "$ref": "#/$defs/duration", "default": "30m", "description": "Time limit for one run." },
+        "needs-compose-stack": { "type": "boolean", "default": false, "description": "Start the compose stack (see 'docker-compose') before running, if it is not up for this worktree." },
+        "container": { "type": "string", "minLength": 1, "description": "Container name for run-in 'container' (docker ps shows it)." },
+        "user": { "type": "string", "pattern": "^[0-9]+(:[0-9]+)?$", "description": "uid[:gid] for run-in 'container'. Without it, docker exec runs as root and leaves root-owned files." },
+        "parameters": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/name" },
+          "additionalProperties": { "$ref": "#/$defs/parameter" }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "run-in": { "const": "container" } } },
+          "then": { "required": ["container"] },
+          "else": { "not": { "anyOf": [{ "required": ["container"] }, { "required": ["user"] }] } }
+        }
+      ]
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "required": { "type": "boolean", "default": false, "description": "The command may not run without a value (from the config, tests.txt or 'default')." },
+        "default": { "type": "string", "description": "Value used when none is given." },
+        "format": {
+          "type": "string",
+          "pattern": "\\{\\{value\\}\\}",
+          "description": "How a non-empty value is written into the command; '{{value}}' is the value. E.g. '--filter {{value}}' or '--config={{value}}'."
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regex the whole value must match (always checked as a full match). Required for a value to be accepted from tests.txt: without a pattern, only the config can set it."
+        },
+        "example": { "type": "string", "description": "Example value, shown to Claude." }
+      }
+    },
+    "verifyEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run"],
+      "properties": {
+        "run": { "$ref": "#/$defs/name", "description": "Name of a command in 'commands'." },
+        "parameters": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/name" },
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["changed-files"],
+                "properties": {
+                  "changed-files": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "The files changed on this ticket (tracked and new, not deleted), relative to the command's working-directory; files outside it are dropped.",
+                    "properties": {
+                      "include": { "type": "array", "items": { "type": "string" }, "default": ["*"], "description": "Glob patterns (fnmatch; '*' also matches '/')." },
+                      "exclude": { "type": "array", "items": { "type": "string" }, "default": [], "description": "Glob patterns to leave out." },
+                      "if-none": { "enum": ["skip", "run-without"], "default": "skip", "description": "No matching files: 'skip' the command, or 'run-without' the parameter." }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model": { "type": "string", "description": "Claude model alias or id, e.g. 'sonnet' or 'opus'." },
+        "thinking": { "enum": ["low", "medium", "high"] },
+        "repo-access": { "enum": ["none", "ro", "rw"], "description": "How the worktree is mounted." },
+        "allow-network": { "type": "boolean", "description": "Anthropic hosts only, through the proxy." },
+        "mcp-config": { "type": ["string", "null"], "description": "MCP config file; null uses the repo's .mcp.json when a stage allows mcp__ tools." },
+        "allowed-tools": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

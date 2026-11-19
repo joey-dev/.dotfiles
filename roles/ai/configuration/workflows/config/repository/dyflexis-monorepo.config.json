@@ -1,0 +1,266 @@
+{
+  "$schema": "../../config.schema.json",
+  "kb-path": "~/notes/work-kb",
+  "flake-path": "~/.dotfiles/templates/latest",
+  "commands": {
+    "cs-check": {
+      "description": "Code style check (php-cs-fixer, eslint, ...). OPEN: bin/cs runs pre-commit, which needs .git and network; neither exists in the sandbox.",
+      "run-in": "sandbox",
+      "command": "bin/cs {{files}}",
+      "parameters": {
+        "files": {
+          "description": "Files to check, relative to the repository root. Empty: the staged files.",
+          "example": "legacy/src/Foo.php frontend/src/bar.ts"
+        }
+      }
+    },
+    "composer-install": {
+      "description": "Install PHP dependencies inside the web container of the compose stack.",
+      "run-in": "container",
+      "container": "dyflexis-monorepo-legacy-web-debug-1",
+      "user": "1000:1000",
+      "needs-compose-stack": true,
+      "command": "composer install"
+    },
+    "phpstan": {
+      "description": "Static analysis of PHP code.",
+      "run-in": "sandbox",
+      "working-directory": "legacy",
+      "command": "vendor/bin/phpstan analyze {{paths}} --memory-limit=-1 --no-progress -c {{config-file}}",
+      "timeout": "15m",
+      "parameters": {
+        "paths": {
+          "description": "Directories or files to analyse. Empty: the paths from the config file.",
+          "example": "Core Common app src"
+        },
+        "config-file": {
+          "description": "PHPStan config file.",
+          "default": "phpstan.neon.dist",
+          "pattern": "^phpstan[A-Za-z0-9_.-]*\\.neon(\\.dist)?$",
+          "example": "phpstan-tests.neon.dist"
+        }
+      }
+    },
+    "phpunit": {
+      "description": "PHP unit tests.",
+      "run-in": "sandbox",
+      "working-directory": "legacy",
+      "command": "vendor/bin/phpunit {{filter}} --config=phpunit.xml.dist",
+      "timeout": "20m",
+      "parameters": {
+        "filter": {
+          "description": "Only run tests whose name matches.",
+          "format": "--filter {{value}}",
+          "pattern": "^[A-Za-z0-9_\\\\:.-]+$",
+          "example": "InvoiceTest"
+        }
+      }
+    },
+    "tests:integration": {
+      "description": "Codeception integration suite through test_runner.sh. A filter is required: the full suite takes too long.",
+      "run-in": "host",
+      "needs-compose-stack": true,
+      "command": "./test_runner.sh integration {{filter}}",
+      "timeout": "20m",
+      "parameters": {
+        "filter": {
+          "description": "Test file or directory.",
+          "required": true,
+          "pattern": "^[A-Za-z0-9_./:-]+$",
+          "example": "tests/integration/Invoice"
+        }
+      }
+    },
+    "tests:api": {
+      "description": "Codeception API suite through test_runner.sh. A filter is required: the full suite takes too long.",
+      "run-in": "host",
+      "needs-compose-stack": true,
+      "command": "./test_runner.sh api {{filter}}",
+      "timeout": "20m",
+      "parameters": {
+        "filter": {
+          "description": "Test file or test name.",
+          "required": true,
+          "pattern": "^[A-Za-z0-9_./:-]+$",
+          "example": "InvoiceCest.php"
+        }
+      }
+    }
+  },
+  "verify": [
+    {
+      "run": "phpstan",
+      "parameters": {
+        "paths": "Core Common app src"
+      }
+    },
+    {
+      "run": "phpstan",
+      "parameters": {
+        "paths": "Component"
+      }
+    },
+    {
+      "run": "phpstan",
+      "parameters": {
+        "config-file": "phpstan-tests.neon.dist"
+      }
+    },
+    {
+      "run": "phpstan",
+      "parameters": {
+        "paths": {
+          "changed-files": {
+            "include": [
+              "*.php"
+            ],
+            "exclude": [
+              "*Test.php",
+              "*/Tests/*"
+            ],
+            "if-none": "skip"
+          }
+        }
+      }
+    },
+    {
+      "run": "phpunit"
+    }
+  ],
+  "shared-dependencies": [
+    {
+      "dir": "legacy/vendor",
+      "lockfile": "legacy/composer.lock"
+    },
+    {
+      "dir": "legacy/app/node_modules",
+      "lockfile": "legacy/app/pnpm-lock.yaml"
+    },
+    {
+      "dir": "frontend/node_modules",
+      "lockfile": "frontend/pnpm-lock.yaml"
+    },
+    {
+      "dir": "tools/vendor",
+      "lockfile": "tools/composer.lock"
+    }
+  ],
+  "docker-compose": {
+    "project-name": "dyflexis-monorepo",
+    "profile": "dyflexis",
+    "up-timeout": "15m",
+    "host-copies": [
+      "nginx-proxy/certs"
+    ],
+    "create-dirs": [
+      "legacy/cache"
+    ]
+  },
+  "max-plan-reviews": 2,
+  "max-escalations": 3,
+  "max-fix-rounds": 3,
+  "headless-timeout": "60m",
+  "commit-no-verify": true,
+  "stages": {
+    "intake": {
+      "model": "sonnet",
+      "thinking": "medium",
+      "repo-access": "none",
+      "allow-network": true,
+      "mcp-config": null,
+      "allowed-tools": [
+        "Read",
+        "Write",
+        "mcp__Atlassian-Rovo-MCP__*"
+      ]
+    },
+    "explore": {
+      "model": "opus",
+      "thinking": "high",
+      "repo-access": "ro",
+      "allow-network": true,
+      "mcp-config": null,
+      "allowed-tools": [
+        "Read",
+        "Glob",
+        "Grep",
+        "Write",
+        "WebFetch"
+      ]
+    },
+    "qa": {
+      "model": "sonnet",
+      "thinking": "medium",
+      "repo-access": "ro",
+      "allow-network": false,
+      "mcp-config": null,
+      "allowed-tools": [
+        "Read",
+        "Glob",
+        "Grep",
+        "Write"
+      ]
+    },
+    "plan": {
+      "model": "opus",
+      "thinking": "high",
+      "repo-access": "ro",
+      "allow-network": true,
+      "mcp-config": null,
+      "allowed-tools": [
+        "Read",
+        "Glob",
+        "Grep",
+        "Write",
+        "WebFetch"
+      ]
+    },
+    "implement": {
+      "model": "sonnet",
+      "thinking": "high",
+      "repo-access": "rw",
+      "allow-network": false,
+      "mcp-config": null,
+      "allowed-tools": [
+        "Read",
+        "Edit",
+        "Write",
+        "Glob",
+        "Grep",
+        "Bash"
+      ]
+    },
+    "verify": {
+      "model": "sonnet",
+      "thinking": "low",
+      "repo-access": "rw",
+      "allow-network": false,
+      "mcp-config": null,
+      "allowed-tools": []
+    },
+    "review": {
+      "model": "opus",
+      "thinking": "high",
+      "repo-access": "ro",
+      "allow-network": false,
+      "mcp-config": null,
+      "allowed-tools": [
+        "Read",
+        "Glob",
+        "Grep",
+        "Write"
+      ]
+    },
+    "retro": {
+      "model": "sonnet",
+      "thinking": "medium",
+      "repo-access": "none",
+      "allow-network": false,
+      "mcp-config": null,
+      "allowed-tools": [
+        "Read",
+        "Write"
+      ]
+    }
+  }
+}
