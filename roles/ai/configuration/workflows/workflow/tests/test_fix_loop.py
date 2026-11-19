@@ -605,7 +605,7 @@ def test_verify_compose_change_between_lines_stops_remaining_lines(tmp_path: Pat
     assert "docker-compose.yml" in result.message
     runner_lines = [argv[2:] for argv, _ in calls if argv[0] == "sh"]
     assert runner_lines == [["api", "FooCest"]]
-    full = guard_patterns(_DOCKER)
+    full = guard_patterns(_DOCKER, (_DOCKER.test_runner,))
     assert [c.args[2] for c in guard_log] == [full, full, full]
 
 

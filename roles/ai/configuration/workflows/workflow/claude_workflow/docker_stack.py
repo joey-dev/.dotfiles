@@ -15,18 +15,25 @@ from collections.abc import Callable
 from fnmatch import fnmatch
 from pathlib import Path
 
-from claude_workflow.config import DockerConfig
+from claude_workflow.config import DEFAULT_PROTECTED_PATHS, DockerConfig
 from claude_workflow.git_host import ignored_paths, touched_paths
 from claude_workflow.tests_file import docker_args
+
+# Extra seconds for `up` to build images before `--wait-timeout` starts counting.
+UP_BUILD_HEADROOM = 600
 
 
 def _under(path: str, entry: str) -> bool:
     return path == entry or path.startswith(entry + "/")
 
 
-def guard_patterns(cfg: DockerConfig) -> tuple[str, ...]:
-    """Protected patterns; the test runner and compose file are always included."""
-    return tuple(dict.fromkeys((*cfg.protected_paths, cfg.test_runner, "docker-compose.yml")))
+def guard_patterns(
+    compose_cfg: DockerConfig | None, host_scripts: tuple[str, ...]
+) -> tuple[str, ...]:
+    """Protected patterns: the compose config's (or the defaults), the host scripts and
+    the compose file. Without a compose config the default patterns still apply."""
+    protected = compose_cfg.protected_paths if compose_cfg is not None else DEFAULT_PROTECTED_PATHS
+    return tuple(dict.fromkeys((*protected, *host_scripts, "docker-compose.yml")))
 
 
 def _git_bytes(worktree: Path, args: list[str]) -> bytes:
@@ -178,9 +185,23 @@ def base_runner_copy(cfg: DockerConfig, worktree: Path, base_ref: str, dest_dir:
     The host runs this copy, never the worktree file: containers can write the worktree,
     and `sh` reads a script while it runs. Raises ValueError if base has no runner.
     """
-    blob = _git_bytes(worktree, ["cat-file", "blob", f"{base_ref}:{cfg.test_runner}"])
-    target = dest_dir / Path(cfg.test_runner).name
+    return base_script_copy(worktree, base_ref, cfg.test_runner, dest_dir)
+
+
+def base_script_copy(
+    worktree: Path, base_ref: str, script: str, dest_dir: Path, *, executable: bool = False
+) -> Path:
+    """Write the base commit's blob of `script` (repo-relative) into dest_dir.
+
+    dest_dir must be outside the worktree. The copy keeps the script's file name (so
+    `$0` looks the same); `executable` makes it 0700. Raises ValueError if base has no
+    such file.
+    """
+    blob = _git_bytes(worktree, ["cat-file", "blob", f"{base_ref}:{script}"])
+    target = dest_dir / Path(script).name
     target.write_bytes(blob)
+    if executable:
+        target.chmod(0o700)
     return target
 
 

@@ -12,6 +12,7 @@ from tempfile import TemporaryDirectory
 
 from claude_workflow.config import DockerConfig, StageName
 from claude_workflow.docker_stack import (
+    UP_BUILD_HEADROOM,
     base_runner_copy,
     compose_env,
     guard_patterns,
@@ -46,10 +47,6 @@ CHANGED_FILES = "changed-files.txt"
 def _section(label: str, status: str, output: str) -> str:
     """One artifact section: always the status and the full output."""
     return f"## `{label}` — {status}\n\n```text\n{output}\n```\n"
-
-
-# Extra seconds for `up` to build images before `--wait-timeout` starts counting.
-UP_BUILD_HEADROOM = 600
 
 
 class _DockerStop(Exception):
@@ -140,7 +137,7 @@ def _run_docker_stack(
         return sections, False
 
     repo = ctx.config.repo_path
-    patterns = guard_patterns(cfg)
+    patterns = guard_patterns(cfg, (cfg.test_runner,))
     _check_guard(cfg, workdir, base, patterns, sections)
     try:
         base_runner_copy(cfg, workdir, base, runner_dir)

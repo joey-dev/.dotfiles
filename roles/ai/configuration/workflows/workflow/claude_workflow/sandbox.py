@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import tempfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -29,6 +30,8 @@ _SYSTEM_RO_PATHS: tuple[str, ...] = (
 
 _SANDBOX_PROXY_SOCK = "/tmp/cw-proxy.sock"
 SANDBOX_CACHE_DIR = "/tmp/cw-cache"
+# Where a scratch git dir is mounted when the repo's .git is a file (a git worktree).
+SANDBOX_SCRATCH_GIT = "/tmp/cw-git"
 _PROXY_BRIDGE_SCRIPT = (
     f"socat TCP-LISTEN:3128,bind=127.0.0.1,fork,reuseaddr "
     f"UNIX-CONNECT:{_SANDBOX_PROXY_SOCK} >/dev/null 2>&1 & "
@@ -44,6 +47,35 @@ _PROXY_BRIDGE_SCRIPT = (
     "NODE_USE_ENV_PROXY=1; "
     '"$@"'
 )
+
+
+@dataclass(frozen=True)
+class ScratchGit:
+    """A throwaway `git init` repo that stands in for the real .git (see make_scratch_git).
+
+    git_dir: the scratch repo's .git folder (bound read-write).
+    gitlink: a file `gitdir: /tmp/cw-git`, bound over the repo's .git when that is a
+    file (bwrap cannot mount a folder over a file).
+    """
+
+    git_dir: Path
+    gitlink: Path
+
+
+def make_scratch_git(root: Path) -> ScratchGit:
+    """Create a scratch git repo in root (an empty host folder outside repo and notes).
+
+    It never sees the real .git: tools such as pre-commit only get an empty repo in
+    which every file is untracked.
+    """
+    # Drop GIT_DIR & co., so `git init` can never touch another repo.
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    subprocess.run(
+        ["git", "init", "-q", str(root / "repo")], check=True, capture_output=True, env=env
+    )
+    gitlink = root / "gitlink"
+    gitlink.write_text(f"gitdir: {SANDBOX_SCRATCH_GIT}\n", encoding="utf-8")
+    return ScratchGit(git_dir=root / "repo" / ".git", gitlink=gitlink)
 
 
 @dataclass(frozen=True)
@@ -70,6 +102,8 @@ class SandboxSpec:
     cache_dir: Path | None = None
     # Repo-relative folders hidden behind an empty tmpfs (e.g. copied host secrets).
     repo_masks: tuple[str, ...] = ()
+    # Throwaway git repo mounted as the repo's .git instead of the mask (needs-git).
+    scratch_git: ScratchGit | None = None
 
 
 @dataclass(frozen=True)
@@ -270,6 +304,18 @@ def _append_git_mask(cmd: list[str], host_repo: Path, sandbox_repo: Path) -> Non
         cmd.extend(["--tmpfs", str(sandbox_git)])
 
 
+def _append_scratch_git(
+    cmd: list[str], host_repo: Path, sandbox_repo: Path, scratch: ScratchGit
+) -> None:
+    """Mount a scratch git repo as .git; the real .git / gitdir is never mounted."""
+    sandbox_git = sandbox_repo / ".git"
+    if (host_repo / ".git").is_file():  # a worktree: replace the gitlink file
+        cmd.extend(["--bind", str(scratch.git_dir), SANDBOX_SCRATCH_GIT])
+        cmd.extend(["--ro-bind", str(scratch.gitlink), str(sandbox_git)])
+    else:
+        cmd.extend(["--bind", str(scratch.git_dir), str(sandbox_git)])
+
+
 def _append_repo_masks(
     cmd: list[str], host_repo: Path, sandbox_repo: Path, masks: Sequence[str]
 ) -> None:
@@ -374,7 +420,10 @@ def build_bwrap_command(
     if spec.repo_dir is not None and paths.repo_dir is not None:
         bind_flag = "--bind" if spec.repo_access is RepoAccess.RW else "--ro-bind"
         cmd.extend([bind_flag, str(spec.repo_dir), str(paths.repo_dir)])
-        _append_git_mask(cmd, spec.repo_dir, paths.repo_dir)
+        if spec.scratch_git is not None:
+            _append_scratch_git(cmd, spec.repo_dir, paths.repo_dir, spec.scratch_git)
+        else:
+            _append_git_mask(cmd, spec.repo_dir, paths.repo_dir)
         for host_dir, relative in spec.repo_ro_overlays:
             cmd.extend(["--ro-bind", str(host_dir), str(paths.repo_dir / relative)])
         _append_repo_masks(cmd, spec.repo_dir, paths.repo_dir, spec.repo_masks)

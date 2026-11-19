@@ -232,7 +232,7 @@ def test_guard_clean_when_nothing_changed(
     assert guard_violations(repo, base, DEFAULT_PROTECTED_PATHS) == []
 
 
-def test_guard_patterns_always_include_runner_and_compose(tmp_path: Path) -> None:
+def test_guard_patterns_always_include_host_scripts_and_compose(tmp_path: Path) -> None:
     repo, base = _make_repo(tmp_path)
     (repo / "bin").mkdir()
     (repo / "bin/run.sh").write_text("echo\n")
@@ -242,8 +242,9 @@ def test_guard_patterns_always_include_runner_and_compose(tmp_path: Path) -> Non
     base = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=repo, check=True, capture_output=True, text=True
     ).stdout.strip()
-    cfg = DockerConfig(project_name="x", test_runner="bin/run.sh", protected_paths=())
-    patterns = guard_patterns(cfg)
+    cfg = DockerConfig(project_name="x", protected_paths=())
+    patterns = guard_patterns(cfg, ("bin/run.sh",))
+    assert "test_runner.sh" not in patterns  # only what the caller names
     assert "bin/run.sh" in patterns and "docker-compose.yml" in patterns
     assert guard_violations(repo, base, patterns) == []
     (repo / "bin/run.sh").write_text("evil\n")
