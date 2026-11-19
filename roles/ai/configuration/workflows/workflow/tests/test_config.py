@@ -430,3 +430,46 @@ def test_docker_host_copy_include_and_services(tmp_path: Path, schema_path: Path
     assert cfg.docker.host_copies == ("plain/dir", "nginx-proxy/certs")
     assert cfg.docker.host_copy_includes == (("nginx-proxy/certs", ("*.crt",)),)
     assert cfg.docker.services == ("db", "redis")
+
+
+def _real_commands(tmp_path: Path) -> dict[str, Any]:
+    if not (REAL_CONFIG_DIR / "global.config.json").is_file():
+        pytest.skip("config/ is outside the package source (Nix build)")
+    repo = tmp_path / "dyflexis-monorepo"
+    repo.mkdir()
+    return dict(load_config(repo, REAL_CONFIG_DIR).commands)
+
+
+def test_real_cs_check_renders_changed_files(tmp_path: Path) -> None:
+    from claude_workflow.commands import Skip, render
+
+    cs = _real_commands(tmp_path)["cs-check"]
+    with pytest.raises(Skip):
+        render(cs, {}, [], from_tests_file=False)
+    assert render(cs, {}, ["a.php", "front end/b.ts"], from_tests_file=False) == [
+        "sh",
+        "-c",
+        "bin/cs a.php 'front end/b.ts'",
+    ]
+
+
+def test_example_cs_check_renders_changed_files(schema_path: Path) -> None:
+    from claude_workflow.commands import parse_commands, render
+
+    example = REAL_CONFIG_DIR / "example.config.json"
+    if not example.is_file():
+        pytest.skip("config/ is outside the package source (Nix build)")
+    cs = parse_commands(json.loads(example.read_text(encoding="utf-8"))["commands"])["cs-check"]
+    assert render(cs, {}, ["a.php"], from_tests_file=False) == ["sh", "-c", "bin/cs a.php"]
+
+
+def test_real_phpstan_changed_excludes_codeception_tests(tmp_path: Path) -> None:
+    from claude_workflow.commands import Skip, render
+
+    stan = _real_commands(tmp_path)["phpstan:changed"]
+    changed = ["legacy/src/Foo.php", "legacy/tests/api/InvoiceCest.php", "legacy/src/FooTest.php"]
+    argv = render(stan, {}, changed, from_tests_file=False)
+    assert "src/Foo.php" in argv[2]
+    assert "Cest" not in argv[2] and "FooTest" not in argv[2]
+    with pytest.raises(Skip):
+        render(stan, {}, ["legacy/tests/unit/X.php"], from_tests_file=False)

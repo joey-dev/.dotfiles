@@ -12,14 +12,21 @@
       "command": "composer install"
     },
     "cs-check": {
-      "description": "Code style check with bin/cs (pre-commit). Runs in the sandbox on a throwaway git repo (needs-git).",
+      "description": "Code style check with bin/cs (pre-commit) on the files changed on this ticket. Runs in the sandbox on a throwaway git repo (needs-git). Skipped when no file changed.",
       "run-in": "sandbox",
       "needs-git": true,
-      "command": "bin/cs verify {{files}}",
+      "command": "bin/cs {{files}}",
       "parameters": {
         "files": {
-          "description": "Files to check, relative to the repository root. Empty: let bin/cs pick its default.",
-          "example": "legacy/src/Foo.php frontend/src/bar.ts"
+          "description": "Files to check, relative to the repository root. Default: all changed files.",
+          "default": {
+            "changed-files": {
+              "include": [
+                "*"
+              ],
+              "if-none": "skip"
+            }
+          }
         }
       }
     },
@@ -58,7 +65,8 @@
               ],
               "exclude": [
                 "*Test.php",
-                "*/Tests/*"
+                "*/Tests/*",
+                "tests/*"
               ],
               "if-none": "skip"
             }
