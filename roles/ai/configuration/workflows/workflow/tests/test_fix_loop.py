@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import pytest
+
 from claude_workflow.claude_runner import ClaudeResult
 from claude_workflow.commands import Command, Parameter, VerifyEntry
 from claude_workflow.config import STAGE_ORDER, StageName, WorkflowConfig, default_config
@@ -19,7 +21,7 @@ from claude_workflow.stages.base import (
     StageResult,
 )
 from claude_workflow.stages.implement import ImplementStage
-from claude_workflow.stages.review import ReviewStage
+from claude_workflow.stages.review import ReviewStage, blocking_section
 from claude_workflow.state import TicketState, load_state, save_state
 
 
@@ -221,13 +223,23 @@ def _review_ctx(tmp_path: Path, tests: str | None) -> StageContext:
     return StageContext("PROJ-1", cfg, state, tmp_path)
 
 
-def _run_review(ctx: StageContext, append_to_tests: str | None) -> tuple[StageResult, list[str]]:
+def _run_review(
+    ctx: StageContext,
+    append_to_tests: str | None,
+    reports: dict[str, str] | None = None,
+    validation: str = "APPROVED\n",
+) -> tuple[StageResult, list[str]]:
+    """Run Review with a fake Claude; `reports` maps a lens name to its report text."""
     prompts: list[str] = []
 
     def fake(stage: Any, sandbox: Any, prompt: str, **_: Any) -> ClaudeResult:
         prompts.append(prompt)
+        if prompt.startswith("Validation pass"):
+            (ctx.state_dir / "07-review-validation.md").write_text(validation)
+            return ClaudeResult(0, "", "", None)
         lens = "correctness" if "logic bugs" in prompt else "conventions"
-        (ctx.state_dir / f"07-review-{lens}.md").write_text("APPROVED\n")
+        report = (reports or {}).get(lens, "APPROVED\n")
+        (ctx.state_dir / f"07-review-{lens}.md").write_text(report)
         if lens == "correctness" and append_to_tests is not None:
             with (ctx.state_dir / "tests.txt").open("a") as handle:
                 handle.write(append_to_tests)
@@ -273,6 +285,93 @@ def test_review_correctness_prompt_has_catalogue(tmp_path: Path) -> None:
     correctness = next(p for p in prompts if "logic bugs" in p)
     assert "`phpunit filter=InvoiceTest`" in correctness
     assert "<command-name>" in correctness
+
+
+_BLOCKING_REPORT = (
+    "CHANGES_REQUESTED\n\n"
+    "## Blocking\n- `src/a.php:3` — null deref. Why: bug.\n\n"
+    "## Non-blocking\n- `src/a.php:9` — rename x.\n"
+)
+
+
+def test_review_all_approved_skips_validation(tmp_path: Path) -> None:
+    result, prompts = _run_review(_review_ctx(tmp_path, "phpunit\n"), None)
+
+    assert len(prompts) == 2
+    assert result.outcome is StageOutcome.DONE
+    assert not (tmp_path / "07-review-validation.md").exists()
+
+
+def test_review_validation_gets_only_blocking_findings(tmp_path: Path) -> None:
+    ctx = _review_ctx(tmp_path, "phpunit\n")
+
+    _, prompts = _run_review(ctx, None, {"correctness": _BLOCKING_REPORT})
+
+    assert len(prompts) == 3
+    assert prompts[2].startswith("Validation pass")
+    assert "07-review-blocking.md" in prompts[2]
+    findings = (tmp_path / "07-review-blocking.md").read_text()
+    assert "null deref" in findings
+    assert "rename x" not in findings
+    assert "CHANGES_REQUESTED" not in findings
+
+
+def test_review_validation_rejecting_all_findings_is_done(tmp_path: Path) -> None:
+    ctx = _review_ctx(tmp_path, "phpunit\n")
+
+    result, _ = _run_review(ctx, None, {"correctness": _BLOCKING_REPORT}, "APPROVED\n- REJECTED")
+
+    assert result.outcome is StageOutcome.DONE
+    assert "rejected all blocking findings" in result.message
+
+
+def test_review_validation_confirming_a_finding_needs_fix(tmp_path: Path) -> None:
+    ctx = _review_ctx(tmp_path, "phpunit\n")
+
+    result, _ = _run_review(
+        ctx, None, {"correctness": _BLOCKING_REPORT}, "CHANGES_REQUESTED\n- CONFIRMED a.php:3\n"
+    )
+
+    assert result.outcome is StageOutcome.NEEDS_FIX
+    review = (tmp_path / "07-review.md").read_text()
+    assert review.index("## Validation") < review.index("## Lens: Correctness")
+    assert "CONFIRMED a.php:3" in review
+
+
+def test_review_invalid_validation_verdict_fails(tmp_path: Path) -> None:
+    ctx = _review_ctx(tmp_path, "phpunit\n")
+
+    result, _ = _run_review(ctx, None, {"conventions": _BLOCKING_REPORT}, "Looks fine\n")
+
+    assert result.outcome is StageOutcome.FAILED
+    assert result.message == "Invalid validation verdict"
+
+
+def test_review_suggested_test_still_forces_fix_after_rejection(tmp_path: Path) -> None:
+    ctx = _review_ctx(tmp_path, "phpunit\n")
+
+    result, _ = _run_review(
+        ctx, "# suggested by review\nphpunit filter=Foo\n", {"correctness": _BLOCKING_REPORT}
+    )
+
+    assert result.outcome is StageOutcome.NEEDS_FIX
+    assert result.message == "Review suggested tests in tests.txt"
+
+
+@pytest.mark.parametrize(
+    ("report", "expected"),
+    [
+        (_BLOCKING_REPORT, "- `src/a.php:3` — null deref. Why: bug."),
+        ("CHANGES_REQUESTED\n\n### **Blocking**\n- x\n", "- x"),
+        ("CHANGES_REQUESTED\n- loose finding\n", "- loose finding"),
+        (
+            "CHANGES_REQUESTED\n## Blocking\n\n## Non-blocking\n- y\n",
+            "## Blocking\n\n## Non-blocking\n- y",
+        ),
+    ],
+)
+def test_blocking_section(report: str, expected: str) -> None:
+    assert blocking_section(report) == expected
 
 
 def _human_setup(tmp_path: Path) -> tuple[WorkflowConfig, list[Any], dict[StageName, Any]]:
