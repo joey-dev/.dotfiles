@@ -477,11 +477,16 @@ def _read_sources(repo_root: Path, config_dir: Path) -> _Sources:
     if not global_path.is_file():
         raise ValueError(f"missing global config: {global_path}")
     repo_path = repo_config_path(config_dir, repo_root)
+    if not repo_path.is_file():
+        # Without it Verify would silently run nothing; ask for an explicit file.
+        raise ValueError(
+            f"no {REPO_DIR}/{repo_path.name} in {config_dir}; copy example.config.json"
+        )
     return _Sources(
         global_path=global_path,
         global_raw=_read_json(global_path),
         repo_path=repo_path,
-        repo_raw=_read_json(repo_path) if repo_path.is_file() else {},
+        repo_raw=_read_json(repo_path),
     )
 
 

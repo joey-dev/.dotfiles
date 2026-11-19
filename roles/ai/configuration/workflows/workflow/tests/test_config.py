@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 from pathlib import Path
 from typing import Any
@@ -109,8 +110,8 @@ def test_repo_overrides_one_stage_field(tmp_path: Path, schema_path: Path) -> No
     assert qa.allowed_tools == ("Read", "Write")
 
 
-def test_missing_repo_file_uses_global_only(tmp_path: Path, schema_path: Path) -> None:
-    config_dir = _config_dir(tmp_path, schema_path, GLOBAL, None)
+def test_empty_repo_file_uses_global_only(tmp_path: Path, schema_path: Path) -> None:
+    config_dir = _config_dir(tmp_path, schema_path, GLOBAL, {})
     repo = _repo(tmp_path)
 
     cfg = load_config(repo, config_dir)
@@ -473,3 +474,17 @@ def test_real_phpstan_changed_excludes_codeception_tests(tmp_path: Path) -> None
     assert "Cest" not in argv[2] and "FooTest" not in argv[2]
     with pytest.raises(Skip):
         render(stan, {}, ["legacy/tests/unit/X.php"], from_tests_file=False)
+
+
+def test_missing_repo_file_is_an_error(tmp_path: Path, schema_path: Path) -> None:
+    config_dir = _config_dir(tmp_path, schema_path, GLOBAL, None)
+    repo = _repo(tmp_path)
+    want = (
+        f"no repository/my-repo.config.json in {config_dir}; copy example.config.json"
+    )
+    with pytest.raises(ValueError, match=re.escape(want)):
+        load_config(repo, config_dir)
+    assert check_config(repo, config_dir) == [want]
+    out, errors = render_full_config(repo, config_dir, tmp_path / "out")
+    assert errors == [want]
+    assert not out.exists()
