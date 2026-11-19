@@ -20,13 +20,12 @@
       "Read(~/.gnupg/**)",
       "Read(~/.config/gh/**)",
       "Read(~/.docker/config.json)",
-      "Read(~/.claude/.credentials.json)"
+      "Read(~/.claude/.credentials.json)",
+      "Read(~/.npmrc)"
     ],
     "ask": [
       "Bash(git push)",
       "Bash(git push *)",
-      "Bash(git commit)",
-      "Bash(git commit *)",
       "Bash(home-manager)",
       "Bash(home-manager *)",
       "Bash(sudo)",
