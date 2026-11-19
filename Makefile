@@ -9,6 +9,10 @@ switch:
 	# Apply the Home Manager configuration (shows a diff of what changed)
 	nh home switch . --configuration $(USERNAME)@$(HOST)
 
+switch-update:
+	# Apply the Home Manager configuration (shows a diff of what changed)
+	nh home switch . --configuration $(USERNAME)@$(HOST) --update
+
 os:
 	# Apply the NixOS configuration (asks for your sudo password)
 	nh os switch . --hostname $(HOST)
