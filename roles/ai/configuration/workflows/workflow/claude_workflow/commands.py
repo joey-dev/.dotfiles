@@ -6,7 +6,9 @@ only convert; they do not re-check types. Rendering a command to an argv is Task
 
 from __future__ import annotations
 
+import fnmatch
 import re
+import shlex
 from dataclasses import dataclass, field
 from typing import Any, Literal, cast
 
@@ -132,3 +134,99 @@ def parse_verify(raw: list[dict[str, Any]]) -> tuple[VerifyEntry, ...]:
             VerifyEntry(run=item["run"], values={k: _value(v) for k, v in values.items()})
         )
     return tuple(entries)
+
+
+class Skip(Exception):
+    """A command has nothing to do (`if-none: skip` and no changed files match)."""
+
+
+_PLACEHOLDER = re.compile(r"\{\{([A-Za-z0-9_-]+)\}\}")
+
+
+def _select_changed(
+    spec: ChangedFiles, changed: list[str], working_directory: str | None
+) -> list[str]:
+    prefix = working_directory.strip("/") + "/" if working_directory else ""
+    picked: list[str] = []
+    for path in changed:
+        if not path.startswith(prefix):
+            continue
+        rel = path[len(prefix) :]
+        if not any(fnmatch.fnmatchcase(rel, g) for g in spec.include):
+            continue
+        if any(fnmatch.fnmatchcase(rel, g) for g in spec.exclude):
+            continue
+        picked.append(rel)
+    return picked
+
+
+def render(
+    cmd: Command,
+    values: dict[str, str | ChangedFiles],
+    changed: list[str],
+    *,
+    from_tests_file: bool,
+) -> list[str]:
+    """Render a command and parameter values to `["sh", "-c", line]`.
+
+    Every inserted word is shell-quoted; the command and `format` text is trusted config.
+    Values from tests.txt (`from_tests_file`) are untrusted and need a full-match pattern.
+    """
+    for name in values:
+        if name not in cmd.parameters:
+            raise ValueError(f"command {cmd.name!r}: unknown parameter {name!r}")
+
+    def fail(name: str, why: str) -> ValueError:
+        return ValueError(f"command {cmd.name!r}, parameter {name!r}: {why}")
+
+    def words_for(name: str, param: Parameter) -> list[str]:
+        if name in values:
+            value: str | ChangedFiles | None = values[name]
+            from_user = from_tests_file
+        else:
+            value = param.default
+            from_user = False
+        if value is None:
+            if param.required:
+                raise fail(name, "required but no value given")
+            return []
+        if isinstance(value, ChangedFiles):
+            if from_user:
+                raise fail(name, "changed-files cannot be set from tests.txt")
+            files = _select_changed(value, changed, cmd.working_directory)
+            if not files:
+                if value.if_none == "skip":
+                    raise Skip(f"command {cmd.name!r}: no changed files match {name!r}")
+                return []
+            return files
+        if from_user:
+            if param.pattern is None:
+                raise fail(name, "has no pattern, so it cannot be set from tests.txt")
+            if "\n" in value or "\r" in value or "\x00" in value:
+                raise fail(name, "value contains a newline or NUL")
+            if re.fullmatch(param.pattern, value) is None:
+                raise fail(name, f"value {value!r} does not match pattern {param.pattern!r}")
+        words = value.split()
+        if not words and param.required:
+            raise fail(name, "required but empty")
+        return words
+
+    def replace(match: re.Match[str]) -> str:
+        name = match.group(1)
+        param = cmd.parameters.get(name)
+        if param is None:
+            raise ValueError(f"command {cmd.name!r}: placeholder {{{{{name}}}}} has no parameter")
+        words = words_for(name, param)
+        if not words:
+            return ""
+        quoted = " ".join(shlex.quote(w) for w in words)
+        if param.format is None:
+            return quoted
+        return param.format.replace("{{value}}", quoted)
+
+    rendered = _PLACEHOLDER.sub(replace, cmd.command)
+    # Parameters not used in the command still get their required/pattern checks.
+    for name, param in cmd.parameters.items():
+        if f"{{{{{name}}}}}" not in cmd.command:
+            words_for(name, param)
+    return ["sh", "-c", re.sub(r" {2,}", " ", rendered).strip()]
