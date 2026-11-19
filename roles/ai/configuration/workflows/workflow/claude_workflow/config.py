@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, NamedTuple, cast
 
 from claude_workflow.commands import (
     Command,
@@ -357,25 +357,51 @@ def _cross_check(raw: dict[str, Any]) -> list[tuple[list[PathPart], str]]:
     return errors
 
 
-def _validate(raw: dict[str, Any], schema_path: Path) -> list[tuple[list[PathPart], str]]:
+class _Error(NamedTuple):
+    path: list[PathPart]  # where the error is reported
+    message: str
+    origin: list[PathPart]  # the key it is about, to find its source file
+
+
+def _schema_errors(error: Any) -> list[_Error]:
+    """One jsonschema error -> _Errors. Errors about a key name report the parent path;
+    their origin is the key itself, so the right source file is named."""
+    path: list[PathPart] = list(error.absolute_path)
+    if error.validator == "additionalProperties" and error.validator_value is False:
+        known = cast(dict[str, Any], error.schema.get("properties", {}))
+        extras = [key for key in cast(dict[str, Any], error.instance) if key not in known]
+        return [
+            _Error(
+                path,
+                f"Additional properties are not allowed ({key!r} was unexpected)",
+                [*path, key],
+            )
+            for key in extras
+        ]
+    if "propertyNames" in error.absolute_schema_path and isinstance(error.instance, str):
+        return [_Error(path, error.message, [*path, error.instance])]
+    return [_Error(path, error.message, path)]
+
+
+def _validate(raw: dict[str, Any], schema_path: Path) -> list[_Error]:
     import jsonschema  # imported here: only needed when loading a config
 
     schema = json.loads(schema_path.read_text(encoding="utf-8"))
     validator: Any = jsonschema.Draft202012Validator(schema)
     found = cast(list[jsonschema.ValidationError], list(validator.iter_errors(raw)))
-    errors: list[tuple[list[PathPart], str]] = []
+    errors: list[_Error] = []
     for error in sorted(found, key=lambda e: list(map(str, e.path))):
         # The command's container/user rule (an if/then/else under allOf) is reported
         # by _cross_check with a readable message.
         if "allOf" in error.absolute_schema_path:
             continue
-        errors.append((list(error.absolute_path), error.message))
-    return errors + _cross_check(raw)
+        errors.extend(_schema_errors(error))
+    return errors + [_Error(path, message, path) for path, message in _cross_check(raw)]
 
 
 def validate_raw(raw: dict[str, Any], schema_path: Path) -> list[str]:
     """Schema errors plus cross checks, as '$.path: message'."""
-    return [f"{_format_path(path)}: {message}" for path, message in _validate(raw, schema_path)]
+    return [f"{_format_path(e.path)}: {e.message}" for e in _validate(raw, schema_path)]
 
 
 def _prefix_depth(raw: object, parts: Sequence[PathPart]) -> int:
@@ -406,7 +432,12 @@ class _Sources:
         return merge_config(self.global_raw, self.repo_raw)
 
     def source_of(self, parts: Sequence[PathPart]) -> Path:
-        """The file a key came from: the one that holds the longest part of its path."""
+        """The file a key came from: the one that holds it (the repo file when both do),
+        else the one that holds the longest part of its path."""
+        if parts and _prefix_depth(self.repo_raw, parts) == len(parts):
+            return self.repo_path
+        if parts and _prefix_depth(self.global_raw, parts) == len(parts):
+            return self.global_path
         repo_depth = _prefix_depth(self.repo_raw, parts)
         if repo_depth and repo_depth >= _prefix_depth(self.global_raw, parts):
             return self.repo_path
@@ -428,8 +459,8 @@ def _read_sources(repo_root: Path, config_dir: Path) -> _Sources:
 
 def _source_errors(sources: _Sources, schema_path: Path) -> list[str]:
     return [
-        f"{sources.source_of(path)}: {_format_path(path)}: {message}"
-        for path, message in _validate(sources.merged(), schema_path)
+        f"{sources.source_of(e.origin)}: {_format_path(e.path)}: {e.message}"
+        for e in _validate(sources.merged(), schema_path)
     ]
 
 

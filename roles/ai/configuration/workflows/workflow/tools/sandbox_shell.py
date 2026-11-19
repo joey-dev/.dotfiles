@@ -3,13 +3,15 @@
 Usage (from the repository you want to test against):
 
     python tools/sandbox_shell.py STAGE [--ticket SANDBOX-1] [--repo PATH]
-        [--config FILE] [--interactive] [--copy-credentials] [-- CMD ...]
+        [--config-dir DIR] [--interactive] [--copy-credentials] [-- CMD ...]
 
 - Default command is `bash`.
 - Read-only stages (explore, qa, plan, review) use the ticket worktree if it
   exists, otherwise your main checkout (safe: it is mounted read-only).
 - implement and verify mount the repo read-write, so they need the ticket
   worktree or an explicit --repo.
+- The config is loaded for the repository you start it in (its folder name picks
+  repository/<repo-name>.config.json), not for --repo, which may be a worktree.
 - --interactive: build the sandbox like Q&A/Retro (keeps the terminal).
 - --copy-credentials: copy your Claude login in, like a real run, so you can
   start `claude` inside.
@@ -23,6 +25,7 @@ import argparse
 import shlex
 import subprocess
 import sys
+from collections.abc import Sequence
 from contextlib import ExitStack
 from dataclasses import replace
 from pathlib import Path
@@ -31,7 +34,12 @@ from tempfile import TemporaryDirectory
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from claude_workflow.claude_runner import _proxy_context, _sandboxed_command  # noqa: E402
-from claude_workflow.config import STAGE_ORDER, StageName, load_config  # noqa: E402
+from claude_workflow.config import (  # noqa: E402
+    STAGE_ORDER,
+    StageName,
+    WorkflowConfig,
+    load_config,
+)
 from claude_workflow.git_host import repo_root  # noqa: E402
 from claude_workflow.net_proxy import DEFAULT_ALLOWED_HOSTS  # noqa: E402
 from claude_workflow.sandbox import build_bwrap_command  # noqa: E402
@@ -43,21 +51,35 @@ NO_REPO_STAGES = {StageName.INTAKE, StageName.RETRO}
 NO_KB_STAGES = {StageName.INTAKE, StageName.IMPLEMENT, StageName.VERIFY}
 
 
-def main() -> int:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("stage", choices=[s.value for s in STAGE_ORDER])
     parser.add_argument("--ticket", default="SANDBOX-1")
     parser.add_argument("--repo", type=Path, help="Repo or worktree to mount")
-    parser.add_argument("--config", type=Path)
+    parser.add_argument(
+        "--config-dir", type=Path, help="Default: $XDG_CONFIG_HOME/claude-workflow"
+    )
     parser.add_argument("--interactive", action="store_true")
     parser.add_argument("--copy-credentials", action="store_true")
     parser.add_argument("cmd", nargs="*", default=["bash"])
-    args = parser.parse_args()
+    return parser
 
-    config = load_config(args.config)
-    config = replace(config, repo_path=repo_root(config.repo_path))
+
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    return build_parser().parse_args(argv)
+
+
+def load_tool_config(args: argparse.Namespace) -> WorkflowConfig:
+    """The workflow config for the repository the tool is started in."""
+    return load_config(repo_root(Path.cwd()), args.config_dir)
+
+
+def main() -> int:
+    parser = build_parser()
+    args = parser.parse_args()
+    config = load_tool_config(args)
     stage = StageName(args.stage)
     ticket = args.ticket.upper()
     state_dir = config.state_base / ticket

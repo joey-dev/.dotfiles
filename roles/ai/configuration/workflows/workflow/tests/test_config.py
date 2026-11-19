@@ -318,3 +318,39 @@ def test_schema_accepts_needs_git_and_changed_files_default(schema_path: Path) -
     }
 
     assert validate_raw(raw, schema_path) == []
+
+
+def test_typo_key_in_repo_file_names_the_repo_file(tmp_path: Path, schema_path: Path) -> None:
+    config_dir = _config_dir(tmp_path, schema_path, GLOBAL, {"comands": {}})
+
+    errors = check_config(_repo(tmp_path), config_dir)
+
+    repo_file = config_dir / "repository" / "my-repo.config.json"
+    assert errors == [
+        f"{repo_file}: $: Additional properties are not allowed ('comands' was unexpected)"
+    ]
+
+
+def test_typo_key_in_global_file_names_the_global_file(tmp_path: Path, schema_path: Path) -> None:
+    config_dir = _config_dir(tmp_path, schema_path, {**GLOBAL, "kb-pth": "x"}, {"comands": {}})
+
+    errors = check_config(_repo(tmp_path), config_dir)
+
+    assert sorted(errors) == sorted(
+        [
+            f"{config_dir / 'global.config.json'}: $: Additional properties are not allowed "
+            "('kb-pth' was unexpected)",
+            f"{config_dir / 'repository' / 'my-repo.config.json'}: $: Additional properties are "
+            "not allowed ('comands' was unexpected)",
+        ]
+    )
+
+
+def test_bad_name_in_repo_commands_names_the_repo_file(tmp_path: Path, schema_path: Path) -> None:
+    repo_raw = {"commands": {"Bad_Name": {"run-in": "sandbox", "command": "true"}}}
+    config_dir = _config_dir(tmp_path, schema_path, GLOBAL, repo_raw)
+
+    errors = check_config(_repo(tmp_path), config_dir)
+
+    assert len(errors) == 1
+    assert errors[0].startswith(f"{config_dir / 'repository' / 'my-repo.config.json'}: $.commands:")
