@@ -1,5 +1,5 @@
 {
-  "$schema": "../config.schema.json",
+  "$schema": "config.schema.json",
   "kb-path": "~/notes/work-kb",
   "flake-path": "~/.dotfiles/templates/latest",
   "max-plan-reviews": 2,

@@ -24,6 +24,8 @@
 
         build-system = [ python3Packages.setuptools ];
 
+        dependencies = [ python3Packages.jsonschema ];
+
         nativeCheckInputs = [
           python3Packages.pytestCheckHook
           git
@@ -31,9 +33,16 @@
 
         nativeBuildInputs = [ makeWrapper ];
 
+        # The config schema lives outside src; the config tests read it from here.
+        preCheck = ''
+          export CLAUDE_WORKFLOW_SCHEMA=${./configuration/workflows/config/config.schema.json}
+        '';
+
         postInstall = ''
           mkdir -p $out/share/claude-workflow
           cp -r $src/skills $out/share/claude-workflow/skills
+          # Fallback when the config dir has no config.schema.json.
+          cp ${./configuration/workflows/config/config.schema.json} $out/share/claude-workflow/config.schema.json
         '';
 
         postFixup = ''
@@ -47,7 +56,8 @@
                 socat
               ]
             } \
-            --set-default CLAUDE_WORKFLOW_SKILLS $out/share/claude-workflow/skills
+            --set-default CLAUDE_WORKFLOW_SKILLS $out/share/claude-workflow/skills \
+            --set-default CLAUDE_WORKFLOW_SCHEMA $out/share/claude-workflow/config.schema.json
         '';
       })
     ];

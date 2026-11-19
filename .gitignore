@@ -18,3 +18,6 @@ result-*
 nvim/.config/nvim/init.vim
 
 /templates/*/flake.lock
+
+# claude-workflow: rendered merged configs (claude-workflow config render)
+/roles/ai/configuration/workflows/config/full-configs/

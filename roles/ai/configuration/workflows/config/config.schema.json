@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "claude-workflow/config.schema.json",
   "title": "claude-workflow config",
-  "description": "Configuration for one repository. Copy example.config.json to configs/<repo-name>.json and edit it.",
+  "description": "claude-workflow config: global.config.json plus repository/<repo-name>.config.json (<repo-name> = the repo folder name). The repo file may override any global key; objects merge key by key, arrays and values are replaced. Check with 'claude-workflow config check'.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -118,6 +118,7 @@
         "working-directory": { "type": "string", "description": "Folder relative to the repository root to run in. Default: the repository root. Changed files given to this command are made relative to it." },
         "timeout": { "$ref": "#/$defs/duration", "default": "30m", "description": "Time limit for one run." },
         "needs-compose-stack": { "type": "boolean", "default": false, "description": "Start the compose stack (see 'docker-compose') before running, if it is not up for this worktree." },
+        "needs-git": { "type": "boolean", "default": false, "description": "For run-in 'sandbox': mount a throwaway 'git init' folder instead of hiding .git (for tools such as pre-commit that need a git repo)." },
         "container": { "type": "string", "minLength": 1, "description": "Container name for run-in 'container' (docker ps shows it)." },
         "user": { "type": "string", "pattern": "^[0-9]+(:[0-9]+)?$", "description": "uid[:gid] for run-in 'container'. Without it, docker exec runs as root and leaves root-owned files." },
         "parameters": {
@@ -140,7 +141,7 @@
       "properties": {
         "description": { "type": "string" },
         "required": { "type": "boolean", "default": false, "description": "The command may not run without a value (from the config, tests.txt or 'default')." },
-        "default": { "type": "string", "description": "Value used when none is given." },
+        "default": { "$ref": "#/$defs/value", "description": "Value used when none is given: a string, or {\"changed-files\": {...}}." },
         "format": {
           "type": "string",
           "pattern": "\\{\\{value\\}\\}",
@@ -162,30 +163,32 @@
         "parameters": {
           "type": "object",
           "propertyNames": { "$ref": "#/$defs/name" },
-          "additionalProperties": {
-            "oneOf": [
-              { "type": "string" },
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["changed-files"],
-                "properties": {
-                  "changed-files": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "description": "The files changed on this ticket (tracked and new, not deleted), relative to the command's working-directory; files outside it are dropped.",
-                    "properties": {
-                      "include": { "type": "array", "items": { "type": "string" }, "default": ["*"], "description": "Glob patterns (fnmatch; '*' also matches '/')." },
-                      "exclude": { "type": "array", "items": { "type": "string" }, "default": [], "description": "Glob patterns to leave out." },
-                      "if-none": { "enum": ["skip", "run-without"], "default": "skip", "description": "No matching files: 'skip' the command, or 'run-without' the parameter." }
-                    }
-                  }
-                }
-              }
-            ]
-          }
+          "additionalProperties": { "$ref": "#/$defs/value" }
         }
       }
+    },
+    "value": {
+      "description": "A parameter value: a string, or the files changed on this ticket.",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["changed-files"],
+          "properties": {
+            "changed-files": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "The files changed on this ticket (tracked and new, not deleted), relative to the command's working-directory; files outside it are dropped.",
+              "properties": {
+                "include": { "type": "array", "items": { "type": "string" }, "default": ["*"], "description": "Glob patterns (fnmatch; '*' also matches '/')." },
+                "exclude": { "type": "array", "items": { "type": "string" }, "default": [], "description": "Glob patterns to leave out." },
+                "if-none": { "enum": ["skip", "run-without"], "default": "skip", "description": "No matching files: 'skip' the command, or 'run-without' the parameter." }
+              }
+            }
+          }
+        }
+      ]
     },
     "stage": {
       "type": "object",

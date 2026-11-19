@@ -1,126 +1,289 @@
-"""Tests for claude_workflow.config."""
+"""Tests for claude_workflow.config (global + per-repo kebab-case config)."""
 
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
+from typing import Any
 
 import pytest
 
-from claude_workflow.config import RepoAccess, StageName, WorkflowConfig, load_config
-from claude_workflow.deps import SharedDependency
+from claude_workflow.commands import ChangedFiles, VerifyEntry
+from claude_workflow.config import (
+    DEFAULT_PROTECTED_PATHS,
+    RepoAccess,
+    StageName,
+    check_config,
+    load_config,
+    merge_config,
+    parse_duration,
+    render_full_config,
+    validate_raw,
+)
+
+REAL_CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"
 
 
-def test_load_config_defaults_and_json_override(tmp_path: Path) -> None:
-    repo = tmp_path / "repo"
-    kb = tmp_path / "kb"
-    cfg_file = tmp_path / "config.json"
-    cfg_file.write_text(
-        json.dumps(
-            {
-                "repo_path": str(repo),
-                "kb_path": str(kb),
-                "stages": {
-                    "explore": {
-                        "model": "sonnet",
-                    }
-                },
-            }
-        ),
-        encoding="utf-8",
+GLOBAL: dict[str, Any] = {
+    "kb-path": "~/kb",
+    "flake-path": None,
+    "max-plan-reviews": 2,
+    "max-escalations": 3,
+    "max-fix-rounds": 3,
+    "headless-timeout": "60m",
+    "commit-no-verify": True,
+    "stages": {
+        "qa": {
+            "model": "sonnet",
+            "thinking": "medium",
+            "repo-access": "ro",
+            "allow-network": False,
+            "mcp-config": None,
+            "allowed-tools": ["Read", "Write"],
+        }
+    },
+}
+
+PHPSTAN: dict[str, Any] = {
+    "run-in": "sandbox",
+    "working-directory": "legacy",
+    "command": "vendor/bin/phpstan analyze {{paths}}",
+    "timeout": "15m",
+    "parameters": {"paths": {"description": "Paths."}},
+}
+
+
+def _config_dir(
+    tmp_path: Path,
+    schema: Path,
+    global_raw: dict[str, Any],
+    repo_raw: dict[str, Any] | None,
+) -> Path:
+    config_dir = tmp_path / "config"
+    (config_dir / "repository").mkdir(parents=True)
+    shutil.copy(schema, config_dir / "config.schema.json")
+    (config_dir / "global.config.json").write_text(json.dumps(global_raw), encoding="utf-8")
+    if repo_raw is not None:
+        (config_dir / "repository" / "my-repo.config.json").write_text(
+            json.dumps(repo_raw), encoding="utf-8"
+        )
+    return config_dir
+
+
+def _repo(tmp_path: Path) -> Path:
+    repo = tmp_path / "my-repo"
+    repo.mkdir()
+    return repo
+
+
+def test_parse_duration() -> None:
+    assert parse_duration("90s") == 90
+    assert parse_duration("15m") == 900
+    assert parse_duration("2h") == 7200
+    for bad in ("15", "0m", "1d", "", "m", " 5m", "5m "):
+        with pytest.raises(ValueError):
+            parse_duration(bad)
+
+
+def test_merge_config_merges_objects_and_replaces_lists() -> None:
+    merged = merge_config(
+        {"a": {"x": 1, "y": [1, 2]}, "b": 1},
+        {"a": {"y": [3]}, "c": 2},
+    )
+    assert merged == {"a": {"x": 1, "y": [3]}, "b": 1, "c": 2}
+
+
+def test_repo_overrides_one_stage_field(tmp_path: Path, schema_path: Path) -> None:
+    config_dir = _config_dir(
+        tmp_path, schema_path, GLOBAL, {"stages": {"qa": {"thinking": "high"}}}
     )
 
-    cfg = load_config(cfg_file)
+    cfg = load_config(_repo(tmp_path), config_dir)
+
+    qa = cfg.stages[StageName.QA]
+    assert qa.thinking == "high"
+    assert qa.model == "sonnet"
+    assert qa.repo_access is RepoAccess.RO
+    assert qa.allow_network is False
+    assert qa.allowed_tools == ("Read", "Write")
+
+
+def test_missing_repo_file_uses_global_only(tmp_path: Path, schema_path: Path) -> None:
+    config_dir = _config_dir(tmp_path, schema_path, GLOBAL, None)
+    repo = _repo(tmp_path)
+
+    cfg = load_config(repo, config_dir)
 
     assert cfg.repo_path == repo
-    assert cfg.kb_path == kb
-    assert cfg.stages[StageName.EXPLORE].model == "sonnet"
-    assert cfg.stages[StageName.EXPLORE].repo_access is RepoAccess.RO
+    assert cfg.kb_path == Path.home() / "kb"
+    assert cfg.flake_path is None
+    assert cfg.headless_timeout == 3600
+    assert cfg.commands == {}
+    assert cfg.verify == ()
+    assert cfg.docker is None
+    assert cfg.shared_dependencies == ()
+    # Stages missing from the config keep the built-in defaults.
     assert cfg.stages[StageName.IMPLEMENT].repo_access is RepoAccess.RW
-    assert cfg.stages[StageName.INTAKE].repo_access is RepoAccess.NONE
-    assert cfg.max_plan_reviews == 2
 
 
-def _load(tmp_path: Path, raw: dict[str, object]) -> WorkflowConfig:
-    cfg_file = tmp_path / "config.json"
-    cfg_file.write_text(json.dumps(raw), encoding="utf-8")
-    return load_config(cfg_file)
+def test_repo_keys_are_loaded(tmp_path: Path, schema_path: Path) -> None:
+    repo_raw = {
+        "commands": {"phpstan": PHPSTAN},
+        "verify": [
+            {"run": "phpstan", "parameters": {"paths": "Core Common"}},
+            {
+                "run": "phpstan",
+                "parameters": {"paths": {"changed-files": {"include": ["*.php"]}}},
+            },
+        ],
+        "shared-dependencies": [{"dir": "vendor", "lockfile": "composer.lock"}],
+        "docker-compose": {
+            "project-name": "dfs",
+            "up-timeout": "20m",
+            "protected-paths": ["bin/*"],
+            "host-copies": ["nginx-proxy/certs"],
+        },
+    }
+    cfg = load_config(_repo(tmp_path), _config_dir(tmp_path, schema_path, GLOBAL, repo_raw))
 
-
-def test_shared_dependencies_default_is_empty(tmp_path: Path) -> None:
-    assert _load(tmp_path, {}).shared_dependencies == ()
-
-
-def test_shared_dependencies_are_loaded(tmp_path: Path) -> None:
-    cfg = _load(
-        tmp_path, {"shared_dependencies": [{"dir": "vendor", "lockfile": "composer.lock"}]}
+    phpstan = cfg.commands["phpstan"]
+    assert (phpstan.run_in, phpstan.timeout, phpstan.working_directory) == (
+        "sandbox",
+        900,
+        "legacy",
     )
-
-    assert cfg.shared_dependencies == (SharedDependency("vendor", "composer.lock"),)
-
-
-def test_shared_dependencies_need_dir_and_lockfile(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="shared_dependencies"):
-        _load(tmp_path, {"shared_dependencies": [{"dir": "vendor"}]})
-
-
-def test_timeouts_have_defaults_and_must_be_positive(tmp_path: Path) -> None:
-    cfg = _load(tmp_path, {})
-    assert (cfg.headless_timeout, cfg.verify_timeout) == (3600, 1800)
-
-    with pytest.raises(ValueError, match="verify_timeout"):
-        _load(tmp_path, {"verify_timeout": 0})
-
-
-def test_commit_no_verify_defaults_to_true(tmp_path: Path) -> None:
-    assert _load(tmp_path, {}).commit_no_verify is True
-    assert _load(tmp_path, {"commit_no_verify": False}).commit_no_verify is False
+    assert phpstan.parameters["paths"].description == "Paths."
+    assert cfg.verify == (
+        VerifyEntry(run="phpstan", values={"paths": "Core Common"}),
+        VerifyEntry(
+            run="phpstan",
+            values={"paths": ChangedFiles(include=("*.php",), exclude=(), if_none="skip")},
+        ),
+    )
+    assert [d.dir for d in cfg.shared_dependencies] == ["vendor"]
+    assert cfg.docker is not None
+    assert cfg.docker.project_name == "dfs"
+    assert cfg.docker.profile == "dyflexis"
+    assert cfg.docker.up_timeout == 1200
+    assert cfg.docker.protected_paths == (*DEFAULT_PROTECTED_PATHS, "bin/*")
+    assert cfg.docker.host_copies == ("nginx-proxy/certs",)
 
 
-def _load_raw(tmp_path: Path, raw: dict[str, object]) -> WorkflowConfig:
-    cfg_file = tmp_path / "config.json"
-    cfg_file.write_text(json.dumps(raw), encoding="utf-8")
-    return load_config(cfg_file)
+def test_load_config_raises_with_source_file_on_errors(tmp_path: Path, schema_path: Path) -> None:
+    config_dir = _config_dir(tmp_path, schema_path, GLOBAL, {"verify": [{"run": "nope"}]})
+
+    with pytest.raises(ValueError) as excinfo:
+        load_config(_repo(tmp_path), config_dir)
+
+    message = str(excinfo.value)
+    assert "my-repo.config.json" in message
+    assert "$.verify[0].run" in message
+    assert "nope" in message
 
 
-def test_docker_config_defaults_to_none(tmp_path: Path) -> None:
-    assert _load_raw(tmp_path, {}).docker is None
-    assert _load_raw(tmp_path, {"docker": None}).docker is None
+def test_missing_global_file_is_an_error(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="global.config.json"):
+        load_config(_repo(tmp_path), tmp_path / "empty")
 
 
-def test_docker_config_loads_project_name(tmp_path: Path) -> None:
-    docker = _load_raw(tmp_path, {"docker": {"project_name": "dfs"}}).docker
-    assert docker is not None
-    assert docker.project_name == "dfs"
-    assert docker.profile == "dyflexis"
-    assert docker.up_timeout == 900
+def test_schema_error_is_reported_with_path(schema_path: Path) -> None:
+    errors = validate_raw({"max-escalations": -1, "headless-timeout": "5"}, schema_path)
+
+    assert any(e.startswith("$.max-escalations:") for e in errors)
+    assert any(e.startswith("$.headless-timeout:") for e in errors)
 
 
-def test_docker_config_requires_project_name(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="project_name"):
-        _load_raw(tmp_path, {"docker": {}})
+def test_unknown_verify_parameter_is_reported(schema_path: Path) -> None:
+    raw = {
+        "commands": {"phpstan": PHPSTAN},
+        "verify": [{"run": "phpstan", "parameters": {"Paths": "src"}}],
+    }
+
+    errors = validate_raw(raw, schema_path)
+
+    # The schema also flags 'Paths' as not kebab-case; the cross check names the command.
+    assert "$.verify[0].parameters.Paths: command 'phpstan' has no parameter 'Paths'" in errors
 
 
-def test_docker_config_rejects_bad_fields(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="up_timeout"):
-        _load_raw(tmp_path, {"docker": {"project_name": "x", "up_timeout": 0}})
-    with pytest.raises(ValueError, match="protected_paths"):
-        _load_raw(tmp_path, {"docker": {"project_name": "x", "protected_paths": [""]}})
+def test_unknown_command_in_verify_is_reported(schema_path: Path) -> None:
+    raw = {"commands": {"phpstan": PHPSTAN}, "verify": [{"run": "phpunit"}]}
+
+    errors = validate_raw(raw, schema_path)
+
+    assert errors == ["$.verify[0].run: unknown command 'phpunit'"]
 
 
-def test_real_config_json_loads_with_monorepo_settings() -> None:
-    real = Path(__file__).resolve().parents[2] / "config.json"
-    if not real.is_file():
+def test_placeholder_without_parameter_is_reported(schema_path: Path) -> None:
+    raw = {"commands": {"phpunit": {"run-in": "sandbox", "command": "phpunit {{filter}}"}}}
+
+    errors = validate_raw(raw, schema_path)
+
+    assert errors == [
+        "$.commands.phpunit.command: placeholder '{{filter}}' has no parameter 'filter'"
+    ]
+
+
+def test_container_must_match_run_in(schema_path: Path) -> None:
+    raw = {
+        "commands": {
+            "a": {"run-in": "container", "command": "true"},
+            "b": {"run-in": "sandbox", "command": "true", "container": "web"},
+        }
+    }
+
+    errors = validate_raw(raw, schema_path)
+
+    assert errors == [
+        "$.commands.a: run-in 'container' needs 'container'",
+        "$.commands.b.container: only allowed with run-in 'container'",
+    ]
+
+
+def test_check_config_names_the_global_file(tmp_path: Path, schema_path: Path) -> None:
+    config_dir = _config_dir(tmp_path, schema_path, {**GLOBAL, "max-fix-rounds": -1}, {})
+
+    errors = check_config(_repo(tmp_path), config_dir)
+
+    assert len(errors) == 1
+    assert errors[0].startswith(f"{config_dir / 'global.config.json'}: $.max-fix-rounds:")
+
+
+def test_render_writes_merged_config_and_returns_errors(tmp_path: Path, schema_path: Path) -> None:
+    config_dir = _config_dir(
+        tmp_path,
+        schema_path,
+        GLOBAL,
+        {"stages": {"qa": {"thinking": "high"}}, "verify": [{"run": "x"}]},
+    )
+    out_dir = tmp_path / "out"
+
+    path, errors = render_full_config(_repo(tmp_path), config_dir, out_dir)
+
+    assert path == out_dir / "my-repo.config.json"
+    written = json.loads(path.read_text(encoding="utf-8"))
+    assert written["stages"]["qa"]["thinking"] == "high"
+    assert written["stages"]["qa"]["model"] == "sonnet"
+    assert written["kb-path"] == "~/kb"
+    assert written["$schema"] == str((config_dir / "config.schema.json").resolve())
+    assert len(errors) == 1
+    assert "my-repo.config.json: $.verify[0].run: unknown command 'x'" in errors[0]
+
+
+def test_real_config_dir_validates(tmp_path: Path) -> None:
+    if not (REAL_CONFIG_DIR / "global.config.json").is_file():
         # The Nix build only sees the workflow/ directory, not its parent.
-        pytest.skip("config.json is outside the package source (Nix build)")
+        pytest.skip("config/ is outside the package source (Nix build)")
+    repo = tmp_path / "dyflexis-monorepo"
+    repo.mkdir()
 
-    cfg = load_config(real)
+    assert check_config(repo, REAL_CONFIG_DIR) == []
+    cfg = load_config(repo, REAL_CONFIG_DIR)
 
     assert cfg.flake_path is not None
     assert str(cfg.flake_path).endswith("templates/latest")
-    assert len(cfg.verify_commands) == 1
-    assert "phpstan" in cfg.verify_commands[0]
-    assert "$CW_CHANGED_FILES" in cfg.verify_commands[0]
+    assert "phpstan" in cfg.commands
+    assert all(entry.run in cfg.commands for entry in cfg.verify)
     assert [d.dir for d in cfg.shared_dependencies] == [
         "legacy/vendor",
         "legacy/app/node_modules",
@@ -129,6 +292,29 @@ def test_real_config_json_loads_with_monorepo_settings() -> None:
     ]
     assert cfg.docker is not None
     assert cfg.docker.project_name == "dyflexis-monorepo"
-    assert cfg.docker.profile == "dyflexis"
     assert cfg.docker.host_copies == ("nginx-proxy/certs",)
     assert cfg.docker.create_dirs == ("legacy/cache",)
+
+
+def test_example_config_validates(schema_path: Path) -> None:
+    example = REAL_CONFIG_DIR / "example.config.json"
+    if not example.is_file():
+        pytest.skip("config/ is outside the package source (Nix build)")
+    raw = json.loads(example.read_text(encoding="utf-8"))
+
+    assert validate_raw(raw, schema_path) == []
+
+
+def test_schema_accepts_needs_git_and_changed_files_default(schema_path: Path) -> None:
+    raw = {
+        "commands": {
+            "stan": {
+                "run-in": "sandbox",
+                "command": "stan {{paths}}",
+                "needs-git": True,
+                "parameters": {"paths": {"default": {"changed-files": {"include": ["*.php"]}}}},
+            }
+        }
+    }
+
+    assert validate_raw(raw, schema_path) == []

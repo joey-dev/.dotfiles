@@ -7,7 +7,7 @@ name = "claude-workflow"
 version = "0.1.0"
 description = "Crash-safe Jira-to-branch Claude Code orchestrator with bwrap sandboxing"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["jsonschema"]
 
 [project.scripts]
 claude-workflow = "claude_workflow.cli:main"
