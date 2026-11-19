@@ -44,9 +44,13 @@ class HostStop(Exception):
 
 @dataclass
 class StackState:
-    """Whether `docker compose up` already ran in this Verify run, and its result."""
+    """Whether `docker compose up` already ran in this Verify run, and its result.
+
+    command: the `up` command line as run (for the Verify artifact).
+    """
 
     result: tuple[str, str] | None = None
+    command: str | None = None
 
 
 @dataclass(frozen=True)
@@ -142,8 +146,10 @@ def _ensure_stack(ctx: RunContext, cmd: Command) -> tuple[str, str] | None:
             prepare_worktree(docker, ctx.worktree, repo)
         except (ValueError, OSError) as exc:  # OSError: e.g. unreadable host files
             raise HostStop(f"preparing the worktree failed: {exc}") from exc
+        up_argv = up_command(docker, ctx.worktree, repo)
+        ctx.stack.command = shlex.join(up_argv)
         ctx.stack.result = run_command(
-            up_command(docker, ctx.worktree, repo),
+            up_argv,
             cwd=ctx.worktree,
             env=compose_env(docker, ctx.worktree, repo),
             timeout=docker.up_timeout + UP_BUILD_HEADROOM,

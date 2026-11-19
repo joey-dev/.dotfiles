@@ -472,3 +472,41 @@ def test_stop_text_with_heading_stays_inside_a_fence(tmp_path: Path) -> None:
     assert "## Verdict: PASS" in inside
     outside = lines[:fence_at] + lines[end + 1 :]
     assert "## Verdict: PASS" not in outside
+
+
+def test_verify_artifact_shows_up_output_when_up_succeeds(tmp_path: Path) -> None:
+    tests = "tests:api filter=One\ntests:api filter=Two\n"
+    ctx = _verify_ctx(tmp_path, tests=tests, verify=(), docker=_DOCKER)
+
+    result, _ = _run_verify(ctx, stdout="Container web Started")
+
+    assert result.outcome is StageOutcome.DONE
+    artifact = _artifact(tmp_path)
+    assert artifact.count("## `docker compose up` — PASS") == 1  # up runs once
+    up_at = artifact.index("## `docker compose up` — PASS")
+    assert up_at < artifact.index("tests:api filter=One")
+    up_section = artifact[up_at:].split("\n## ", 1)[0]
+    assert "```text\n$ docker compose " in up_section
+    assert "Container web Started" in up_section
+
+
+def test_verify_up_output_kept_when_a_host_stop_follows(tmp_path: Path) -> None:
+    ctx = _verify_ctx(tmp_path, tests="tests:api filter=One\n", verify=(), docker=_DOCKER)
+
+    # The guard passes before `up`, then trips right before the host run.
+    result, _ = _run_verify(ctx, stdout="up log", guard=[[], ["docker-compose.yml"]])
+
+    assert result.outcome is StageOutcome.NEEDS_HUMAN
+    artifact = _artifact(tmp_path)
+    assert "## `docker compose up` — PASS" in artifact
+    assert "up log" in artifact
+
+
+def test_verify_failed_up_has_no_extra_up_section(tmp_path: Path) -> None:
+    ctx = _verify_ctx(tmp_path, tests="tests:api filter=FooCest\n", verify=(), docker=_DOCKER)
+
+    _run_verify(ctx, returncode=1, stdout="boom")
+
+    artifact = _artifact(tmp_path)
+    assert "## `docker compose up`" not in artifact
+    assert "boom" in artifact  # shown in the command's own section

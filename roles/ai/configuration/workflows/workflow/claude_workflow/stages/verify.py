@@ -61,6 +61,20 @@ class _Results:
 
 
 def _run_job(job: _Job, run_ctx: RunContext, changed: list[str], results: _Results) -> None:
+    """Run one job. When it started the compose stack and `up` passed, the `up` output
+    gets its own section before the job's (a failed `up` is in the job's section)."""
+    stack = run_ctx.stack
+    first_up = stack.result is None
+    at = len(results.sections)
+    _run_one(job, run_ctx, changed, results)
+    if first_up and stack.result is not None and stack.result[0] == "PASS":
+        status, output = stack.result
+        results.sections.insert(
+            at, _section("docker compose up", status, f"$ {stack.command}\n{output}")
+        )
+
+
+def _run_one(job: _Job, run_ctx: RunContext, changed: list[str], results: _Results) -> None:
     """Render and run one job; record its section. Never raises for a bad command."""
     label = describe_values(job.name, job.values)
     cmd = run_ctx.config.commands.get(job.name)
