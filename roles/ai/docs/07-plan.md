@@ -1,5 +1,7 @@
 # claude-workflow fixes — Implementation Plan
 
+> **Status (2026-11-19):** all tasks done (checkboxes were never ticked). See `08-next-session.md` for the current status.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** fix the bugs in `06-bugs.md` and add the features from our Q&A: shared dependencies, a clean sandbox environment, skills as a system prompt, TDD in Implement, and an automatic fix loop.

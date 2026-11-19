@@ -2,44 +2,47 @@
 
 Read this first in a new session. It says **where we are**, **what is next**, and **the rules**.
 
-The other docs (`01`–`07`) hold the details. Read them only when a task needs them.
+This is the **only status page**. The other docs hold details; their checkboxes are not kept up to date.
 
 ---
 
-## Where we are
+## Status of every plan (2026-11-19)
 
-- The workflow `claude-workflow` lives in `roles/ai/configuration/workflows/workflow/`.
-- All fixes from `07-plan.md` are **implemented**.
-- The **tests + Docker phase is built** (Tasks 1-6): `tests.txt`, Verify with `flake:` and `docker:` lines, per-stage phpstan caches, config for `dyflexis-monorepo`. **189 unit tests pass.**
-- It is **built, not yet run on the real repo.** The next step is **Task 7: manual checks with the user** (see "Still to confirm" in `09-tests-and-docker.md`).
-- **Intake** uses the repo's `Atlassian-Rovo-MCP` server (`.mcp.json`) with a one-way copy of `~/.mcp-auth`. The user has **validated Intake** (commit `ec9fb7f`).
-- **Verified by hand:**
-  - the Q&A sandbox (terminal, clean env, proxy);
-  - the dev shell capture with a test flake.
-- **Not yet verified:** a full run on a real ticket, and stages Explore → Retro on the real repo.
+| Doc | What | Status |
+|---|---|---|
+| `06-bugs.md` | Bug list from the first review | **Done**, except "left for later" (see below) |
+| `07-plan.md` | Fixes for those bugs (15 tasks) | **Done** (checkboxes never ticked). Intake validated by the user (`ec9fb7f`) |
+| `09-tests-and-docker.md` | Design: tests, Docker stack, security rules | **Built**; the format parts are replaced by `11` |
+| `10-plan-tests-docker.md` | Tests + Docker plan | **Tasks 1-6 done** (commit `f1b50ed`, 199 tests). **Task 7 not done** → moved into `11`, Task 6 |
+| `11-plan-commands-config.md` | Named commands, kebab-case config (global + per repo), new `tests.txt` | **Not started**. Decision 9 (cs-check) is open |
+
+**Not yet verified anywhere:** a full run on a real ticket, stages Explore → Retro on the real repo, and anything with the real Docker stack.
 
 ---
 
 ## What is next
 
-**Current phase: tests + Docker, Task 7 (manual checks with the user).** Design and facts are in **`09-tests-and-docker.md`**. The plan is **`10-plan-tests-docker.md`**.
+1. **The user picks decision 9 in `11`** (`cs-check` in the sandbox with a throwaway git dir, or on the host).
+2. **Build plan `11`, Tasks 1-5** (subagent-driven worked well for `10`).
+3. **Task 6 of `11`:** real-repo checks with the user, then a first real ticket.
 
-What to do:
+### Open user decisions
 
-1. **Run the "Still to confirm" list** from `09` on the real repo (`~/Code/Work/dyflexis-monorepo`), together with the user.
-2. **Do a first real ticket** and read `06-verify.md`.
-3. Don't change the known limits in `09` without asking the user.
+- **Decision 9 in `11`:** `cs-check` in the sandbox (recommended) or on the host.
+- **Certs:** `nginx-proxy/certs/*.key` are root-owned → copy through a root container, or copy only `*.crt` (`09`, "Known limits").
+- **Secrets in the compose stack:** `~/.npmrc` and `.env` values reach containers that run Claude's code. OK or limit? (`09`, "Known limits").
 
 ---
 
 ## Rules (keep these)
 
 - **Scope:** only `roles/ai`. **One ticket at a time.** Keep the skills simple.
-- **Git:** never commit or push without an explicit OK. The user commits themselves.
+- **Git:** `git add` and commit are allowed again (2026-11-19). Never push.
 - **Secrets:** a deny rule blocks reading `~/.claude/.credentials.json`. Don't work around it.
 - **Connections:** don't add new ones (no claude.ai connectors). Use what the repo already has.
 - **Tools:** install via Nix only (`nix shell nixpkgs#…`).
 - **New files** must be `git add`-ed before a Nix flake build sees them.
+- **Config files** live in `roles/ai/configuration/workflows/config/`: `global.config.json`, `repository/<repo-name>.config.json`, `example.config.json`, `config.schema.json`. Neovim validates them live via `$schema`.
 
 ---
 
@@ -49,6 +52,18 @@ Run the unit tests (from `roles/ai/configuration/workflows/workflow/`):
 
 ```sh
 nix shell nixpkgs#python312 nixpkgs#python312Packages.pytest -c env PYTHONPATH=. pytest -q
+```
+
+Check a config against the schema (from `roles/ai/configuration/workflows/config/`):
+
+```sh
+nix shell nixpkgs#check-jsonschema -c check-jsonschema --schemafile config.schema.json repository/dyflexis-monorepo.config.json
+```
+
+Build home-manager (also runs the unit tests), from the dotfiles root:
+
+```sh
+nix build '.#homeConfigurations."joey@work".activationPackage' --no-link
 ```
 
 Open a stage's sandbox by hand (from the repo you want to test):
@@ -61,21 +76,18 @@ nix shell nixpkgs#python312 nixpkgs#socat nixpkgs#bubblewrap -c \
 
 ---
 
-## Backlog (from the tests phase)
-
-Details in `09-tests-and-docker.md`.
+## Backlog
 
 - **Automate migrations** (now: Claude only edits `legacy/app/atlas-migrations/customer/schema/tables`, the user runs it).
-- **Browser / manual testing** on the dev website — next step after the tests.
-- **Parallel tickets** (one Docker stack per ticket).
+- **Browser / manual testing** on the dev website.
+- **Parallel tickets** (one Docker stack per ticket; per-worktree container names).
+- **More CI checks** to keep the pipeline green.
+- **Codex / other models** as a runner (needs company OK; start with one read-only Review lens).
+- **Deferred minors from plan 10** (all low risk): no `-z` edge-case tests, `.cache/<ticket>` never cleaned up, a few extra asserts.
 
----
+## Known open items (minor, from `06-bugs.md`)
 
-## Known open items (minor, deferred)
-
-See `06-bugs.md`, "left for later". In short:
-
-- the settings file uses a denylist (only `hooks` removed);
-- some edge cases in the fix rounds (`--from-stage implement`, `--only-stage`);
-- a Verify timeout loses its partial output;
+- The settings file uses a denylist (only `hooks` removed).
+- Some edge cases in the fix rounds (`--from-stage implement`, `--only-stage`).
+- A Verify timeout loses its partial output.
 - `_run_pipeline` and `build_bwrap_command` are long.

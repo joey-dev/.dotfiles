@@ -1,5 +1,7 @@
 # Tests + Docker Implementation Plan
 
+> **Status (2026-11-19):** Tasks 1-6 done (commit `f1b50ed`). Task 7 moved into `11-plan-commands-config.md`, Task 6. See `08-next-session.md` for the current status.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Implement and Verify run the ticket's own tests (flake and Docker) on `dyflexis-monorepo`, plus phpstan on changed files.

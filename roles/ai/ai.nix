@@ -58,6 +58,7 @@
     };
 
     # Skills come from the package (CLAUDE_WORKFLOW_SKILLS in the wrapper above).
-    xdg.configFile."claude-workflow/config.json".source = ./configuration/workflows/config.json;
+    # global.config.json, repository/<repo-name>.config.json and the schema (see docs/11).
+    xdg.configFile."claude-workflow".source = ./configuration/workflows/config;
   };
 }
