@@ -1,8 +1,43 @@
 # 9. Tests, Docker stack and database (design notes)
 
-Status: **built, not yet run on the real repo.** Plan: `10-plan-tests-docker.md`. Task 7 (manual checks) is still open.
+Status: **built, not yet run on the real repo.** Plan: `10-plan-tests-docker.md`; the command format was replaced by plan `11`. The real-repo checks are Task 6 of `11`.
+
+**Update (plan 11):** `flake:` / `docker:` prefixes, `verify_commands` and `flake_path` in `config.json` are gone. Read the section "Named commands (replaces the prefixes)" below first. The older sections keep the original reasoning and may use the old names.
 
 This doc holds the facts, the user's answers, the proposed design and the open questions. Update it when a question is answered.
+
+---
+
+## Named commands (replaces the prefixes)
+
+**The idea:** every check is a **named command** in the repo config. `tests.txt` lists names, not shell lines.
+
+- **Config:** `repository/dyflexis-monorepo.config.json`, key `commands`. Schema: `config.schema.json`.
+- **`run-in`** decides where it runs: `sandbox` (bwrap, no network), `host` (after the guard), or `container` (`docker exec`).
+- **`tests.txt` line:** `<command> [key=value ...]`, for example `tests:api filter=InvoiceCest.php`.
+- **`verify`** lists what Verify always runs, in order.
+
+**Safety rules for `tests.txt` values** (Claude writes the file):
+
+- A parameter needs a **`pattern`**, and the whole value must match it.
+- A value word may **not start with `-`** (no options) and may **not contain a `..` path segment**.
+- Values are **shell-quoted word by word**. A value with spaces becomes several arguments, never shell syntax.
+- A `host` command's script is **protected like the compose files**, and the **base-commit copy** runs.
+
+### Decisions 9-12 (user, 2026-11-19)
+
+9. **`cs-check` runs in the sandbox** as `bin/cs verify {{files}}`, with **`needs-git: true`**. A throwaway `git init` folder replaces the masked `.git`.
+10. **`config render`** writes the merged config to `full-configs/<repo>.config.json` (gitignored, read-only view). The workflow never reads it.
+11. **Certs: copy only `*.crt`.** A `host-copies` entry is `{"path": "nginx-proxy/certs", "include": ["*.crt"]}`. Private keys stay behind. Symlinks are skipped. *To confirm in Task 6:* the proxy still starts.
+12. **Secrets:**
+    - `docker-compose.services` lists the services the tests need: `legacy-web-debug`, `lighttpd`, `db`, `redis`. Only those and their `depends_on` start. This also skips the `pnpm install` containers that bind-mount `~/.npmrc`. **Not verified without Docker: confirm in Task 6.**
+    - The repo `.env` may reach containers.
+    - The generated sandbox Claude settings **deny reading** `Read(**/.env)` and `Read(**/.env.*)` (defence in depth; `.env` is not mounted anyway).
+
+### `phpstan:changed`
+
+- A separate command: phpstan on the **changed PHP files**, tests (`*Test.php`, `*/Tests/*`) excluded. No changed file means **skipped**.
+- It is **not** in `verify`.
 
 ---
 
@@ -174,10 +209,10 @@ docker: api SomeCest
   - The `dyflexis` profile starts **`dyflexis-webpack`** and **`dyflexis-frontend`**. They run `pnpm install` and scripts from the **worktree's `package.json`**, with network access, and bind-mount **`~/.npmrc`**.
   - **`.env` values** (for example `POS_PLATFORM_API_KEY`, `VITE_MAPTILER_API_KEY`) are in the environment of containers that run Claude-written code.
   - Container output can come back to Claude through **`06-verify.md`**.
-- **The cert copy fails on the real repo.** **User decision, check in Task 7.**
+- **The cert copy failed on the real repo (resolved by decision 11: crt-only copy).** Check in Task 6 that the proxy starts.
   - The keys in `nginx-proxy/certs/*.key` are **`root:root 0600`**, so the host cannot read them and the copy fails. Verify then stops and asks the human (see "Built").
   - Option **(a)**: copy the folder through a root Docker container.
-  - Option **(b)**: copy only the `*.crt` files.
+  - Option **(b)**: copy only the `*.crt` files. **Chosen** (decision 11).
 
 ---
 

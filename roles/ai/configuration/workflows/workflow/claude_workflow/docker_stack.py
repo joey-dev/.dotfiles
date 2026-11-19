@@ -123,8 +123,30 @@ def _safe_path(root: Path, rel: str) -> Path:
     return current
 
 
+def _include_filter(patterns: tuple[str, ...]) -> Callable[[str, list[str]], set[str]] | None:
+    """copytree `ignore` for a host-copies include filter: keep folders and the files
+    matching a pattern; drop everything else, symlinks included. No patterns: copy all."""
+    if not patterns:
+        return None
+
+    def ignore(directory: str, names: list[str]) -> set[str]:
+        dropped: set[str] = set()
+        for name in names:
+            path = Path(directory) / name
+            if path.is_symlink():
+                dropped.add(name)
+            elif path.is_dir():
+                continue
+            elif not any(fnmatch(name, pat) for pat in patterns):
+                dropped.add(name)
+        return dropped
+
+    return ignore
+
+
 def prepare_worktree(cfg: DockerConfig, worktree: Path, repo: Path) -> None:
     """Copy host_copies from the main checkout and create create_dirs (after the guard)."""
+    includes = dict(cfg.host_copy_includes)
     for entry in cfg.host_copies:
         source = _safe_path(repo, entry)
         target = _safe_path(worktree, entry)
@@ -136,7 +158,9 @@ def prepare_worktree(cfg: DockerConfig, worktree: Path, repo: Path) -> None:
             elif target.exists():
                 target.unlink()
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(source, target, symlinks=True)
+            shutil.copytree(
+                source, target, symlinks=True, ignore=_include_filter(includes.get(entry, ()))
+            )
         except OSError as exc:  # e.g. root-owned 0600 keys in nginx-proxy/certs
             raise ValueError(f"could not copy {entry}: {exc}") from exc
     for entry in cfg.create_dirs:
@@ -175,6 +199,7 @@ def up_command(cfg: DockerConfig, worktree: Path, repo: Path) -> list[str]:
         "--wait",
         "--wait-timeout",
         str(cfg.up_timeout),
+        *cfg.services,
     ]
 
 

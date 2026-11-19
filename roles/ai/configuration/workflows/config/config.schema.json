@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "claude-workflow/config.schema.json",
   "title": "claude-workflow config",
-  "description": "claude-workflow config: global.config.json plus repository/<repo-name>.config.json (<repo-name> = the repo folder name). The repo file may override any global key; objects merge key by key, arrays and values are replaced. Check with 'claude-workflow config check'.",
+  "description": "claude-workflow config: global.config.json plus repository/<repo-name>.config.json (<repo-name> = the repo folder name). Merge rule: the repo file overrides the global file. Objects (such as 'commands' or 'stages') merge key by key, one level at a time; arrays and plain values (strings, numbers, booleans, null) are replaced as a whole. Check with 'claude-workflow config check'.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -65,8 +65,31 @@
             },
             "host-copies": {
               "type": "array",
+              "items": {
+                "oneOf": [
+                  { "type": "string", "minLength": 1 },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["path"],
+                    "properties": {
+                      "path": { "type": "string", "minLength": 1, "description": "Folder, relative to the repository root." },
+                      "include": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": { "type": "string", "minLength": 1 },
+                        "description": "Only files whose name matches one of these globs (fnmatch) are copied, e.g. ['*.crt'] to leave private keys behind. Symlinks are skipped."
+                      }
+                    }
+                  }
+                ]
+              },
+              "description": "Gitignored folders the stack mounts, copied from the main checkout before 'up'. They are hidden from every sandbox (they may hold keys). An entry is a path, or {\"path\": ..., \"include\": [globs]} to copy only matching files."
+            },
+            "services": {
+              "type": "array",
               "items": { "type": "string", "minLength": 1 },
-              "description": "Gitignored folders the stack mounts, copied from the main checkout before 'up'. They are hidden from every sandbox (they may hold keys)."
+              "description": "Compose services to start: only these and what they depend_on. Recommended: list what the tests need, so unrelated services (and their image builds) are not started. Absent: every service of the profile."
             },
             "create-dirs": {
               "type": "array",

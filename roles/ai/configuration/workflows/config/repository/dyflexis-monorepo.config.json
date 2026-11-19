@@ -1,17 +1,6 @@
 {
   "$schema": "../config.schema.json",
   "commands": {
-    "cs-check": {
-      "description": "Code style check (php-cs-fixer, eslint, ...). OPEN: bin/cs runs pre-commit, which needs .git and network; neither exists in the sandbox.",
-      "run-in": "sandbox",
-      "command": "bin/cs {{files}}",
-      "parameters": {
-        "files": {
-          "description": "Files to check, relative to the repository root. Empty: the staged files.",
-          "example": "legacy/src/Foo.php frontend/src/bar.ts"
-        }
-      }
-    },
     "composer-install": {
       "description": "Install PHP dependencies inside the web container of the compose stack.",
       "run-in": "container",
@@ -19,6 +8,18 @@
       "user": "1000:1000",
       "needs-compose-stack": true,
       "command": "composer install"
+    },
+    "cs-check": {
+      "description": "Code style check with bin/cs (pre-commit). Runs in the sandbox on a throwaway git repo (needs-git).",
+      "run-in": "sandbox",
+      "needs-git": true,
+      "command": "bin/cs verify {{files}}",
+      "parameters": {
+        "files": {
+          "description": "Files to check, relative to the repository root. Empty: let bin/cs pick its default.",
+          "example": "legacy/src/Foo.php frontend/src/bar.ts"
+        }
+      }
     },
     "phpstan": {
       "description": "Static analysis of PHP code.",
@@ -39,6 +40,36 @@
         }
       }
     },
+    "phpstan:changed": {
+      "description": "Static analysis of only the PHP files changed on this ticket (tests excluded). Skipped when no PHP file changed.",
+      "run-in": "sandbox",
+      "working-directory": "legacy",
+      "command": "vendor/bin/phpstan analyze {{paths}} --memory-limit=-1 --no-progress -c {{config-file}}",
+      "timeout": "15m",
+      "parameters": {
+        "paths": {
+          "description": "Files to analyse. Default: the changed PHP files.",
+          "default": {
+            "changed-files": {
+              "include": [
+                "*.php"
+              ],
+              "exclude": [
+                "*Test.php",
+                "*/Tests/*"
+              ],
+              "if-none": "skip"
+            }
+          }
+        },
+        "config-file": {
+          "description": "PHPStan config file.",
+          "default": "phpstan.neon.dist",
+          "pattern": "^phpstan[A-Za-z0-9_.-]*\\.neon(\\.dist)?$",
+          "example": "phpstan-tests.neon.dist"
+        }
+      }
+    },
     "phpunit": {
       "description": "PHP unit tests.",
       "run-in": "sandbox",
@@ -49,23 +80,8 @@
         "filter": {
           "description": "Only run tests whose name matches.",
           "format": "--filter {{value}}",
-          "pattern": "^[A-Za-z0-9_\\\\:.-]+$",
+          "pattern": "^[A-Za-z0-9_][A-Za-z0-9_\\\\:.-]*$",
           "example": "InvoiceTest"
-        }
-      }
-    },
-    "tests:integration": {
-      "description": "Codeception integration suite through test_runner.sh. A filter is required: the full suite takes too long.",
-      "run-in": "host",
-      "needs-compose-stack": true,
-      "command": "./test_runner.sh integration {{filter}}",
-      "timeout": "20m",
-      "parameters": {
-        "filter": {
-          "description": "Test file or directory.",
-          "required": true,
-          "pattern": "^[A-Za-z0-9_./:-]+$",
-          "example": "tests/integration/Invoice"
         }
       }
     },
@@ -79,8 +95,23 @@
         "filter": {
           "description": "Test file or test name.",
           "required": true,
-          "pattern": "^[A-Za-z0-9_./:-]+$",
+          "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./:-]*$",
           "example": "InvoiceCest.php"
+        }
+      }
+    },
+    "tests:integration": {
+      "description": "Codeception integration suite through test_runner.sh. A filter is required: the full suite takes too long.",
+      "run-in": "host",
+      "needs-compose-stack": true,
+      "command": "./test_runner.sh integration {{filter}}",
+      "timeout": "20m",
+      "parameters": {
+        "filter": {
+          "description": "Test file or directory.",
+          "required": true,
+          "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./:-]*$",
+          "example": "tests/integration/Invoice"
         }
       }
     }
@@ -102,23 +133,6 @@
       "run": "phpstan",
       "parameters": {
         "config-file": "phpstan-tests.neon.dist"
-      }
-    },
-    {
-      "run": "phpstan",
-      "parameters": {
-        "paths": {
-          "changed-files": {
-            "include": [
-              "*.php"
-            ],
-            "exclude": [
-              "*Test.php",
-              "*/Tests/*"
-            ],
-            "if-none": "skip"
-          }
-        }
       }
     },
     {
@@ -148,10 +162,21 @@
     "profile": "dyflexis",
     "up-timeout": "15m",
     "host-copies": [
-      "nginx-proxy/certs"
+      {
+        "path": "nginx-proxy/certs",
+        "include": [
+          "*.crt"
+        ]
+      }
     ],
     "create-dirs": [
       "legacy/cache"
+    ],
+    "services": [
+      "legacy-web-debug",
+      "lighttpd",
+      "db",
+      "redis"
     ]
   }
 }

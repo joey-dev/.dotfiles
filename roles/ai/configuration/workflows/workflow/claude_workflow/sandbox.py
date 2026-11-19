@@ -279,19 +279,29 @@ def prepare_sandbox_home(state_dir: Path) -> Path:
     return sandbox_home
 
 
+# Defence in depth: .env files are never mounted, and Claude may not read them either.
+ENV_DENY_RULES = ("Read(**/.env)", "Read(**/.env.*)")
+
+
 def sandbox_settings(host_settings: Path) -> dict[str, object]:
-    """Return the host Claude settings without hooks.
+    """Return the host Claude settings without hooks, plus a deny rule for .env files.
 
     The hooks call notify-send, which cannot work inside the sandbox (no D-Bus).
-    Everything else, such as the permission deny rules, is kept.
+    Everything else, such as the host's permission deny rules, is kept.
     """
-    if not host_settings.is_file():
-        return {}
-    settings = json.loads(host_settings.read_text(encoding="utf-8"))
-    if not isinstance(settings, dict):
-        return {}
-    all_settings = cast(dict[str, object], settings)
-    return {key: value for key, value in all_settings.items() if key != "hooks"}
+    result: dict[str, object] = {}
+    if host_settings.is_file():
+        settings = json.loads(host_settings.read_text(encoding="utf-8"))
+        if isinstance(settings, dict):
+            all_settings = cast(dict[str, object], settings)
+            result = {key: value for key, value in all_settings.items() if key != "hooks"}
+    permissions = result.get("permissions")
+    perms = dict(cast(dict[str, object], permissions)) if isinstance(permissions, dict) else {}
+    deny = perms.get("deny")
+    existing = [str(rule) for rule in cast(list[object], deny)] if isinstance(deny, list) else []
+    perms["deny"] = [*existing, *(r for r in ENV_DENY_RULES if r not in existing)]
+    result["permissions"] = perms
+    return result
 
 
 def _append_git_mask(cmd: list[str], host_repo: Path, sandbox_repo: Path) -> None:

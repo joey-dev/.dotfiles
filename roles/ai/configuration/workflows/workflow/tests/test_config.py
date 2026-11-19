@@ -411,3 +411,22 @@ def test_needs_git_only_with_run_in_sandbox(schema_path: Path) -> None:
         "$.commands.h.needs-git: only allowed with run-in 'sandbox'",
         "$.commands.c.needs-git: only allowed with run-in 'sandbox'",
     ]
+
+
+def test_docker_host_copy_include_and_services(tmp_path: Path, schema_path: Path) -> None:
+    repo_raw = {
+        "docker-compose": {
+            "project-name": "dfs",
+            "host-copies": [
+                "plain/dir",
+                {"path": "nginx-proxy/certs", "include": ["*.crt"]},
+            ],
+            "services": ["db", "redis"],
+        },
+    }
+    cfg = load_config(_repo(tmp_path), _config_dir(tmp_path, schema_path, GLOBAL, repo_raw))
+
+    assert cfg.docker is not None
+    assert cfg.docker.host_copies == ("plain/dir", "nginx-proxy/certs")
+    assert cfg.docker.host_copy_includes == (("nginx-proxy/certs", ("*.crt",)),)
+    assert cfg.docker.services == ("db", "redis")

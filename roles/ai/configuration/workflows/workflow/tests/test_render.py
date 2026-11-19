@@ -31,9 +31,9 @@ def line(argv: list[str]) -> str:
 def test_value_with_shell_chars_is_quoted() -> None:
     cmd = make("run {{x}}", {"x": Parameter(pattern=".*")})
 
-    out = line(render(cmd, {"x": "a;rm -rf /$(id)"}, [], from_tests_file=True))
+    out = line(render(cmd, {"x": "a;rm /$(id)"}, [], from_tests_file=True))
 
-    assert out == "run 'a;rm' -rf '/$(id)'"
+    assert out == "run 'a;rm' '/$(id)'"
 
 
 def test_pattern_is_full_match() -> None:
@@ -196,3 +196,32 @@ def test_placeholder_outside_quotes_next_to_quoted_text_is_ok() -> None:
     cmd = make("run 'a b' {{x}} \"c\" \\\"{{x}}", {"x": Parameter()})
 
     assert line(render(cmd, {"x": "v"}, [], from_tests_file=False)) == "run 'a b' v \"c\" \\\"v"
+
+
+# --- tests.txt values: no leading '-', no '..' ------------------------------------------
+
+
+def _filter_cmd() -> Command:
+    return make("run {{filter}}", {"filter": Parameter(pattern=r"[A-Za-z0-9_./:=-]+")})
+
+
+@pytest.mark.parametrize("value", ["--config=/etc/x", "-x", "ok -rf", "a --b"])
+def test_tests_file_value_words_may_not_start_with_dash(value: str) -> None:
+    with pytest.raises(ValueError, match="cmd.*filter.*'-'"):
+        render(_filter_cmd(), {"filter": value}, [], from_tests_file=True)
+
+
+@pytest.mark.parametrize("value", ["../x", "a/../b", "a/..", ".."])
+def test_tests_file_value_words_may_not_contain_dotdot_segment(value: str) -> None:
+    with pytest.raises(ValueError, match="cmd.*filter.*'\\.\\.'"):
+        render(_filter_cmd(), {"filter": value}, [], from_tests_file=True)
+
+
+def test_tests_file_dots_inside_names_are_fine() -> None:
+    argv = render(_filter_cmd(), {"filter": "a..b/c.php"}, [], from_tests_file=True)
+    assert line(argv) == "run a..b/c.php"
+
+
+def test_config_values_may_start_with_dash() -> None:
+    argv = render(_filter_cmd(), {"filter": "--x"}, [], from_tests_file=False)
+    assert line(argv) == "run --x"

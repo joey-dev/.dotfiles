@@ -7,6 +7,7 @@ so their values are validated against each parameter's pattern and get no cache.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -31,9 +32,16 @@ SKIPPED_NO_FILES = "SKIPPED (no changed files)"
 SKIPPED_HOST_STOP = "SKIPPED (host commands stopped)"
 
 
+def _fenced(text: str) -> str:
+    """`text` in a code fence longer than any backtick run inside it, so it can't close."""
+    longest = max((len(run) for run in re.findall(r"`+", text)), default=0)
+    fence = "`" * max(3, longest + 1)
+    return f"{fence}text\n{text}\n{fence}\n"
+
+
 def _section(label: str, status: str, output: str) -> str:
     """One artifact section: always the status and the full output."""
-    return f"## `{label}` — {status}\n\n```text\n{output}\n```\n"
+    return f"## `{label}` — {status}\n\n{_fenced(output)}"
 
 
 @dataclass(frozen=True)
@@ -73,7 +81,7 @@ def _run_job(job: _Job, run_ctx: RunContext, changed: list[str], results: _Resul
         return
     except HostStop as exc:
         results.stop = f"Host commands stopped: {exc}. Run them by hand."
-        results.sections.append(f"## Host commands stopped\n\n`{label}`: {exc}\n")
+        results.sections.append(f"## Host commands stopped\n\n`{label}`:\n\n{_fenced(str(exc))}")
         return
     except ValueError as exc:
         results.failed = True

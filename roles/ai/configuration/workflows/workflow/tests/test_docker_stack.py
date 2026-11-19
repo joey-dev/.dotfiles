@@ -274,3 +274,33 @@ def test_base_script_copy_refuses_symlink_in_base(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="regular file"):
         base_script_copy(wt, "HEAD", "link.sh", dest)
     assert list(dest.iterdir()) == []
+
+
+def test_prepare_worktree_copies_only_included_files(tmp_path: Path) -> None:
+    repo, wt = tmp_path / "repo", tmp_path / "wt"
+    certs = repo / "nginx-proxy/certs"
+    certs.mkdir(parents=True)
+    (certs / "a.crt").write_text("crt")
+    (certs / "a.key").write_text("secret")
+    (certs / "dhparam.pem").write_text("dh")
+    (certs / "link.crt").symlink_to("/etc/passwd")
+    wt.mkdir()
+    cfg = DockerConfig(
+        project_name="dfs",
+        host_copies=("nginx-proxy/certs",),
+        host_copy_includes=(("nginx-proxy/certs", ("*.crt",)),),
+    )
+
+    prepare_worktree(cfg, wt, repo)
+
+    assert sorted(p.name for p in (wt / "nginx-proxy/certs").iterdir()) == ["a.crt"]
+
+
+def test_up_command_appends_services(tmp_path: Path) -> None:
+    repo, wt = tmp_path / "repo", tmp_path / "wt"
+    repo.mkdir()
+    wt.mkdir()
+    cfg = DockerConfig(project_name="dfs", services=("db", "redis"))
+    assert up_command(cfg, wt, repo)[-5:] == ["--wait", "--wait-timeout", "900", "db", "redis"]
+    assert up_command(cfg, wt, repo)[-2:] == ["db", "redis"]
+    assert up_command(DockerConfig(project_name="dfs"), wt, repo)[-1] == "900"

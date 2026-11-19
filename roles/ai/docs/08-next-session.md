@@ -14,7 +14,7 @@ This is the **only status page**. The other docs hold details; their checkboxes 
 | `07-plan.md` | Fixes for those bugs (15 tasks) | **Done** (checkboxes never ticked). Intake validated by the user (`ec9fb7f`) |
 | `09-tests-and-docker.md` | Design: tests, Docker stack, security rules | **Built**; the format parts are replaced by `11` |
 | `10-plan-tests-docker.md` | Tests + Docker plan | **Tasks 1-6 done** (commit `f1b50ed`, 199 tests). **Task 7 not done** → moved into `11`, Task 6 |
-| `11-plan-commands-config.md` | Named commands, kebab-case config (global + per repo), `full-configs/` render, new `tests.txt` | **Not started**; all decisions made (2026-11-19) |
+| `11-plan-commands-config.md` | Named commands, kebab-case config (global + per repo), `full-configs/` render, new `tests.txt` | **Tasks 1-5 done** (config, commands, runners, `tests.txt`, final config + docs). **Task 6 next**; all decisions made (2026-11-19) |
 
 **Not yet verified anywhere:** a full run on a real ticket, stages Explore → Retro on the real repo, and anything with the real Docker stack.
 
@@ -22,8 +22,9 @@ This is the **only status page**. The other docs hold details; their checkboxes 
 
 ## What is next
 
-1. **Build plan `11`, Tasks 1-5** (subagent-driven worked well for `10`).
-2. **Task 6 of `11`:** real-repo checks with the user, then a first real ticket.
+1. **Task 6 of `11`:** real-repo checks with the user, then a first real ticket.
+   - Confirm `docker-compose.services` (`legacy-web-debug`, `lighttpd`, `db`, `redis`): **not verified without Docker**.
+   - Check that the proxy starts with only the `*.crt` files.
 
 ### Open user decisions
 
@@ -48,7 +49,7 @@ None. Decided 2026-11-19: cs-check in the sandbox with a throwaway git dir; cert
 Run the unit tests (from `roles/ai/configuration/workflows/workflow/`):
 
 ```sh
-nix shell nixpkgs#python312 nixpkgs#python312Packages.pytest -c env PYTHONPATH=. pytest -q
+nix shell --impure --expr 'with (builtins.getFlake "nixpkgs").legacyPackages.${builtins.currentSystem}; python312.withPackages (p: [ p.pytest p.jsonschema ])' -c env PYTHONPATH=. pytest -q
 ```
 
 Check a config against the schema (from `roles/ai/configuration/workflows/config/`):

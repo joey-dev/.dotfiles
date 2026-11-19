@@ -141,7 +141,6 @@ When a stage returns **FAILED**, the program **stops with exit 1**. The stage st
 | Intake | Ticket not fetched | Check `Atlassian-Rovo-MCP` (`claude` in the repo, then `/mcp`) |
 | Plan | Review limit reached without `APPROVED` | Run again, or `--from-stage plan` |
 | Explore … Review | `composer.lock` / `package-lock.json` differs from main | Run the install in the worktree on the host, run again |
-| Verify | `verify_commands` is empty | Add commands to the config, run again |
 | Verify | A command changed the diff (message lists the files) | Add generated files to `.gitignore`, run again |
 | Verify / Review | Out of fix rounds (`--auto`) | Fix by hand, or `--from-stage implement` |
 | Review | Worktree changed after Verify | `--from-stage verify` |

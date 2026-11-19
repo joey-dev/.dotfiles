@@ -102,8 +102,13 @@ class DockerConfig:
     protected_paths: tuple[str, ...] = DEFAULT_PROTECTED_PATHS
     # Gitignored folders the stack mounts, copied from the main checkout before `up`.
     host_copies: tuple[str, ...] = ()
+    # Optional include globs (fnmatch on the file name) per host_copies path: only matching
+    # files are copied. Paths without an entry are copied whole.
+    host_copy_includes: tuple[tuple[str, tuple[str, ...]], ...] = ()
     # Gitignored folders the stack mounts that only need to exist (rebuilt by the app).
     create_dirs: tuple[str, ...] = ()
+    # Compose services to start (plus their depends_on). Empty: every service of the profile.
+    services: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -538,6 +543,12 @@ def _docker(raw: dict[str, Any] | None) -> DockerConfig | None:
     if raw is None:
         return None
     defaults = DockerConfig(project_name=raw["project-name"])
+    copies: list[tuple[str, tuple[str, ...]]] = []
+    for entry in raw.get("host-copies", ()):
+        if isinstance(entry, str):
+            copies.append((entry, ()))
+        else:
+            copies.append((entry["path"], tuple(entry.get("include", ()))))
     return replace(
         defaults,
         profile=raw.get("profile", defaults.profile),
@@ -546,8 +557,10 @@ def _docker(raw: dict[str, Any] | None) -> DockerConfig | None:
         ),
         # Extra patterns: the defaults are always protected.
         protected_paths=(*DEFAULT_PROTECTED_PATHS, *raw.get("protected-paths", ())),
-        host_copies=tuple(raw.get("host-copies", ())),
+        host_copies=tuple(path for path, _ in copies),
+        host_copy_includes=tuple((path, inc) for path, inc in copies if inc),
         create_dirs=tuple(raw.get("create-dirs", ())),
+        services=tuple(raw.get("services", ())),
     )
 
 

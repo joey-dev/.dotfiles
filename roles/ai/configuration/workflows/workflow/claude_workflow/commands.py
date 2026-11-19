@@ -215,6 +215,11 @@ def render(
                 raise fail(name, "has no pattern, so it cannot be set from tests.txt")
             if "\n" in value or "\r" in value or "\x00" in value:
                 raise fail(name, "value contains a newline or NUL")
+            for word in value.split():
+                if word.startswith("-"):
+                    raise fail(name, f"word {word!r} starts with '-' (an option)")
+                if ".." in word.split("/"):
+                    raise fail(name, f"word {word!r} contains a '..' path segment")
             if re.fullmatch(param.pattern, value) is None:
                 raise fail(name, f"value {value!r} does not match pattern {param.pattern!r}")
         words = value.split()

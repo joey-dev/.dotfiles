@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -301,11 +301,9 @@ def test_sandbox_settings_drops_hooks(tmp_path: Path) -> None:
     settings = sandbox_settings(host)
 
     assert "hooks" not in settings
-    assert settings["permissions"] == {"deny": ["Read(~/.ssh/**)"]}
-
-
-def test_sandbox_settings_missing_file_is_empty(tmp_path: Path) -> None:
-    assert sandbox_settings(tmp_path / "absent.json") == {}
+    assert settings["permissions"] == {
+        "deny": ["Read(~/.ssh/**)", "Read(**/.env)", "Read(**/.env.*)"]
+    }
 
 
 def test_home_ro_mounts_are_read_only_and_readable(tmp_path: Path, monkeypatch: Any) -> None:
@@ -448,3 +446,19 @@ def test_no_cache_dir_means_no_cache_mount(tmp_path: Path, monkeypatch: Any) -> 
     cmd = build_bwrap_command(_minimal_spec(tmp_path), ["true"], env={})
 
     assert "/tmp/cw-cache" not in cmd
+
+
+def test_sandbox_settings_deny_env_files_merged_with_host_denies(tmp_path: Path) -> None:
+    host = tmp_path / "settings.json"
+    host.write_text(json.dumps({"permissions": {"deny": ["Read(~/.ssh/**)"], "allow": ["x"]}}))
+
+    permissions = cast(dict[str, Any], sandbox_settings(host)["permissions"])
+
+    assert permissions["deny"] == ["Read(~/.ssh/**)", "Read(**/.env)", "Read(**/.env.*)"]
+    assert permissions["allow"] == ["x"]
+
+
+def test_sandbox_settings_without_host_file_still_denies_env(tmp_path: Path) -> None:
+    settings = sandbox_settings(tmp_path / "absent.json")
+
+    assert settings == {"permissions": {"deny": ["Read(**/.env)", "Read(**/.env.*)"]}}
