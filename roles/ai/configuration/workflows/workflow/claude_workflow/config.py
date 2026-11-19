@@ -16,6 +16,7 @@ from claude_workflow.commands import (
     VerifyEntry,
     _VALUE,
     _PLACEHOLDER as _CMD_PLACEHOLDER,
+    host_script,
     parse_commands,
     parse_duration,
     parse_verify,
@@ -348,6 +349,15 @@ def _cross_check(raw: dict[str, Any]) -> list[tuple[list[PathPart], str]]:
             for key in ("container", "user"):
                 if key in cmd:
                     errors.append((["commands", name, key], "only allowed with run-in 'container'"))
+        if cmd.get("run-in") == "host" and isinstance(line, str):
+            try:
+                host_script(line)
+            except ValueError as exc:
+                errors.append((["commands", name, "command"], str(exc)))
+        if cmd.get("needs-git") is True and cmd.get("run-in") != "sandbox":
+            errors.append(
+                (["commands", name, "needs-git"], "only allowed with run-in 'sandbox'")
+            )
     verify_raw = raw.get("verify")
     verify = cast(list[object], verify_raw) if isinstance(verify_raw, list) else []
     for index, entry in enumerate(verify):

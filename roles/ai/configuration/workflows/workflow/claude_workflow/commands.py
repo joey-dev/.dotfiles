@@ -7,6 +7,7 @@ only convert; they do not re-check types. Rendering a command to an argv is Task
 from __future__ import annotations
 
 import fnmatch
+import posixpath
 import re
 import shlex
 from dataclasses import dataclass, field
@@ -270,3 +271,29 @@ def tokens_inside_quotes(text: str, token: re.Pattern[str]) -> list[str]:
                 continue
         i += 1
     return found
+
+
+# A host script path: plain characters only, so it can be found and replaced in the line.
+_SCRIPT_WORD = re.compile(r"[A-Za-z0-9_./-]+")
+
+
+def host_script(command: str) -> str:
+    """The repo script a `host` command runs: its first word, a relative repo path.
+
+    './test_runner.sh x' -> 'test_runner.sh'. Anything else is refused (ValueError):
+    a PATH program such as `make` or `npm` would run worktree code (Makefile,
+    package.json) on the host with nothing protected, and an absolute path is not in
+    the repo. The word may only use [A-Za-z0-9_./-] and may not leave the repo.
+    """
+    first = command.split(maxsplit=1)[0] if command.strip() else ""
+    if "/" not in first or first.startswith("/"):
+        raise ValueError(
+            f"host command must start with a repo script (a relative path such as "
+            f"./test_runner.sh or bin/cs), not {first!r}"
+        )
+    if _SCRIPT_WORD.fullmatch(first) is None:
+        raise ValueError(f"host repo script {first!r} may only use [A-Za-z0-9_./-]")
+    script = posixpath.normpath(first)
+    if script == "." or ".." in script.split("/"):
+        raise ValueError(f"host repo script {first!r} leaves the repository")
+    return script

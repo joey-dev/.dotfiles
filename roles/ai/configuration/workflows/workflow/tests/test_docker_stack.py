@@ -12,6 +12,7 @@ import pytest
 from claude_workflow.config import DEFAULT_PROTECTED_PATHS, DockerConfig
 from claude_workflow.docker_stack import (
     base_runner_copy,
+    base_script_copy,
     compose_env,
     guard_patterns,
     guard_violations,
@@ -274,3 +275,16 @@ def test_prepare_worktree_copy_error_is_clear_value_error(tmp_path: Path) -> Non
         pytest.raises(ValueError, match="could not copy nginx-proxy/certs"),
     ):
         prepare_worktree(cfg, wt, repo)
+
+
+def test_base_script_copy_refuses_symlink_in_base(tmp_path: Path) -> None:
+    wt, _ = _make_repo(tmp_path)
+    (wt / "link.sh").symlink_to("test_runner.sh")
+    _git(wt, "add", ".")
+    _git(wt, "commit", "-m", "link")
+    dest = tmp_path / "out"
+    dest.mkdir()
+
+    with pytest.raises(ValueError, match="regular file"):
+        base_script_copy(wt, "HEAD", "link.sh", dest)
+    assert list(dest.iterdir()) == []

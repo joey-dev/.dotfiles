@@ -373,3 +373,41 @@ def test_placeholder_inside_quotes_is_reported(schema_path: Path) -> None:
         "$.commands.a.command: placeholder '{{x}}' sits inside quotes",
         "$.commands.a.parameters.x.format: '{{value}}' sits inside quotes",
     ]
+
+
+def test_host_command_must_start_with_a_repo_script(schema_path: Path) -> None:
+    raw = {
+        "commands": {
+            "make": {"run-in": "host", "command": "make test"},
+            "npm": {"run-in": "host", "command": "npm run x"},
+            "abs": {"run-in": "host", "command": "/usr/bin/x"},
+            "up": {"run-in": "host", "command": "../x.sh"},
+            "ok1": {"run-in": "host", "command": "./test_runner.sh api"},
+            "ok2": {"run-in": "host", "command": "bin/cs"},
+        }
+    }
+
+    errors = validate_raw(raw, schema_path)
+
+    assert len(errors) == 4
+    for name in ("make", "npm", "abs", "up"):
+        (error,) = [e for e in errors if e.startswith(f"$.commands.{name}.command:")]
+        assert "repo script" in error or "leaves the repository" in error
+
+
+def test_needs_git_only_with_run_in_sandbox(schema_path: Path) -> None:
+    raw = {
+        "commands": {
+            "h": {"run-in": "host", "command": "bin/cs", "needs-git": True},
+            "c": {"run-in": "container", "container": "web", "command": "x", "needs-git": True},
+            "s": {"run-in": "sandbox", "command": "bin/cs", "needs-git": True},
+            "f": {"run-in": "host", "command": "bin/cs", "needs-git": False},
+        }
+    }
+
+    errors = validate_raw(raw, schema_path)
+
+    assert errors == [
+        "$.commands.h.needs-git: only allowed with run-in 'sandbox'",
+        "$.commands.c.needs-git: only allowed with run-in 'sandbox'",
+    ]

@@ -11,9 +11,9 @@ from unittest.mock import patch
 
 import pytest
 
-from claude_workflow.commands import Command
+from claude_workflow.commands import Command, host_script
 from claude_workflow.config import DockerConfig, RepoAccess, default_config
-from claude_workflow.runners import HostStop, RunContext, host_script, run
+from claude_workflow.runners import HostStop, RunContext, run
 from claude_workflow.sandbox import SANDBOX_CACHE_DIR, SANDBOX_SCRATCH_GIT, SandboxSpec
 
 
@@ -169,9 +169,16 @@ def test_host_command_without_compose_config_still_guarded(tmp_path: Path) -> No
 def test_host_script_parsing() -> None:
     assert host_script("./test_runner.sh integration {{filter}}") == "test_runner.sh"
     assert host_script("bin/cs {{files}}") == "bin/cs"
-    assert host_script("docker compose ps") is None
-    assert host_script("/usr/bin/env true") is None
-    for bad in ("../x.sh run", "bin/../../x", "'bin/cs' x", "bin/c$s"):
+    for bad in (
+        "docker compose ps",
+        "/usr/bin/env true",
+        "make",
+        "",
+        "../x.sh run",
+        "bin/../../x",
+        "'bin/cs' x",
+        "bin/c$s",
+    ):
         with pytest.raises(ValueError):
             host_script(bad)
 
@@ -396,4 +403,38 @@ def test_compose_stack_without_config_fails(tmp_path: Path) -> None:
     with patch("claude_workflow.runners.run_command", rec):
         status, output = run(cmd, _sh("true"), ctx)
     assert status.startswith("FAIL") and "docker-compose" in output
+    assert rec.calls == []
+
+
+def test_symlinked_script_in_base_is_refused(tmp_path: Path) -> None:
+    wt, _ = _make_worktree(tmp_path)
+    (wt / "docker").mkdir()
+    (wt / "docker/run.sh").write_text("#!/bin/sh\necho unprotected\n")
+    os.chmod(wt / "docker/run.sh", 0o755)
+    (wt / "bin/link.sh").symlink_to("../docker/run.sh")
+    _git(wt, "add", ".")
+    _git(wt, "commit", "-m", "link")
+    base = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=wt, check=True, capture_output=True, text=True
+    ).stdout.strip()
+    ctx = _ctx(tmp_path, wt, base)
+    rec = _Recorder()
+    with (
+        patch("claude_workflow.runners.run_command", rec),
+        pytest.raises(HostStop, match="regular file"),
+    ):
+        run(_cmd(run_in="host", command="bin/link.sh"), _sh("bin/link.sh"), ctx)
+    assert rec.calls == []
+
+
+def test_non_script_host_command_is_refused_at_run_time(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    rec = _Recorder()
+    for command in ("make test", "npm run x", "/usr/bin/x", "docker compose ps"):
+        with (
+            patch("claude_workflow.runners.run_command", rec),
+            pytest.raises(ValueError, match="repo script"),
+        ):
+            run(_cmd(run_in="host", command=command), _sh(command), ctx)
     assert rec.calls == []

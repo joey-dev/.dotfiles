@@ -195,9 +195,23 @@ def base_script_copy(
 
     dest_dir must be outside the worktree. The copy keeps the script's file name (so
     `$0` looks the same); `executable` makes it 0700. Raises ValueError if base has no
-    such file.
+    such file, or when it is not a regular file there (a symlink's blob is only the link
+    target, e.g. `docker/run.sh`: running it would run that unprotected worktree file).
     """
-    blob = _git_bytes(worktree, ["cat-file", "blob", f"{base_ref}:{script}"])
+    listing = _git_bytes(worktree, ["ls-tree", "-z", base_ref, "--", script])
+    entries = [e for e in listing.split(b"\0") if e]
+    if len(entries) != 1:
+        raise ValueError(f"{script} is not in the base commit")
+    meta, _, raw_path = entries[0].partition(b"\t")
+    mode, kind, sha = meta.decode().split()
+    if raw_path.decode("utf-8", errors="surrogateescape") != script:
+        raise ValueError(f"{script} is not in the base commit")
+    if kind != "blob" or mode not in {"100644", "100755"}:
+        raise ValueError(
+            f"{script} is not a regular file in the base commit (mode {mode}, {kind}); "
+            "symlinks and folders are refused"
+        )
+    blob = _git_bytes(worktree, ["cat-file", "blob", sha])
     target = dest_dir / Path(script).name
     target.write_bytes(blob)
     if executable:
