@@ -1,36 +1,62 @@
-"""Parse the tests.txt file that the Plan stage writes.
+"""Parse the tests.txt file that Plan writes (and Implement and Review may extend).
 
-Each line is `flake: <shell command>` (runs in the flake sandbox) or
-`docker: <args>` (runs on the host through the test runner). Docker args are
-split on whitespace and strictly validated, because they reach a host command.
+Each line is `<command-name> [name=value ...]`, split on whitespace, so a value can't
+contain spaces. The command must exist in the config, and every value must belong to
+a parameter with a `pattern` and fully match it. tests.txt is untrusted (Claude writes
+it): `render` checks all of this again before anything runs.
 """
 
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
-from typing import Literal
+from dataclasses import dataclass, field
+
+from claude_workflow.commands import Command
 
 TESTS_FILE = "tests.txt"
 
-DOCKER_TEST_TYPES: frozenset[str] = frozenset(
-    {"unit", "integration", "api", "mobile-api", "acceptance", "codecept-build"}
-)
-
-_TOKEN = re.compile(r"^[A-Za-z0-9_./:=@,+-]+$")
+TESTS_LINE_FORMAT = "<command-name> [parameter=value ...]"
 
 
 @dataclass(frozen=True)
 class TestLine:
-    """One valid line of tests.txt."""
+    """One valid line of tests.txt: a command name and its parameter values."""
 
     __test__ = False  # not a pytest test class
 
-    kind: Literal["flake", "docker"]
-    text: str
+    command: str
+    values: dict[str, str] = field(default_factory=dict[str, str])
 
 
-def parse_tests_file(text: str) -> tuple[list[TestLine], list[str]]:
+def _parse_line(line: str, commands: dict[str, Command]) -> TestLine:
+    """Parse one non-empty line (raises ValueError with the reason)."""
+    name, *pairs = line.split()
+    cmd = commands.get(name)
+    if cmd is None:
+        known = ", ".join(sorted(commands)) or "none"
+        raise ValueError(f"unknown command {name!r} (known: {known})")
+    values: dict[str, str] = {}
+    for pair in pairs:
+        key, sep, value = pair.partition("=")
+        if not sep or not key:
+            raise ValueError(f"expected parameter=value, got {pair!r}")
+        param = cmd.parameters.get(key)
+        if param is None:
+            known = ", ".join(sorted(cmd.parameters)) or "none"
+            raise ValueError(f"command {name!r} has no parameter {key!r} (known: {known})")
+        if param.pattern is None:
+            raise ValueError(f"parameter {key!r} has no pattern, so tests.txt cannot set it")
+        if key in values:
+            raise ValueError(f"parameter {key!r} is given twice")
+        if re.fullmatch(param.pattern, value) is None:
+            raise ValueError(f"value {value!r} for {key!r} does not match pattern {param.pattern!r}")
+        values[key] = value
+    return TestLine(name, values)
+
+
+def parse_tests_file(
+    text: str, commands: dict[str, Command]
+) -> tuple[list[TestLine], list[str]]:
     """Return (valid lines, error messages). Blank lines and # comments are skipped."""
     lines: list[TestLine] = []
     errors: list[str] = []
@@ -38,23 +64,8 @@ def parse_tests_file(text: str) -> tuple[list[TestLine], list[str]]:
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
-        kind, sep, rest = line.partition(":")
-        rest = rest.strip()
-        if not sep or kind not in ("flake", "docker") or not rest:
-            errors.append(f"line {number}: expected 'flake: <command>' or 'docker: <args>', got {line!r}")
-            continue
-        lines.append(TestLine(kind, rest))  # type: ignore[arg-type]
+        try:
+            lines.append(_parse_line(line, commands))
+        except ValueError as exc:
+            errors.append(f"line {number}: {exc}: {line!r}")
     return lines, errors
-
-
-def docker_args(text: str) -> list[str]:
-    """Split docker test args on whitespace and validate them. Raises ValueError."""
-    tokens = text.split()
-    if not tokens:
-        raise ValueError("docker args are empty")
-    if tokens[0] not in DOCKER_TEST_TYPES:
-        raise ValueError(f"unknown docker test type {tokens[0]!r}")
-    for token in tokens:
-        if not _TOKEN.match(token):
-            raise ValueError(f"disallowed characters in docker arg {token!r}")
-    return tokens

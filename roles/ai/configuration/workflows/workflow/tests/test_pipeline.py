@@ -12,6 +12,7 @@ import claude_workflow.pipeline as pipeline_mod
 import claude_workflow.stages.base as base_mod
 import claude_workflow.stages.plan as plan_mod
 from claude_workflow.claude_runner import ClaudeResult
+from claude_workflow.commands import Command, Parameter
 from claude_workflow.config import STAGE_ORDER, StageName, WorkflowConfig, default_config
 from claude_workflow.pipeline import run_pipeline
 from claude_workflow.stages.base import (
@@ -308,5 +309,47 @@ def test_plan_prompt_asks_for_tests_file(tmp_path: Path, monkeypatch: Any) -> No
     PlanStage().run(StageContext("PROJ-18", cfg, TicketState("PROJ-18"), state_dir))
 
     assert "tests.txt" in prompts[0]
-    assert "flake:" in prompts[0]
-    assert "docker:" in prompts[0]
+    assert "<command-name>" in prompts[0]
+    assert "flake:" not in prompts[0]
+
+
+def _plan_prompt(tmp_path: Path, monkeypatch: Any, **config: Any) -> str:
+    cfg = replace(_test_config(tmp_path), **config)
+    _init_git_repo(cfg.repo_path)
+    state_dir = cfg.state_base / "PROJ-19"
+    state_dir.mkdir(parents=True)
+    prompts: list[str] = []
+
+    def fake_headless(stage: Any, sandbox: Any, prompt: str, **_: Any) -> ClaudeResult:
+        prompts.append(prompt)
+        return ClaudeResult(1, "", "stop", None)
+
+    monkeypatch.setattr(base_mod, "run_claude_headless", fake_headless)
+    PlanStage().run(StageContext("PROJ-19", cfg, TicketState("PROJ-19"), state_dir))
+    return prompts[0]
+
+
+def test_catalogue_in_plan_prompt(tmp_path: Path, monkeypatch: Any) -> None:
+    api = Command(
+        name="tests:api", description="Codeception API suite.", run_in="host",
+        command="./test_runner.sh api {{filter}}", working_directory=None, timeout=60,
+        needs_compose_stack=True, needs_git=False, container=None, user=None,
+        parameters={
+            "filter": Parameter(
+                description="Test file.", required=True, pattern="[A-Za-z.]+",
+                example="InvoiceCest.php",
+            ),
+            "env": Parameter(description="Not settable.", example="ci"),
+        },
+    )
+
+    prompt = _plan_prompt(tmp_path, monkeypatch, commands={"tests:api": api})
+
+    assert "`tests:api`" in prompt
+    assert "run-in: host" in prompt
+    assert "Codeception API suite." in prompt
+    assert "`filter`" in prompt and "required" in prompt
+    assert "InvoiceCest.php" in prompt
+    assert "`tests:api filter=InvoiceCest.php`" in prompt  # an example tests.txt line
+    assert "`env`" in prompt and "not in tests.txt" in prompt
+    assert "./test_runner.sh" not in prompt  # Plan never sees the raw command

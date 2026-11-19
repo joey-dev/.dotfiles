@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
 
+from claude_workflow.commands import Command, VerifyEntry
 from claude_workflow.config import STAGE_ORDER, StageName, default_config
 from claude_workflow.pipeline import run_pipeline
 from claude_workflow.stages.base import StageContext, StageOutcome, StageResult
@@ -78,8 +79,16 @@ class WorkflowRegressionTests(TestCase):
             path = Path(directory)
             worktree = path / "worktree"
             worktree.mkdir()
+            check = Command(
+                name="check", description="", run_in="sandbox", command="printf verified",
+                working_directory=None, timeout=60, needs_compose_stack=False,
+                needs_git=False, container=None, user=None,
+            )
             config = replace(
-                default_config(), verify_commands=("printf verified",), state_base=path / "base"
+                default_config(),
+                commands={"check": check},
+                verify=(VerifyEntry("check"),),
+                state_base=path / "base",
             )
             state = TicketState("PROJ-1", worktree_path=worktree, base_commit="base")
             ctx = StageContext("PROJ-1", config, state, path)

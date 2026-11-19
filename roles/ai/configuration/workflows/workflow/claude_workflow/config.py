@@ -98,7 +98,6 @@ class DockerConfig:
 
     project_name: str
     profile: str = "dyflexis"
-    test_runner: str = "test_runner.sh"
     up_timeout: int = 900
     protected_paths: tuple[str, ...] = DEFAULT_PROTECTED_PATHS
     # Gitignored folders the stack mounts, copied from the main checkout before `up`.
@@ -123,13 +122,10 @@ class WorkflowConfig:
     shared_dependencies: tuple[SharedDependency, ...] = ()
     max_fix_rounds: int = 3
     headless_timeout: int = 3600  # seconds per headless Claude call
-    verify_timeout: int = 1800  # seconds per verify command (not in the config)
     commit_no_verify: bool = True  # skip git hooks for the final commit
     docker: DockerConfig | None = None
     commands: dict[str, Command] = field(default_factory=dict[str, Command])
     verify: tuple[VerifyEntry, ...] = ()
-    # Old free-form verify commands; no longer loaded from config (removed in Task 4).
-    verify_commands: tuple[str, ...] = ()
 
 
 def _default_state_base() -> Path:

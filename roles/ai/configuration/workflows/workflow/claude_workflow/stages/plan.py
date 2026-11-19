@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from claude_workflow.catalogue import command_catalogue
 from claude_workflow.claude_runner import run_claude_headless
 from claude_workflow.config import StageName
 from claude_workflow.sandbox import sandbox_paths
-from claude_workflow.tests_file import TESTS_FILE
+from claude_workflow.tests_file import TESTS_FILE, TESTS_LINE_FORMAT
 from claude_workflow.stages.base import (
     StageContext,
     StageOutcome,
@@ -49,9 +50,10 @@ class PlanStage:
             f"{paths.notes_dir / '03-qa.md'}. Write a concrete, step-by-step implementation and "
             f"test plan to {plan_md}. Write the plan test-first: each step names the test to "
             f"write before the code it covers. Also write {tests_md}: one line per test to run, "
-            f"'flake: <command>' or 'docker: <test_runner.sh arguments>'. List every test you "
+            f"'{TESTS_LINE_FORMAT}', using only the commands listed below. List every test you "
             f"plan to create or edit. If you hit a genuine unknown, write {blocked_md} "
-            f"and stop instead of guessing."
+            f"and stop instead of guessing.\n\n"
+            f"{command_catalogue(ctx.config.commands)}"
         )
         draft_result = run_headless_with_escalation(
             ctx, StageName.PLAN, sandbox, draft_prompt, plan_md_host
@@ -67,7 +69,9 @@ class PlanStage:
                 f"{paths.notes_dir / '03-qa.md'}. "
                 f"Write your review to {review_md}. Start the file with 'APPROVED' if the plan "
                 f"is ready, or 'CHANGES_REQUESTED' followed by concrete fixes. Also check {tests_md}: "
-                f"it must list every test the plan creates or edits."
+                f"it must list every test the plan creates or edits, using only the commands "
+                f"listed below.\n\n"
+                f"{command_catalogue(ctx.config.commands)}"
             )
             previous = artifact_stamp(review_md_host)
             rev = run_claude_headless(

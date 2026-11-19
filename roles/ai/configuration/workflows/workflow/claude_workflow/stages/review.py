@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
+from claude_workflow.catalogue import command_catalogue
 from claude_workflow.claude_runner import run_claude_headless
 from claude_workflow.config import StageName
 from claude_workflow.git_host import capture_diff, diff_digest
@@ -27,7 +28,7 @@ _LENSES: tuple[tuple[str, str], ...] = (
         "correctness",
         "Review diff.patch strictly for logic bugs, edge cases, error handling, "
         "missing tests, and regressions against 01-ticket.md and 04-plan.md. "
-        "If you think a test will fail, append it to {tests_file} under "
+        "If you think a test will fail, append a line for it to {tests_file} under "
         "'# suggested by review' and report it as a finding.",
     ),
     (
@@ -79,12 +80,14 @@ class ReviewStage:
             lens_host = ctx.state_dir / f"07-review-{lens_name}.md"
             lens_sandbox = paths.notes_dir / f"07-review-{lens_name}.md"
             focus_text = focus.format(tests_file=paths.notes_dir / TESTS_FILE)
+            catalogue = command_catalogue(ctx.config.commands) if lens_name == "correctness" else ""
             prompt = (
                 f"Read {paths.notes_dir / 'diff.patch'}, "
                 f"{paths.notes_dir / '01-ticket.md'}, and "
                 f"{paths.notes_dir / '04-plan.md'}. Focus: {focus_text} "
                 f"Write findings to {lens_sandbox}. Start with CHANGES_REQUESTED if issues "
                 "need to be fixed before acceptance, or APPROVED otherwise."
+                + (f"\n\n{catalogue}" if catalogue else "")
             )
             previous = artifact_stamp(lens_host)
             res = run_claude_headless(

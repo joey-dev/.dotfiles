@@ -1,7 +1,7 @@
 """Host-side Docker test stack: guard, worktree preparation and command builders.
 
 Claude never gets Docker access. The host starts the compose stack from the ticket's
-worktree and runs the test runner, but only after `guard_violations` confirms that no
+worktree and runs host commands, but only after `guard_violations` confirms that no
 Docker-related file differs from the base commit.
 """
 
@@ -17,7 +17,6 @@ from pathlib import Path
 
 from claude_workflow.config import DEFAULT_PROTECTED_PATHS, DockerConfig
 from claude_workflow.git_host import ignored_paths, touched_paths
-from claude_workflow.tests_file import docker_args
 
 # Extra seconds for `up` to build images before `--wait-timeout` starts counting.
 UP_BUILD_HEADROOM = 600
@@ -179,15 +178,6 @@ def up_command(cfg: DockerConfig, worktree: Path, repo: Path) -> list[str]:
     ]
 
 
-def base_runner_copy(cfg: DockerConfig, worktree: Path, base_ref: str, dest_dir: Path) -> Path:
-    """Write the base commit's test runner into dest_dir (outside the worktree).
-
-    The host runs this copy, never the worktree file: containers can write the worktree,
-    and `sh` reads a script while it runs. Raises ValueError if base has no runner.
-    """
-    return base_script_copy(worktree, base_ref, cfg.test_runner, dest_dir)
-
-
 def base_script_copy(
     worktree: Path, base_ref: str, script: str, dest_dir: Path, *, executable: bool = False
 ) -> Path:
@@ -217,14 +207,6 @@ def base_script_copy(
     if executable:
         target.chmod(0o700)
     return target
-
-
-def runner_command(cfg: DockerConfig, runner: Path, line: str) -> list[str]:
-    """Build the test runner argv from one tests-file line (raises ValueError if invalid).
-
-    runner is the host copy from base_runner_copy; run it with cwd=worktree.
-    """
-    return ["sh", str(runner), *docker_args(line)]
 
 
 def run_command(
