@@ -26,7 +26,7 @@ This doc holds the facts, the user's answers, the proposed design and the open q
 
 ### Decisions 9-12 (user, 2026-11-19)
 
-9. **`cs-check` runs in the sandbox** as `bin/cs verify {{files}}`, with **`needs-git: true`**. A throwaway `git init` folder replaces the masked `.git`.
+9. **`cs-check` runs in the sandbox** as `bin/cs {{files}}`, with **`needs-git: true`**. `files` defaults to **all changed files**; none changed means **skipped**. A throwaway `git init` folder replaces the masked `.git`.
 10. **`config render`** writes the merged config to `full-configs/<repo>.config.json` (gitignored, read-only view). The workflow never reads it.
 11. **Certs: copy only `*.crt`.** A `host-copies` entry is `{"path": "nginx-proxy/certs", "include": ["*.crt"]}`. Private keys stay behind. Symlinks are skipped. *To confirm in Task 6:* the proxy still starts.
 12. **Secrets:**
@@ -36,7 +36,7 @@ This doc holds the facts, the user's answers, the proposed design and the open q
 
 ### `phpstan:changed`
 
-- A separate command: phpstan on the **changed PHP files**, tests (`*Test.php`, `*/Tests/*`) excluded. No changed file means **skipped**.
+- A separate command: phpstan on the **changed PHP files**, tests (`*Test.php`, `*/Tests/*`, `tests/*`) excluded. `legacy/tests/` holds the Codeception `Cest` files. No changed file means **skipped**.
 - It is **not** in `verify`.
 
 ---
@@ -196,6 +196,11 @@ docker: api SomeCest
   - `06-verify.md` is still written, with the sandbox and `flake:` results and a "Docker tests skipped" section;
   - the pipeline asks **`[c]ontinue / [r]etry stage / [a]bort`**. Continue marks Verify done and goes on to Review;
   - with **`--auto`** it stops (exit 1). Run again without `--auto` to continue or retry.
+- **No new symlinks (final review of plan 11).** Root Docker follows a symlinked bind-mount source. If Claude replaced `./api-documentation` with a link to `$HOME`, Docker would mount `$HOME` into a test container.
+  - Right before `up` and before **every** host command, the host checks every touched or gitignored path, **and each parent folder** of it, with `lstat`.
+  - A symlink stops the run (**`NEEDS_HUMAN`**), unless the base commit has the **same symlink with the same target** at that path.
+  - Any doubt (an `lstat` error, an odd path) also stops. Code: `docker_stack.symlink_violations`.
+- **`06-verify.md` shows the `docker compose up` output** (command line plus output), also when `up` passes.
 - **`up` gets 10 extra minutes** on top of `up_timeout` (images build before `--wait-timeout` starts).
 - **The stack is left running** (user decision). After a ticket, the dev site shows the worktree's code until you run `docker compose --profile=dyflexis up -d` from the main checkout.
 

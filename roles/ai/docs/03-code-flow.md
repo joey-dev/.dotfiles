@@ -32,21 +32,23 @@ flowchart TD
 ## 3.1 `cli.py` — start
 
 1. `main()` builds the argument parser.
-2. Loads the config with `load_config(args.config)`.
-3. Replaces `repo_path` with the **git root** (`repo_root`), so starting in a subfolder works.
+2. Finds the **git root** (`repo_root`), so starting in a subfolder works.
+3. Loads the config with `load_config(root, args.config_dir)`.
 4. Calls `run_pipeline(...)`. Its return value becomes the **exit code**.
 
 ---
 
 ## 3.2 `config.py` — settings
 
-`load_config(path)` (`config.py:259`):
+`load_config(repo_root, config_dir)`:
 
-1. Starts from **built-in defaults** (`default_config`, `default_stages`).
-2. Picks a file: `--config` path, else `~/.config/claude-workflow/config.json`. No file → defaults only.
-3. Applies **per-stage overrides** with validation (`_apply_stage_overrides`).
-4. Validates the top-level keys: `verify_commands`, `shared_dependencies`, the limits, the timeouts, `commit_no_verify`.
-5. Expands `~` in all paths. Returns a frozen `WorkflowConfig`.
+1. Reads **two files** from the config folder (`--config-dir`, else `~/.config/claude-workflow`):
+   - `global.config.json`: `kb-path`, `flake-path`, the limits, `stages`;
+   - `repository/<repo-name>.config.json`: `commands`, `verify`, `docker-compose`, `shared-dependencies`, plus any override.
+2. **A missing file is an error.** No repo file → *"copy example.config.json"*.
+3. **Merges** them: objects merge per key (one stage field can be changed), lists are replaced.
+4. **Validates** with `config.schema.json` plus cross checks (unknown commands, placeholders, invalid `pattern` regexes, ...). Each error names its **source file**.
+5. Returns a frozen `WorkflowConfig`. `claude-workflow config check` runs the same checks.
 
 ---
 
@@ -121,7 +123,7 @@ Each `run(ctx)` follows the same pattern: worktree (if needed) → sandbox → p
 | `qa.py` | Saves the session id **before** starting; keeps it on Ctrl-C |
 | `plan.py` | Draft → loop of review (checks blocker + verdict) and revise |
 | `implement.py` | Test-first prompt with your check commands; the fix feedback file if set |
-| `verify.py` | No Claude. `_run_check()` per command with timeout; diff before/after; NEEDS_FIX on failures |
+| `verify.py` | No Claude. Runs `verify` + `tests.txt` through `commands.render` and `runners.run`; diff before/after; NEEDS_FIX on failures, NEEDS_HUMAN on a host stop |
 | `review.py` | Digest check, `diff.patch`, 2 lenses, NEEDS_FIX on changes requested |
 | `retro.py` | Like `qa.py`, no repo; prints the paths for you first |
 

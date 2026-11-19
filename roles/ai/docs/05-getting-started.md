@@ -8,7 +8,7 @@ How to install, configure, and run the workflow. Each item says **what it does**
 
 ## 5.1 Install (once per machine)
 
-**What it does:** puts `claude-workflow`, `claude`, `bwrap`, `socat` on your `PATH`, and writes `~/.config/claude-workflow/config.json`.
+**What it does:** puts `claude-workflow`, `claude`, `bwrap`, `socat` on your `PATH`, and links the config folder to `~/.config/claude-workflow/` (`global.config.json`, `repository/`, the schema).
 
 1. `"ai"` is already in `hosts/roles.nix`.
 2. Rebuild home-manager the way you normally do. The build **runs the tests**.
@@ -50,11 +50,16 @@ mkdir -p ~/notes/work-kb
 
 ## 5.3 First-time setup (once per repository)
 
-### a. Set `verify_commands` — **required**
+### a. Create the repo config — **required**
 
-**What it does:** Verify runs these, and Implement is told to use them for test-first work. **An empty list makes Verify fail.**
+**What it does:** the repo config names the **commands** Verify may run. **Without the file, the workflow refuses to start.**
 
-### b. Set `flake_path` — recommended
+- File: `roles/ai/configuration/workflows/config/repository/<repo-name>.config.json`.
+- `<repo-name>` is the **folder name** of the repo root, for example `dyflexis-monorepo`.
+- Start from **`example.config.json`** in the same config folder.
+- Check it: `claude-workflow config check` (run inside the repo).
+
+### b. Set `flake-path` — recommended
 
 **What it does:** Implement and Verify get the flake's dev shell environment (PHP, Composer, Node, …). It's loaded **once per run**.
 
@@ -69,26 +74,39 @@ mkdir -p ~/notes/work-kb
 
 **What it does:** the worktree branches from your main checkout's `HEAD` at Explore. Uncommitted changes are **not** included (you get a warning).
 
-### e. Where to put a per-repo config
+### e. How the repo config works
 
-There is **no automatic per-repo config file**:
+**The idea:** every check is a **named command**. Claude never writes shell lines; it writes command names in `tests.txt`.
 
-- edit `roles/ai/configuration/workflows/config.json` and rebuild (applies to **all** repos), or
-- keep a separate file and pass it with **`--config`**.
+- **`commands`**: each one has a `command` line with `{{parameters}}`, and a **`run-in`**:
+  - `sandbox`: bwrap, no network;
+  - `host`: runs the base-commit copy of a repo script on the host;
+  - `container`: `docker exec` into a running container.
+- **`verify`**: the commands Verify **always** runs, in order.
+- **`tests.txt`** (per ticket): `<command> [key=value ...]`. Only parameters with a **`pattern`** can be set there.
+- **`docker-compose`**: the compose stack for commands with `needs-compose-stack: true`.
 
-Example (**untested**, commands are placeholders):
+Example (**untested**, the command is a placeholder):
 
 ```json
 {
-  "flake_path": "~/projects/my-repo",
-  "verify_commands": [
-    "vendor/bin/phpunit --testsuite unit",
-    "npm run lint"
-  ]
+  "$schema": "../config.schema.json",
+  "commands": {
+    "phpunit": {
+      "run-in": "sandbox",
+      "command": "vendor/bin/phpunit {{filter}}",
+      "parameters": {
+        "filter": { "format": "--filter {{value}}", "pattern": "^[A-Za-z0-9_]+$" }
+      }
+    }
+  },
+  "verify": [{ "run": "phpunit" }]
 }
 ```
 
-Keys you leave out keep their defaults.
+The global file (`global.config.json`) holds the limits and stages. A repo file can **override** any global key.
+
+**See the merged result:** `claude-workflow config render` writes `full-configs/<repo>.config.json` (read-only view; the workflow never reads it).
 
 ---
 
@@ -96,7 +114,7 @@ Keys you leave out keep their defaults.
 
 ```sh
 cd ~/path/to/your/repo          # any folder inside the repo works
-claude-workflow PROJ-123 [--from-stage STAGE | --only-stage STAGE] [--auto] [--config FILE]
+claude-workflow PROJ-123 [--from-stage STAGE | --only-stage STAGE] [--auto] [--config-dir DIR]
 ```
 
 | Parameter | What it does |
@@ -105,7 +123,7 @@ claude-workflow PROJ-123 [--from-stage STAGE | --only-stage STAGE] [--auto] [--c
 | `--from-stage STAGE` | Re-run `STAGE` **and every stage after it**. Earlier stages must be completed. |
 | `--only-stage STAGE` | Re-run **only** `STAGE`, stop after you approve it. |
 | `--auto` | Gates always "continue", the fix choice always "fix" (while rounds are left). Q&A, Retro and escalation stay interactive. |
-| `--config FILE` | Use this JSON config instead of `~/.config/claude-workflow/config.json`. |
+| `--config-dir DIR` | Config folder with `global.config.json` and `repository/` (default `~/.config/claude-workflow`). |
 
 `STAGE` is one of: `intake`, `explore`, `qa`, `plan`, `implement`, `verify`, `review`, `retro`.
 
@@ -153,26 +171,32 @@ Use `--copy-credentials -- claude` to start Claude inside. See the docstring at 
 
 ## 5.5 Config keys
 
-File: `configuration/workflows/config.json`. Loader: `config.py:259`.
+Folder: `configuration/workflows/config/`. Schema: `config.schema.json` (Neovim validates live via `$schema`). Loader: `config.py`, `load_config`.
 
-### Top level
+Keys are **kebab-case**. Durations are strings with a unit: `"90s"`, `"15m"`, `"2h"`.
 
-| Key | Default | What it does |
-|---|---|---|
-| `repo_path` | git root of the current folder | Repository to work on |
-| `worktree_base` | `<state_base>/worktrees` | Where worktrees are created |
-| `state_base` | `~/.local/state/claude-workflow` | Where ticket state folders go |
-| `kb_path` | `~/notes/work-kb` | Knowledge base, mounted read-only |
-| `skills_base` | from `CLAUDE_WORKFLOW_SKILLS` | Folder with `shared/`, `intake/`, … skills |
-| `flake_path` | `null` | Nix flake whose dev shell Implement and Verify use |
-| `verify_commands` | `[]` | Shell commands for Verify; **must not be empty** |
-| `shared_dependencies` | `vendor` + `composer.lock`, `node_modules` + `package-lock.json` | Folders mounted from main when lockfiles match |
-| `max_plan_reviews` | `2` | Max plan review passes (≥ 1) |
-| `max_escalations` | `3` | Max blocked-question rounds per stage (≥ 0) |
-| `max_fix_rounds` | `3` | Max Verify/Review → Implement rounds (≥ 0) |
-| `headless_timeout` | `3600` | Seconds per headless Claude call |
-| `verify_timeout` | `1800` | Seconds per verify command |
-| `commit_no_verify` | `true` | Skip git hooks for the final commit |
+### Global (`global.config.json`)
+
+| Key | What it does |
+|---|---|
+| `kb-path` | Knowledge base, mounted read-only |
+| `flake-path` | Nix flake whose dev shell Implement and Verify use (`null` = none) |
+| `max-plan-reviews` | Max plan review passes |
+| `max-escalations` | Max blocked-question rounds per stage |
+| `max-fix-rounds` | Max Verify/Review → Implement rounds |
+| `headless-timeout` | Time per headless Claude call, e.g. `"60m"` |
+| `commit-no-verify` | Skip git hooks for the final commit |
+| `stages` | Per stage settings (below) |
+
+### Per repo (`repository/<repo-name>.config.json`)
+
+| Key | What it does |
+|---|---|
+| `commands` | The named commands (see 5.3 e) |
+| `verify` | Commands Verify always runs |
+| `docker-compose` | Compose project, profile, `services`, `host-copies`, `create-dirs`, `up-timeout` |
+| `shared-dependencies` | Folders mounted from main when the lockfiles match |
+| any global key | Overrides the global value (stages merge per field) |
 
 ### Per stage (`stages.<name>.…`)
 
@@ -180,10 +204,10 @@ File: `configuration/workflows/config.json`. Loader: `config.py:259`.
 |---|---|---|
 | `model` | e.g. `sonnet`, `opus` | Passed as `--model` |
 | `thinking` | `low`, `medium`, `high`, `xhigh`, `max` | Passed as `--effort` |
-| `repo_access` | `none`, `ro`, `rw` | How the worktree is mounted |
-| `allow_network` | `true` / `false` | `false` = only Anthropic hosts via the proxy (Verify: no network at all) |
-| `mcp_config` | path or `null` | MCP JSON file, mounted as `~/.claude/mcp.json` |
-| `allowed_tools` | list of strings | Claude tools the stage may use |
+| `repo-access` | `none`, `ro`, `rw` | How the worktree is mounted |
+| `allow-network` | `true` / `false` | `false` = only Anthropic hosts via the proxy (Verify: no network at all) |
+| `mcp-config` | path or `null` | MCP JSON file, mounted as `~/.claude/mcp.json` |
+| `allowed-tools` | list of strings | Claude tools the stage may use |
 
 ---
 
@@ -192,7 +216,7 @@ File: `configuration/workflows/config.json`. Loader: `config.py:259`.
 | Variable | What it does |
 |---|---|
 | `XDG_STATE_HOME` | Base for `state_base` (default `~/.local/state`) |
-| `XDG_CONFIG_HOME` | Base for the config file (default `~/.config`) |
+| `XDG_CONFIG_HOME` | Base for the config folder (default `~/.config`) |
 | `CLAUDE_WORKFLOW_SKILLS` | Skills folder. **Set by the Nix wrapper** |
 
 **Inside the sandbox**, only these host variables are kept: `HOME USER LOGNAME PATH SHELL LANG LC_ALL LC_CTYPE LOCALE_ARCHIVE TERM TERMINFO TERMINFO_DIRS COLORTERM TZ NIX_SSL_CERT_FILE SSL_CERT_FILE`. The flake's dev shell variables are added on top. Tokens and other secrets are **not** passed.
@@ -206,7 +230,7 @@ For no-network stages, the sandbox also sets `HTTPS_PROXY`, `HTTP_PROXY` and `NO
 - [ ] `ai` role rebuilt
 - [ ] Logged in with `claude` on the host
 - [ ] `Atlassian-Rovo-MCP` connected (`claude` in the repo → `/mcp`)
-- [ ] `verify_commands` set
-- [ ] `flake_path` set (if the repo needs a dev shell)
+- [ ] `repository/<repo-name>.config.json` exists and `claude-workflow config check` says ok
+- [ ] `flake-path` set (if the repo needs a dev shell)
 - [ ] Dependencies installed in your main checkout
 - [ ] Local changes committed or stashed

@@ -14,7 +14,7 @@ This is the **only status page**. The other docs hold details; their checkboxes 
 | `07-plan.md` | Fixes for those bugs (15 tasks) | **Done** (checkboxes never ticked). Intake validated by the user (`ec9fb7f`) |
 | `09-tests-and-docker.md` | Design: tests, Docker stack, security rules | **Built**; the format parts are replaced by `11` |
 | `10-plan-tests-docker.md` | Tests + Docker plan | **Tasks 1-6 done** (commit `f1b50ed`, 199 tests). **Task 7 not done** → moved into `11`, Task 6 |
-| `11-plan-commands-config.md` | Named commands, kebab-case config (global + per repo), `full-configs/` render, new `tests.txt` | **Tasks 1-5 done** (config, commands, runners, `tests.txt`, final config + docs). **Task 6 next**; all decisions made (2026-11-19) |
+| `11-plan-commands-config.md` | Named commands, kebab-case config (global + per repo), `full-configs/` render, new `tests.txt` | **Tasks 1-5 done**, incl. the final-review fixes (config, commands, runners, `tests.txt`, final config + docs). **Task 6 next**; all decisions made (2026-11-19) |
 
 **Not yet verified anywhere:** a full run on a real ticket, stages Explore → Retro on the real repo, and anything with the real Docker stack.
 
@@ -25,6 +25,16 @@ This is the **only status page**. The other docs hold details; their checkboxes 
 1. **Task 6 of `11`:** real-repo checks with the user, then a first real ticket.
    - Confirm `docker-compose.services` (`legacy-web-debug`, `lighttpd`, `db`, `redis`): **not verified without Docker**.
    - Check that the proxy starts with only the `*.crt` files.
+   - Check `cs-check` (`bin/cs <changed files>`) and `phpstan:changed` (tests excluded) on a real diff.
+   - Read the `docker compose up` section in `06-verify.md` after the first real run.
+
+### Final-review fixes of `11` (done 2026-11-19)
+
+- **New symlinks stop the host.** Before `up` and before every host command: any touched or gitignored path (or a parent folder) that is a symlink not in the base commit → **`NEEDS_HUMAN`**. Root Docker would follow a symlinked mount source.
+- **`cs-check`** runs `bin/cs {{files}}` on the **changed files** (skipped when none). The old `bin/cs verify` checked nothing.
+- **A missing `repository/<repo-name>.config.json` is an error** (run, `config check`, `config render`, `sandbox_shell`).
+- A command that **can't start** is a `FAIL`, not a crash. An **invalid `pattern` regex** is a config error.
+- `phpstan:changed` also excludes `tests/*`. `06-verify.md` shows the **`up` output** also when `up` passes.
 
 ### Open user decisions
 

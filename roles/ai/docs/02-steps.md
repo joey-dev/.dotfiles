@@ -2,7 +2,7 @@
 
 This document explains **each stage**: what it reads, what it writes, what it is **allowed** to do, and how it ends.
 
-All Python files mentioned live in `roles/ai/configuration/workflows/workflow/claude_workflow/`. Settings are the defaults from `configuration/workflows/config.json`.
+All Python files mentioned live in `roles/ai/configuration/workflows/workflow/claude_workflow/`. Settings come from `configuration/workflows/config/global.config.json` (and the repo file).
 
 ---
 
@@ -180,13 +180,13 @@ Code: `deps.py`. Per entry in `shared_dependencies` (default: `vendor` + `compos
 | **Network** | Anthropic only |
 | **KB** | no |
 | **Tools** | `Read`, `Edit`, `Write`, `Glob`, `Grep`, `Bash` |
-| **Dev shell** | the flake's environment, if `flake_path` is set |
+| **Dev shell** | the flake's environment, if `flake-path` is set |
 | **Reads** | `04-plan.md`, `03-qa.md`, and the fix feedback file if set |
 | **Writes** | code in the worktree, `05-implement.md`, maybe `blocked-questions.md` |
 | **Code** | `stages/implement.py` |
 
 - The prompt asks for **red-green**: write the test, see it fail, write the code until it passes.
-- It lists your **`verify_commands`** so Claude knows how to run the checks (`_test_first_instruction`, `stages/implement.py:16`).
+- It shows the **command catalogue** (from the repo config's `commands`) and what Verify always runs (`verify`). For `sandbox` commands it also shows the line, so Claude can run that check itself (`_test_first_instruction`, `stages/implement.py`).
 - In a fix round: *"Fix the problems listed in ~/notes/06-verify.md"* (or `07-review.md`).
 - **No git** (`.git` is hidden) and **no network** except Anthropic.
 - Implement does **not commit**.
@@ -199,18 +199,33 @@ Code: `deps.py`. Per entry in `shared_dependencies` (default: `vendor` + `compos
 
 | | |
 |---|---|
-| **Runs as** | **No Claude.** The host runs shell commands |
-| **Repo access** | worktree, read-write mount |
-| **Network** | **none at all** |
-| **Dev shell** | the flake's environment, if `flake_path` is set |
+| **Runs as** | **No Claude.** The host runs **named commands** from the repo config |
+| **Repo access** | worktree, read-write mount (sandbox commands) |
+| **Network** | **none** in the sandbox |
+| **Dev shell** | the flake's environment, if `flake-path` is set |
+| **Reads** | `tests.txt` (written by Plan / Implement) |
 | **Writes** | `06-verify.md` |
-| **Code** | `stages/verify.py` |
+| **Code** | `stages/verify.py`, `runners.py`, `docker_stack.py` |
 
-1. `verify_commands` **empty** → FAILED. **The default config has it empty.**
-2. Takes a snapshot of the diff, then runs each command as `sh -c "<cmd>"` in bwrap.
+**What runs:**
+
+- First every entry of **`verify`** (trusted config; these get the Verify cache).
+- Then every line of **`tests.txt`**: `<command> [key=value ...]`. Values are **checked on the host** against the parameter's `pattern` (no cache).
+- Each command has a **`run-in`**:
+  - **`sandbox`**: bwrap, no network;
+  - **`host`**: the **base-commit copy** of the script runs on the host, after the guard;
+  - **`container`**: `docker exec` into a running container.
+- **`needs-compose-stack: true`** starts the compose stack from the worktree first (once per run).
+
+**Steps:**
+
+1. No `tests.txt` → **NEEDS_FIX** (write it).
+2. Takes a snapshot of the diff, then runs every command.
 3. The diff **changed** → FAILED, with the list of changed files.
 4. Stores a **fingerprint of the diff** (`verified_diff`).
-5. Any command failed or timed out → **NEEDS_FIX**. Otherwise → **DONE**.
+5. Any command failed or timed out → **NEEDS_FIX**.
+6. Only a **host stop** (guard tripped, new symlink, preparing failed) → **NEEDS_HUMAN**. Otherwise → **DONE**.
+7. A command with no changed files to check is **skipped**, not passed.
 
 ---
 
