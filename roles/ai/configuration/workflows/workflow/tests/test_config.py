@@ -488,3 +488,18 @@ def test_missing_repo_file_is_an_error(tmp_path: Path, schema_path: Path) -> Non
     out, errors = render_full_config(repo, config_dir, tmp_path / "out")
     assert errors == [want]
     assert not out.exists()
+
+
+def test_invalid_parameter_pattern_is_reported(schema_path: Path) -> None:
+    raw = {
+        "commands": {
+            "t": {
+                "run-in": "sandbox",
+                "command": "t {{f}}",
+                "parameters": {"f": {"pattern": "^[a-z+$"}, "g": {"pattern": "^ok$"}},
+            }
+        }
+    }
+    errors = validate_raw(raw, schema_path)
+    assert len(errors) == 1
+    assert errors[0].startswith("$.commands.t.parameters.f.pattern: invalid regex: ")

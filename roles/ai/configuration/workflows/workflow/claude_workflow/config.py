@@ -335,6 +335,17 @@ def _cross_check(raw: dict[str, Any]) -> list[tuple[list[PathPart], str]]:
                     (["commands", name, "command"], f"placeholder '{tok}' sits inside quotes")
                 )
         for pname, praw in params.items():
+            pattern = praw.get("pattern") if isinstance(praw, dict) else None
+            if isinstance(pattern, str):
+                try:
+                    re.compile(pattern)
+                except re.error as exc:
+                    errors.append(
+                        (
+                            ["commands", name, "parameters", pname, "pattern"],
+                            f"invalid regex: {exc}",
+                        )
+                    )
             fmt = praw.get("format") if isinstance(praw, dict) else None
             if isinstance(fmt, str) and tokens_inside_quotes(fmt, _VALUE):
                 errors.append(
