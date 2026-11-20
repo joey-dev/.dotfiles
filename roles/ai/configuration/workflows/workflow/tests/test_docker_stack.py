@@ -59,6 +59,19 @@ def _make_repo(tmp_path: Path) -> tuple[Path, str]:
     return repo, base
 
 
+def test_guard_uses_owner_execute_bit_like_git(tmp_path: Path) -> None:
+    # The /srv worktree ACL (o::rX) gives "other" execute on normal files; git ignores
+    # that (only the owner bit counts), so the guard must too.
+    repo, base = _make_repo(tmp_path)
+    dockerfile = repo / "legacy/docker/legacy-web/legacy-web.Dockerfile"
+    dockerfile.chmod(0o645)
+    assert guard_violations(repo, base, DEFAULT_PROTECTED_PATHS) == []
+    dockerfile.chmod(0o744)
+    assert guard_violations(repo, base, DEFAULT_PROTECTED_PATHS) == [
+        "legacy/docker/legacy-web/legacy-web.Dockerfile"
+    ]
+
+
 def test_guard_flags_changed_test_runner(tmp_path: Path) -> None:
     repo, base = _make_repo(tmp_path)
     (repo / "test_runner.sh").write_text("rm -rf /\n")

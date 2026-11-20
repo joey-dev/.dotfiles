@@ -124,7 +124,8 @@ def _base_content_violations(
                 st = target.lstat()
                 same = (
                     stat.S_ISREG(st.st_mode)
-                    and bool(st.st_mode & 0o111) == (mode == "100755")
+                    # Owner execute bit only, like git (the worktree ACL adds "other" x).
+                    and bool(st.st_mode & stat.S_IXUSR) == (mode == "100755")
                     and target.read_bytes() == blob
                 )
         except OSError:
