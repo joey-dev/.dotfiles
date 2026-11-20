@@ -1,4 +1,4 @@
-"""Stage 3: Interactive Q&A — batched clarification with the human."""
+"""Stage 3: Interactive Q&A — one open question at a time with the human."""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ class QaStage:
         prompt = (
             f"Read {paths.notes_dir / '01-ticket.md'} and "
             f"{paths.notes_dir / '02-findings.md'}. "
-            f"Ask batched clarifying questions and record all Q&A incrementally to "
+            f"Ask the user one open question at a time and record all Q&A incrementally to "
             f"{paths.notes_dir / '03-qa.md'}."
         )
         previous = None if resume else artifact_stamp(artifact)

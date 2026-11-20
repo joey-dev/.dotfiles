@@ -119,6 +119,8 @@ Code: `deps.py`. Per entry in `shared_dependencies` (default: `vendor` + `compos
 | **Writes** | `02-findings.md` |
 | **Code** | `stages/explore.py` |
 
+- Findings start with **How It Works Today** and **Could Change the Ticket**, and the open questions are sorted **biggest first**, so Q&A can start with the most important one.
+
 ---
 
 ## 2.3 Q&A
@@ -137,6 +139,7 @@ Code: `deps.py`. Per entry in `shared_dependencies` (default: `vendor` + `compos
 | **Writes** | `03-qa.md` |
 | **Code** | `stages/qa.py` |
 
+- Claude first echoes the ticket back, then asks **one open question at a time**. After each answer it re-checks which other points that answer settled, and updates `03-qa.md`.
 - You end the session yourself. Exit code 0 + fresh `03-qa.md` → **DONE**.
 - **Ctrl-C** (exit 130) keeps the session, so the next run **resumes the same conversation**.
 - **`--auto` does not skip this.**
@@ -159,8 +162,8 @@ Code: `deps.py`. Per entry in `shared_dependencies` (default: `vendor` + `compos
 | **Writes** | `04-plan.md`, `04-plan-review.md`, maybe `blocked-questions.md` |
 | **Code** | `stages/plan.py` |
 
-1. **Draft:** writes `04-plan.md`. Each step names the test to write before its code.
-2. **Review pass:** a new Claude call writes `04-plan-review.md`, starting with `APPROVED` or `CHANGES_REQUESTED`. Markdown around the word is fine, but extra words after it are not (`APPROVED WITH CHANGES` is no verdict).
+1. **Draft:** writes `04-plan.md`. It starts with a **Size** line and an **Approaches** section (2–3 ways, which one was picked, why). Decisions not made in `03-qa.md` are marked *planner's call*. Each step names the test to write before its code.
+2. **Review pass:** a new Claude call writes `04-plan-review.md`, starting with `APPROVED` or `CHANGES_REQUESTED`. The reviewer does a **builder check**: what would the implementer still need to ask? Markdown around the word is fine, but extra words after it are not (`APPROVED WITH CHANGES` is no verdict).
 3. **Revise:** if changes are requested, a new call rewrites the plan. Back to step 2.
 4. Stops after `max_plan_reviews` (default **2**) review passes.
 
@@ -240,7 +243,7 @@ Code: `deps.py`. Per entry in `shared_dependencies` (default: `vendor` + `compos
 | **Repo access** | worktree, read-only |
 | **Network** | Anthropic only |
 | **KB** | yes, read-only |
-| **Reads** | `diff.patch`, `01-ticket.md`, `04-plan.md` |
+| **Reads** | `diff.patch`, `01-ticket.md`, `03-qa.md` (wins over the ticket), `04-plan.md` |
 | **Writes** | `diff.patch`, `07-review-correctness.md`, `07-review-conventions.md`, `07-review.md` |
 | **Code** | `stages/review.py` |
 

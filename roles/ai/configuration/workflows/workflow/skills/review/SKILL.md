@@ -15,6 +15,7 @@ Treat the change as **someone else's merge request**. Your report goes back to I
 
 - `diff.patch` — the change under review. Only lines added or changed in it are in scope.
 - `01-ticket.md` — what the change should do (the author's intent).
+- `03-qa.md` — the user's answers, including any escalation sections at the end. Where it disagrees with `01-ticket.md` (see its "Changed from the ticket" section), `03-qa.md` wins: a ticket requirement that `03-qa.md` changed or dropped is not missing.
 - `04-plan.md` — how the author planned to do it.
 - The repository (read-only) — read surrounding code to confirm a finding, not to hunt for problems outside the diff.
 - `CLAUDE.md` / `AGENTS.md` files in the repo — a rule applies to a changed file only if the rule file sits in that file's directory or a parent directory.
@@ -38,7 +39,7 @@ Treat the change as **someone else's merge request**. Your report goes back to I
 
 - Code that will not parse, compile, or load (syntax errors, type errors, missing imports, unresolved references).
 - Logic that produces wrong results for realistic inputs, or a regression in existing behavior.
-- A requirement from `01-ticket.md` that is missing or implemented incorrectly.
+- A requirement from `01-ticket.md` (as changed by `03-qa.md`) that is missing or implemented incorrectly.
 - A clear violation of a scoped `CLAUDE.md` rule; quote the rule.
 
 **Non-blocking** — worth mentioning, but the change can proceed: naming, readability, minor duplication, small simplifications. Keep these few.
@@ -88,8 +89,8 @@ CHANGES_REQUESTED
 
 A separate run that checks the **blocking findings** of the lenses before they go back to Implement. You did not write these findings; do not trust them.
 
-1. Read the findings file named in the prompt, `diff.patch`, and `01-ticket.md`.
-2. For each finding, open the code and check the claim itself: the line exists in the diff, the bug really happens, the ticket really asks for it, the quoted `CLAUDE.md` rule really exists and applies to that path.
+1. Read the findings file named in the prompt, `diff.patch`, `01-ticket.md`, and `03-qa.md`.
+2. For each finding, open the code and check the claim itself: the line exists in the diff, the bug really happens, the ticket really asks for it and `03-qa.md` did not change that, the quoted `CLAUDE.md` rule really exists and applies to that path.
 3. Mark it **CONFIRMED** only if you verified it. Mark it **REJECTED** if it is wrong, pre-existing, not blocking under the rules above, or you cannot confirm it.
 4. Do not add new findings and do not edit `tests.txt`.
 
