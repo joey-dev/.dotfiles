@@ -17,7 +17,7 @@ All Python files mentioned live in `roles/ai/configuration/workflows/workflow/cl
 ### The ticket worktree
 
 - Created at **Explore** (`ensure_ticket_worktree`, `stages/base.py:57`).
-- Branch = ticket in lower case (`proj-123`). Path = `~/.local/state/claude-workflow/worktrees/<TICKET>`.
+- Branch = ticket in lower case (`proj-123`). Path = `<worktree-base>/<TICKET>` (config key `worktree-base`, default `/srv/claude-workflow/worktrees`).
 - Base commit = `HEAD` of your main checkout **the first time**. It never moves after that.
 - Uncommitted changes in your main checkout are **not** included. You get a warning.
 - Every stage that needs code (Explore, Q&A, Plan, Implement, Verify, Review, escalation Q&A) uses this worktree.

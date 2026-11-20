@@ -136,4 +136,4 @@ One `SKILL.md` per stage, plus `shared/`. Each stage gets **`shared` + its own**
 | `~/.local/state/claude-workflow/.cache/<TICKET>/<stage>/` | `base.py` (`stage_cache_dir`) | Persistent `$TMPDIR` (phpstan cache) for Implement and Verify; one folder per stage, outside the ticket folder |
 | `…/<TICKET>/diff.patch` | `review.py` | The diff that was reviewed |
 | `…/<TICKET>/feedback.md` | **you** (optional) | Feedback read by Retro |
-| `~/.local/state/claude-workflow/worktrees/<TICKET>/` | `base.py` / `git_host.py` | The git worktree with the code changes |
+| `<worktree-base>/<TICKET>/` (default `/srv/claude-workflow/worktrees`) | `base.py` / `git_host.py` | The git worktree with the code changes |

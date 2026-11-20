@@ -220,6 +220,10 @@ docker: api SomeCest
 - **`docker.sock` bind mounts** in the compose file (`proxy`, `proxy-companion`) would point at the root socket. The host runs `docker compose config --format json` and writes an override to `<state_base>/compose/<project-name>.override.json`. `up` gets `--file <override>`.
 - **Port conflict:** if `up` fails with "address already in use", Verify adds a hint to stop the dev stack. Verify does **not** stop it itself.
 - **Registry:** images are pulled with **your** login (`~/.docker/config.json`, client side). `cw-docker` needs no login.
+- **Troubleshooting: "permission denied" on `/var/lib/cw-docker-sock/docker.sock`.**
+  - **Cause:** dockerd's default socket group `docker` maps to subgid 200130 inside the user namespace, so the daemon user is locked out.
+  - **Fix (already in `system.nix`):** `daemon.settings.group = "0"`. Group 0 inside the namespace is `cw-docker` (2001).
+  - After a daemon config change, restart: `sudo systemctl --user -M cw-docker@ restart docker`.
 - **The plan-11 guard, base-copy and symlink checks stay** as extra layers.
 
 ---

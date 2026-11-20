@@ -92,7 +92,7 @@ nix shell nixpkgs#python312 nixpkgs#socat nixpkgs#bubblewrap -c \
 
 - **Automate migrations** (now: Claude only edits `legacy/app/atlas-migrations/customer/schema/tables`, the user runs it).
 - **Browser / manual testing** on the dev website.
-- **Dev stack + workflow stack at once** (only **after** option 2 of `12` works) (option 2 is built; this is still a later item): the workflow stack publishes no host ports (`ports: !reset []` override), so Verify no longer stops your dev stack. Research is in `12`, last section.
+- **Dev stack + workflow stack at once** (option 2 is built, but this is still a later item): the workflow stack publishes no host ports (`ports: !reset []` override), so Verify no longer stops your dev stack. Research is in `12`, last section.
 - **Parallel tickets** (one Docker stack per ticket; per-worktree container names).
 - **More CI checks** to keep the pipeline green.
 - **Codex / other models** as a runner (needs company OK; start with one read-only Review lens).

@@ -85,7 +85,7 @@
 ### How it works with your dev stack
 
 - **Two daemons:** your normal root Docker (your dev stack) and `cw-docker`'s rootless Docker (the workflow).
-- They are **separate**, so a Verify run can't "take over" your containers anymore. Both stacks want ports 80/443, so **in option 2 Verify must stop your dev stack first** (`docker compose down` on your daemon). Running both at once is a **later step, not part of option 2**: see "Later, after option 2: both stacks at once" at the end.
+- They are **separate**, so a Verify run can't "take over" your containers anymore. Both stacks want ports 80/443, so **you must stop your dev stack before a Verify run** (`docker compose down` on your daemon). Verify does **not** stop it itself; on "address already in use" it adds a hint. Running both at once is a **later step, not part of option 2**: see "Later, after option 2: both stacks at once" at the end.
 - **Databases are separate** (separate volumes). For the tests that's fine: `test_customer` is seeded on every run.
 
 ### Variant: a small VM instead of a user
@@ -126,7 +126,7 @@
 | **Tests left to CI only** | Integration, API, acceptance | Only what the workflow doesn't list (e.g. Playwright) |
 | **Can Claude-written code reach your home folder?** | No: it only runs in the bwrap sandbox | No: the Docker daemon itself can't reach it (file permissions) |
 | **Where the protection comes from** | Docker is never started | Linux permissions, plus the plan-11 checks as extra layers |
-| **Your dev stack** | Untouched | Separate; Verify stops it first (ports 80/443). Running both at once is a later step (see the last section) |
+| **Your dev stack** | Untouched | Separate; stop it yourself before Verify (ports 80/443, Verify only hints). Running both at once is a later step (see the last section) |
 | **System changes** | None | New user, rootless daemon, a sysctl for low ports, a shared worktree folder |
 | **Ongoing maintenance** | None | A second image store (disk), keeping two daemons (the registry login is yours, client side) |
 | **Speed of a Verify run** | Fast (no stack) | Slower: stack start, plus image builds on the first run |
@@ -145,7 +145,7 @@
 
 > **Not part of option 2.** This is a **separate follow-up**, planned and built only **after option 2 works end to end**.
 >
-> Until then, option 2 keeps the simple rule: **Verify stops your dev stack first**, and the **sysctl for low ports stays** in option 2. Nothing below is planned or built yet.
+> Until then, option 2 keeps the simple rule: **you stop your dev stack before Verify** (Verify only gives a hint), and the **sysctl for low ports stays** in option 2. Nothing below is planned or built yet.
 
 **Question:** can we run your dev stack and the `cw-docker` stack **at the same time**, e.g. with Podman?
 
@@ -192,7 +192,7 @@ services:
 
 - **Your dev stack:** your root Docker, ports 80/443/3306/… as now. **Untouched, can stay up.**
 - **Workflow stack:** `cw-docker`'s own daemon, own container names, own networks, **no host ports**.
-- **Verify no longer has to stop your dev stack.** You don't have to pause the workflow either.
+- **You no longer have to stop your dev stack.** You don't have to pause the workflow either.
 
 ### Podman vs rootless Docker for the `cw-docker` daemon
 

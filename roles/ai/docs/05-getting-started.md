@@ -62,6 +62,8 @@ After a change to the daemon config, restart it:
 sudo systemctl --user -M cw-docker@ restart docker
 ```
 
+If you get "permission denied" on the socket, see "Rootless Docker" in `09-tests-and-docker.md` (socket group note).
+
 The monorepo `.env` needs `HOST_GID=100`.
 
 ---
