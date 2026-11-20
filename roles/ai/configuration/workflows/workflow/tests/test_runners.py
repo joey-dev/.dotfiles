@@ -367,8 +367,9 @@ def test_compose_up_once_for_two_commands(tmp_path: Path) -> None:
     assert ups[0]["cwd"] == wt
     assert ups[0]["env"]["COMPOSE_PROJECT_NAME"] == "proj"
     assert ups[0]["timeout"] == 900 + 600
-    assert [_is_up(c["argv"]) for c in rec.calls] == [True, False, False]
-    assert rec.calls[2]["env"]["COMPOSE_PROJECT_NAME"] == "proj"
+    assert "down" in rec.calls[0]["argv"]
+    assert [_is_up(c["argv"]) for c in rec.calls] == [False, True, False, False]
+    assert rec.calls[3]["env"]["COMPOSE_PROJECT_NAME"] == "proj"
     assert ctx.stack.result == ("PASS", "ok")
 
 
@@ -488,13 +489,13 @@ def test_symlink_appearing_after_up_stops_the_host_run(tmp_path: Path) -> None:
     cmd = _cmd(run_in="host", command="./bin/run.sh", needs_compose_stack=True)
     rec = _Recorder()
     # A container (running Claude's code) plants a symlink in a bind-mounted folder.
-    rec.on_call = lambda argv: (wt / "planted").symlink_to(tmp_path)
+    rec.on_call = lambda argv: (wt / "planted").symlink_to(tmp_path) if _is_up(argv) else None
     with (
         patch("claude_workflow.runners.run_command", rec),
         pytest.raises(HostStop, match="planted"),
     ):
         run(cmd, _sh("./bin/run.sh"), ctx)
-    assert len(rec.calls) == 1 and _is_up(rec.calls[0]["argv"])
+    assert len(rec.calls) == 2 and _is_up(rec.calls[1]["argv"])
 
 
 def test_container_command_passes_docker_host(
@@ -641,13 +642,13 @@ def test_compose_up_config_failure_is_host_stop(tmp_path: Path, _fake_compose_mo
         pytest.raises(HostStop, match="compose override"),
     ):
         run(_cmd(run_in="container", container="web-1", needs_compose_stack=True), _sh("true"), ctx)
-    assert rec.calls == []
+    assert not any(_is_up(c["argv"]) for c in rec.calls)
 
 
 def test_compose_up_failure_gets_port_hint(tmp_path: Path) -> None:
     wt, base = _make_worktree(tmp_path)
     ctx = _ctx(tmp_path, wt, base)
-    rec = _Recorder([("FAIL (exit 1)", "listen tcp :80: address already in use")])
+    rec = _Recorder([("PASS", ""), ("FAIL (exit 1)", "listen tcp :80: address already in use")])
     with patch("claude_workflow.runners.run_command", rec):
         status, output = run(
             _cmd(run_in="container", container="web-1", needs_compose_stack=True), _sh("true"), ctx
@@ -692,3 +693,45 @@ def test_host_command_without_any_docker_config_keeps_env_unchanged(tmp_path: Pa
     with patch("claude_workflow.runners.run_command", rec):
         run(_cmd(run_in="host", command="./bin/run.sh"), _sh("./bin/run.sh"), ctx)
     assert rec.calls[0]["env"] is None
+
+
+def test_compose_stack_goes_down_before_host_copy_and_up(tmp_path: Path) -> None:
+    # prepare_worktree replaces host-copy folders; a running container would keep a
+    # bind mount on the deleted folder (empty certs). So: down, then copy, then up.
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    rec = _Recorder()
+    order: list[str] = []
+    rec.on_call = lambda argv: order.append(
+        "down" if "down" in argv else ("up" if _is_up(argv) else "other")
+    )
+    with (
+        patch("claude_workflow.runners.run_command", rec),
+        patch(
+            "claude_workflow.runners.prepare_worktree",
+            side_effect=lambda *a: order.append("prepare"),
+        ),
+    ):
+        run(
+            _cmd(run_in="host", command="./bin/run.sh", needs_compose_stack=True),
+            _sh("./bin/run.sh"),
+            ctx,
+        )
+    assert order[:3] == ["down", "prepare", "up"]
+    down = next(c for c in rec.calls if "down" in c["argv"])
+    assert down["env"]["DOCKER_HOST"] == ctx.config.docker_host
+
+
+def test_compose_down_failure_stops_before_up(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    rec = _Recorder(results=[("FAIL (exit 1)", "boom")])
+    with patch("claude_workflow.runners.run_command", rec):
+        status, output = run(
+            _cmd(run_in="host", command="./bin/run.sh", needs_compose_stack=True),
+            _sh("./bin/run.sh"),
+            ctx,
+        )
+    assert status.startswith("FAIL (compose stack did not start")
+    assert "boom" in output
+    assert not any(_is_up(c["argv"]) for c in rec.calls)

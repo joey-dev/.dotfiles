@@ -318,7 +318,8 @@ def test_verify_runs_host_line_after_up(tmp_path: Path) -> None:
     result, calls = _run_verify(ctx, stdout="all good")
 
     assert result.outcome is StageOutcome.DONE
-    (up, up_kw), (host, host_kw) = calls
+    (down, _), (up, up_kw), (host, host_kw) = calls
+    assert down[:2] == ["docker", "compose"] and "down" in down
     assert up[:2] == ["docker", "compose"] and "up" in up and "--wait" in up
     assert up_kw["timeout"] == _DOCKER.up_timeout + 600
     assert up[-1] == str(_DOCKER.up_timeout)  # --wait-timeout unchanged
@@ -405,7 +406,8 @@ def test_verify_prepare_error_needs_human(tmp_path: Path) -> None:
     assert "host_copies source" in result.message
     assert ctx.state.verified_diff is not None
     assert "host_copies source" in _artifact(tmp_path)
-    assert _docker_calls(calls) == []
+    # only the `down` before the copy ran; nothing was started
+    assert [a for a in _docker_calls(calls) if "down" not in a] == []
 
 
 # --- sandbox spec -----------------------------------------------------------------------

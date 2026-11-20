@@ -17,6 +17,7 @@ from claude_workflow.docker_stack import (
     compose_env,
     compose_model,
     docker_env,
+    down_command,
     guard_patterns,
     guard_violations,
     override_path,
@@ -601,3 +602,28 @@ def test_docker_env_drops_docker_context(monkeypatch: pytest.MonkeyPatch) -> Non
 def test_port_hint_on_port_already_allocated() -> None:
     out = "Bind for 0.0.0.0:443 failed: port is already allocated"
     assert "stop your dev stack" in port_hint(out)
+
+
+def test_prepare_worktree_makes_host_copy_group_writable(tmp_path: Path) -> None:
+    # Container root is cw-docker (group access via the /srv ACL); copytree keeps the
+    # source modes (0755/0644), which caps the ACL mask, so proxy-companion could not
+    # write its generated keys. The copy must be group read-write (and keep x as is).
+    repo, wt = tmp_path / "repo", tmp_path / "wt"
+    (repo / "nginx-proxy/certs/sub").mkdir(parents=True)
+    (repo / "nginx-proxy/certs/ca.crt").write_text("ca")
+    (repo / "nginx-proxy/certs/ca.crt").chmod(0o644)
+    (repo / "nginx-proxy/certs/sub").chmod(0o755)
+    cfg = DockerConfig(project_name="dfs", host_copies=("nginx-proxy/certs",))
+    prepare_worktree(cfg, wt, repo)
+    certs = wt / "nginx-proxy/certs"
+    assert certs.stat().st_mode & 0o070 == 0o070
+    assert (certs / "sub").stat().st_mode & 0o070 == 0o070
+    assert (certs / "ca.crt").stat().st_mode & 0o070 == 0o060
+
+
+def test_down_command_keeps_volumes(tmp_path: Path) -> None:
+    cfg = DockerConfig(project_name="dfs")
+    argv = down_command(cfg, tmp_path / "wt", tmp_path / "repo")
+    assert argv[:2] == ["docker", "compose"]
+    assert argv[-2:] == ["down", "--remove-orphans"]
+    assert "-v" not in argv and "--volumes" not in argv

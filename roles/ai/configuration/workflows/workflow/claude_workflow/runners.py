@@ -26,6 +26,7 @@ from claude_workflow.docker_stack import (
     compose_env,
     compose_model,
     docker_env,
+    down_command,
     guard_patterns,
     guard_violations,
     override_path,
@@ -160,6 +161,18 @@ def _ensure_stack(ctx: RunContext, cmd: Command) -> tuple[str, str] | None:
     if ctx.stack.result is None:
         _check_guard(ctx, cmd)
         repo = ctx.config.repo_path
+        # Fresh containers each run: prepare_worktree replaces host-copy folders, and a
+        # running container would keep its bind mount on the deleted folder. This also
+        # clears containers left broken by an earlier failed `up`. Volumes are kept.
+        down_status, down_output = run_command(
+            down_command(docker, ctx.worktree, repo),
+            cwd=ctx.worktree,
+            env=compose_env(docker, ctx.worktree, repo, docker_host),
+            timeout=docker.up_timeout,
+        )
+        if down_status != "PASS":
+            ctx.stack.result = (down_status, down_output)
+            return f"FAIL (compose stack did not start: {down_status})", down_output
         try:
             prepare_worktree(docker, ctx.worktree, repo)
         except (ValueError, OSError) as exc:  # OSError: e.g. unreadable host files

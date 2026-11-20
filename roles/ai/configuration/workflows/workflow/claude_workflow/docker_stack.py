@@ -262,6 +262,21 @@ def _include_filter(patterns: tuple[str, ...]) -> Callable[[str, list[str]], set
     return ignore
 
 
+def _make_group_writable(root: Path) -> None:
+    """Give the group read-write (folders also x) on a copied tree.
+
+    copytree keeps the source modes (0755/0644). With the worktree ACL, the group bits are
+    the ACL mask, so they would cap `cw-docker` (container root) at read-only and services
+    like proxy-companion could not write into the copy. Symlinks are left alone.
+    """
+    for path in (root, *root.rglob("*")):
+        if path.is_symlink():
+            continue
+        mode = path.stat().st_mode
+        extra = 0o070 if path.is_dir() else 0o060
+        path.chmod(stat.S_IMODE(mode) | extra)
+
+
 def prepare_worktree(cfg: DockerConfig, worktree: Path, repo: Path) -> None:
     """Copy host_copies from the main checkout and create create_dirs (after the guard)."""
     includes = dict(cfg.host_copy_includes)
@@ -279,6 +294,7 @@ def prepare_worktree(cfg: DockerConfig, worktree: Path, repo: Path) -> None:
             shutil.copytree(
                 source, target, symlinks=True, ignore=_include_filter(includes.get(entry, ()))
             )
+            _make_group_writable(target)
         except OSError as exc:  # e.g. root-owned 0600 keys in nginx-proxy/certs
             raise ValueError(f"could not copy {entry}: {exc}") from exc
     for entry in cfg.create_dirs:
@@ -326,6 +342,13 @@ def _compose_argv(
         "--profile",
         cfg.profile,
     ]
+
+
+def down_command(
+    cfg: DockerConfig, worktree: Path, repo: Path, override: Path | None = None
+) -> list[str]:
+    """`docker compose down` for the project; keeps volumes (database data)."""
+    return [*_compose_argv(cfg, worktree, repo, override), "down", "--remove-orphans"]
 
 
 def up_command(
