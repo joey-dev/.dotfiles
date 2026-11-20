@@ -13,6 +13,7 @@
       nixpkgs,
       flake-utils,
       nix-phps,
+      ...
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
