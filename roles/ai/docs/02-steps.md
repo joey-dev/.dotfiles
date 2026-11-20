@@ -243,7 +243,7 @@ Code: `deps.py`. Per entry in `shared_dependencies` (default: `vendor` + `compos
 | **Repo access** | worktree, read-only |
 | **Network** | Anthropic only |
 | **KB** | yes, read-only |
-| **Reads** | `diff.patch`, `01-ticket.md`, `04-plan.md` |
+| **Reads** | `diff.patch`, `01-ticket.md`, `03-qa.md` (wins over the ticket), `04-plan.md` |
 | **Writes** | `diff.patch`, `07-review-correctness.md`, `07-review-conventions.md`, `07-review.md` |
 | **Code** | `stages/review.py` |
 

@@ -33,7 +33,8 @@ _LENSES: tuple[tuple[str, str], ...] = (
     (
         "correctness",
         "Review diff.patch strictly for logic bugs, edge cases, error handling, "
-        "missing tests, and regressions against 01-ticket.md and 04-plan.md. "
+        "missing tests, and regressions against 01-ticket.md (as changed by 03-qa.md) "
+        "and 04-plan.md. "
         "If you think a test will fail, append a line for it to {tests_file} under "
         "'# suggested by review' and report it as a finding.",
     ),
@@ -131,7 +132,8 @@ class ReviewStage:
             catalogue = command_catalogue(ctx.config.commands) if lens_name == "correctness" else ""
             prompt = (
                 f"Read {paths.notes_dir / 'diff.patch'}, "
-                f"{paths.notes_dir / '01-ticket.md'}, and "
+                f"{paths.notes_dir / '01-ticket.md'}, "
+                f"{paths.notes_dir / '03-qa.md'}, and "
                 f"{paths.notes_dir / '04-plan.md'}. Focus: {focus_text} "
                 f"Write findings to {paths.notes_dir / lens_file}. Start with CHANGES_REQUESTED "
                 "if issues need to be fixed before acceptance, or APPROVED otherwise."
@@ -155,7 +157,8 @@ class ReviewStage:
             prompt = (
                 f"Validation pass. {paths.notes_dir / BLOCKING_FILE} lists blocking findings "
                 f"from other reviewers of {paths.notes_dir / 'diff.patch'}. Read it, the diff, "
-                f"and {paths.notes_dir / '01-ticket.md'}, then check each finding against the "
+                f"{paths.notes_dir / '01-ticket.md'} and {paths.notes_dir / '03-qa.md'}, "
+                "then check each finding against the "
                 "code in the repository. Do not look for new issues. "
                 f"Write {paths.notes_dir / VALIDATION_FILE}: the first line is CHANGES_REQUESTED "
                 "if at least one finding is CONFIRMED, otherwise APPROVED. Then one line per "

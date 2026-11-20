@@ -316,6 +316,17 @@ def test_review_validation_gets_only_blocking_findings(tmp_path: Path) -> None:
     assert "CHANGES_REQUESTED" not in findings
 
 
+def test_review_prompts_include_qa_answers(tmp_path: Path) -> None:
+    """03-qa.md can change what the ticket asks; every review call must read it."""
+    ctx = _review_ctx(tmp_path, "phpunit\n")
+
+    _, prompts = _run_review(ctx, None, {"correctness": _BLOCKING_REPORT})
+
+    assert len(prompts) == 3
+    for prompt in prompts:
+        assert "03-qa.md" in prompt
+
+
 def test_review_validation_rejecting_all_findings_is_done(tmp_path: Path) -> None:
     ctx = _review_ctx(tmp_path, "phpunit\n")
 
