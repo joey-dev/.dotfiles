@@ -18,6 +18,16 @@
       "type": ["string", "null"],
       "description": "Folder with the flake.nix whose dev shell is used by commands with run-in 'sandbox' (Implement and Verify). null: no dev shell."
     },
+    "docker-host": {
+      "type": ["string", "null"],
+      "pattern": "^unix:///.+",
+      "description": "Docker socket of the separate rootless daemon, as 'unix:///absolute/path'. Every docker call of the workflow gets it as DOCKER_HOST. null or absent: the default daemon."
+    },
+    "worktree-base": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Folder that holds the ticket worktrees. '~' is expanded. Absent: a 'worktrees' folder in the workflow state folder."
+    },
     "commands": {
       "type": "object",
       "description": "Named commands. Verify runs them (see 'verify'), and Plan/Review list them by name in tests.txt as '<name> [parameter=value ...]'.",

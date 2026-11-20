@@ -129,6 +129,7 @@ class WorkflowConfig:
     headless_timeout: int = 3600  # seconds per headless Claude call
     commit_no_verify: bool = True  # skip git hooks for the final commit
     docker: DockerConfig | None = None
+    docker_host: str | None = None  # DOCKER_HOST of the separate rootless daemon
     commands: dict[str, Command] = field(default_factory=dict[str, Command])
     verify: tuple[VerifyEntry, ...] = ()
 
@@ -598,6 +599,10 @@ def load_config(repo_root: Path, config_dir: Path | None = None) -> WorkflowConf
         repo_path=repo_root,
         kb_path=_expand_path(raw["kb-path"]) if "kb-path" in raw else base.kb_path,
         flake_path=None if flake is None else _expand_path(flake),
+        docker_host=raw.get("docker-host"),
+        worktree_base=(
+            _expand_path(raw["worktree-base"]) if "worktree-base" in raw else base.worktree_base
+        ),
         max_plan_reviews=raw.get("max-plan-reviews", base.max_plan_reviews),
         max_escalations=raw.get("max-escalations", base.max_escalations),
         max_fix_rounds=raw.get("max-fix-rounds", base.max_fix_rounds),

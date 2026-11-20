@@ -2,6 +2,8 @@
   "$schema": "config.schema.json",
   "kb-path": "~/notes/work-kb",
   "flake-path": "~/.dotfiles/templates/latest",
+  "docker-host": "unix:///var/lib/cw-docker-sock/docker.sock",
+  "worktree-base": "/srv/claude-workflow/worktrees",
   "max-plan-reviews": 2,
   "max-escalations": 3,
   "max-fix-rounds": 3,

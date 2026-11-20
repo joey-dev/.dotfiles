@@ -503,3 +503,49 @@ def test_invalid_parameter_pattern_is_reported(schema_path: Path) -> None:
     errors = validate_raw(raw, schema_path)
     assert len(errors) == 1
     assert errors[0].startswith("$.commands.t.parameters.f.pattern: invalid regex: ")
+
+
+def test_docker_host_and_worktree_base_from_global(tmp_path: Path, schema_path: Path) -> None:
+    global_raw = {
+        **GLOBAL,
+        "docker-host": "unix:///var/lib/cw-docker-sock/docker.sock",
+        "worktree-base": "/srv/claude-workflow/worktrees",
+    }
+
+    cfg = load_config(_repo(tmp_path), _config_dir(tmp_path, schema_path, global_raw, {}))
+
+    assert cfg.docker_host == "unix:///var/lib/cw-docker-sock/docker.sock"
+    assert cfg.worktree_base == Path("/srv/claude-workflow/worktrees")
+
+
+def test_docker_host_defaults_to_none_and_worktree_base_to_state(
+    tmp_path: Path, schema_path: Path
+) -> None:
+    cfg = load_config(_repo(tmp_path), _config_dir(tmp_path, schema_path, GLOBAL, {}))
+
+    assert cfg.docker_host is None
+    assert cfg.worktree_base == cfg.state_base / "worktrees"
+
+
+def test_worktree_base_expands_tilde(tmp_path: Path, schema_path: Path) -> None:
+    global_raw = {**GLOBAL, "worktree-base": "~/wt"}
+
+    cfg = load_config(_repo(tmp_path), _config_dir(tmp_path, schema_path, global_raw, {}))
+
+    assert cfg.worktree_base == Path.home() / "wt"
+
+
+@pytest.mark.parametrize("value", ["tcp://1.2.3.4:2375", "unix://relative/x"])
+def test_docker_host_must_be_unix_uri(tmp_path: Path, schema_path: Path, value: str) -> None:
+    config_dir = _config_dir(tmp_path, schema_path, {**GLOBAL, "docker-host": value}, {})
+
+    errors = check_config(_repo(tmp_path), config_dir)
+
+    assert len(errors) == 1
+    assert "docker-host" in errors[0]
+
+
+def test_docker_host_null_is_allowed(tmp_path: Path, schema_path: Path) -> None:
+    config_dir = _config_dir(tmp_path, schema_path, {**GLOBAL, "docker-host": None}, {})
+
+    assert check_config(_repo(tmp_path), config_dir) == []
