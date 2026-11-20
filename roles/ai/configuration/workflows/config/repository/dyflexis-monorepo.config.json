@@ -173,7 +173,8 @@
       {
         "path": "nginx-proxy/certs",
         "include": [
-          "*.crt"
+          "*.crt",
+          ".gitkeep"
         ]
       }
     ],
