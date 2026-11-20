@@ -39,7 +39,7 @@ Three read-only research agents. **Verified** = read in source, docs or the repo
 - **`docker.sock` is hard-coded** (`docker-compose.yml:67`) and mounted by `proxy` (`:141-143`) and `proxy-companion` (`:166-168`).
 - **Containers write into the worktree as uid 1000:** `dyflexis-composer` as `${HOST_UID}:${HOST_GID}` (`:371`), `legacy-web-debug`, `lighttpd`, `object-storage-fixture`, and `test_runner.sh:5` (`--user ${UID:-1000}:${GID:-1000}`; `#!/bin/sh`).
 - **Rootless uid mapping** ([Docker docs](https://docs.docker.com/engine/security/rootless/)): container root = `cw-docker`; container uid `N ≥ 1` = host uid `subuid-start + N − 1`.
-- **Every bind source is inside the worktree**, except the socket.
+- **Every bind source is inside the worktree**, except the socket (and `~/.npmrc`, see 09 Known limits).
 - **Images** come from `registry.gitlab.com/dyflexis/...` and `gitlab.com/dyflexis/dependency_proxy/...`. Several are built locally.
 - **Guess:** pull/build credentials come from the **client** (`~/.docker/config.json` of the user running `docker`), so the user's existing login works and `cw-docker` needs none.
 
@@ -340,6 +340,9 @@ Plan 10's Task 6 checks, now against the rootless daemon. Dev stack **down** fir
 - [ ] `tests:integration` and `tests:api` run and report PASS/FAIL (not a permission error).
 - [ ] **Symlink attack fails:** in a scratch worktree, replace `legacy/pub` with a symlink to `/home/joey`, start the stack **by hand** (bypassing the guard) → the mount fails or shows nothing.
 - [ ] After the run, the user can `git status`, edit and delete files in the worktree, and `git worktree remove` works.
+- [ ] **Empty override:** Compose accepts an override with `{"services": {}}` (a model without socket mounts); record what happens.
+- [ ] **Restrictive modes:** files a container writes with mode 0600/0700 can still be edited and removed by the user, and `git worktree remove` works.
+- [ ] **Git inside containers:** the worktree `.git` file points into `/home/joey`, which `cw-docker` cannot read. Run `git status` in a container and record what happens.
 - [ ] Without `docker-host` in the config → Verify ends with NEEDS_HUMAN, and the message names `docker-host`.
 - [ ] Write the results into "Spike results" / 08, and update 08's status table.
 

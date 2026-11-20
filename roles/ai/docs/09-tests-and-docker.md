@@ -230,6 +230,7 @@ docker: api SomeCest
 
 ## Known limits
 
+- **The monorepo also binds `~/.npmrc`** (`docker-compose.yml`, used by webpack, frontend, storybook). The configured services do not use it today. Adding one of them (or profile `all`) makes `up` fail on the rootless daemon, because `cw-docker` can't read `$HOME`.
 - **Profiles `all` / `storybook` bind-mount the repo root read-write** (`dyflexis-storybook`). A container could change the compose file during a line. **Keep the profile `dyflexis`.**
 - **The `migrations` image builds from the worktree's `./legacy` context.** Dockerfiles are protected, but the files copied into the image are not. Build steps run in containers, not on the host.
 - **Containers run Claude-written code with network and secrets.** **Needs the user's OK.**

@@ -143,7 +143,7 @@ def _docker_host(ctx: RunContext) -> str:
     """The rootless Docker socket, or HostStop with a message for the human."""
     try:
         return require_rootless(ctx.config.docker_host, ctx.config.worktree_base)
-    except ValueError as exc:
+    except (ValueError, OSError, RuntimeError) as exc:
         raise HostStop(str(exc)) from exc
 
 
@@ -219,6 +219,8 @@ def _run_host(cmd: Command, argv: list[str], ctx: RunContext) -> tuple[str, str]
         env = compose_env(
             docker, ctx.worktree, ctx.config.repo_path, _docker_host(ctx), ctx.stack.override
         )
+    elif ctx.config.docker_host is not None:
+        env = docker_env(_docker_host(ctx))
     # Checked again right before running: the stack runs worktree code.
     _check_guard(ctx, cmd)
     with TemporaryDirectory(prefix="cw-host-") as scratch:

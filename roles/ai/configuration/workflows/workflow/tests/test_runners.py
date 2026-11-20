@@ -17,7 +17,6 @@ from claude_workflow.config import DockerConfig, RepoAccess, default_config
 from claude_workflow.runners import HostStop, RunContext, run
 from claude_workflow.sandbox import SANDBOX_CACHE_DIR, SANDBOX_SCRATCH_GIT, SandboxSpec
 
-
 HOST = "unix:///var/lib/cw-docker-sock/docker.sock"
 
 
@@ -655,3 +654,41 @@ def test_compose_up_failure_gets_port_hint(tmp_path: Path) -> None:
         )
     assert status.startswith("FAIL")
     assert "stop your dev stack" in output
+
+
+def test_docker_host_symlink_loop_stops(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    loop = tmp_path / "loop"
+    loop.symlink_to(loop)
+    ctx = replace(ctx, config=replace(ctx.config, worktree_base=loop))
+    rec = _Recorder()
+    with (
+        patch("claude_workflow.runners.run_command", rec),
+        pytest.raises(HostStop),
+    ):
+        run(_cmd(run_in="container", container="web-1"), _sh("true"), ctx)
+    assert rec.calls == []
+
+
+def test_host_command_without_compose_config_passes_docker_host(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DOCKER_HOST", "unix:///var/run/docker.sock")
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    ctx = replace(ctx, config=replace(ctx.config, docker=None))
+    rec = _Recorder()
+    with patch("claude_workflow.runners.run_command", rec):
+        run(_cmd(run_in="host", command="./bin/run.sh"), _sh("./bin/run.sh"), ctx)
+    assert rec.calls[0]["env"]["DOCKER_HOST"] == HOST
+
+
+def test_host_command_without_any_docker_config_keeps_env_unchanged(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    ctx = replace(ctx, config=replace(ctx.config, docker=None, docker_host=None))
+    rec = _Recorder()
+    with patch("claude_workflow.runners.run_command", rec):
+        run(_cmd(run_in="host", command="./bin/run.sh"), _sh("./bin/run.sh"), ctx)
+    assert rec.calls[0]["env"] is None

@@ -21,7 +21,7 @@
     "docker-host": {
       "type": ["string", "null"],
       "pattern": "^unix:///.+",
-      "description": "Docker socket of the separate rootless daemon, as 'unix:///absolute/path'. Every docker call of the workflow gets it as DOCKER_HOST. null or absent: the default daemon."
+      "description": "Docker socket of the separate rootless daemon, as 'unix:///absolute/path'. Every docker call of the workflow gets it as DOCKER_HOST. null or absent: Docker steps stop (NEEDS_HUMAN); the workflow never uses root Docker."
     },
     "worktree-base": {
       "type": "string",

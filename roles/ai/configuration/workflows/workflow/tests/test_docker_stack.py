@@ -30,7 +30,6 @@ from claude_workflow.docker_stack import (
     write_override,
 )
 
-
 HOST = "unix:///var/lib/cw-docker-sock/docker.sock"
 
 
@@ -579,3 +578,13 @@ def test_compose_model_raises_on_failure_or_bad_json(
     fake, _ = _fake_compose(status, output)
     with patch("claude_workflow.docker_stack.run_command", fake), pytest.raises(ValueError):
         compose_model(DockerConfig(project_name="dfs"), tmp_path, tmp_path, HOST)
+
+
+def test_docker_env_drops_docker_context(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DOCKER_CONTEXT", "default")
+    assert "DOCKER_CONTEXT" not in docker_env("unix:///x/d.sock")
+
+
+def test_port_hint_on_port_already_allocated() -> None:
+    out = "Bind for 0.0.0.0:443 failed: port is already allocated"
+    assert "stop your dev stack" in port_hint(out)

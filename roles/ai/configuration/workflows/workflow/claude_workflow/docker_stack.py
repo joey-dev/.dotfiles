@@ -17,7 +17,7 @@ import subprocess
 from collections.abc import Callable
 from fnmatch import fnmatch
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from claude_workflow.config import DEFAULT_PROTECTED_PATHS, DockerConfig
 from claude_workflow.git_host import ignored_paths, touched_paths
@@ -71,6 +71,7 @@ def docker_env(docker_host: str) -> dict[str, str]:
     """Copy of the environment with DOCKER_HOST set (overrides an inherited one)."""
     env = dict(os.environ)
     env["DOCKER_HOST"] = docker_host
+    env.pop("DOCKER_CONTEXT", None)  # a shell context must not override DOCKER_HOST
     return env
 
 
@@ -353,12 +354,15 @@ def socket_override(model: dict[str, Any], socket: str) -> dict[str, Any]:
     without one are left out, so a model without socket mounts gives no services.
     """
     services: dict[str, Any] = {}
-    for name, service in model.get("services", {}).items():
-        volumes = [
-            {**volume, "source": socket}
-            for volume in service.get("volumes") or []
-            if isinstance(volume, dict) and volume.get("source") in _ROOT_SOCKET_SOURCES
-        ]
+    model_services = cast("dict[str, dict[str, Any]]", model.get("services") or {})
+    for name, service in model_services.items():
+        listed = cast("list[Any]", service.get("volumes") or [])
+        volumes: list[dict[str, Any]] = []
+        for entry in listed:
+            if isinstance(entry, dict):
+                volume = cast("dict[str, Any]", entry)
+                if volume.get("source") in _ROOT_SOCKET_SOURCES:
+                    volumes.append({**volume, "source": socket})
         if volumes:
             services[name] = {"volumes": volumes}
     return {"services": services}
@@ -386,7 +390,7 @@ def compose_model(
         raise ValueError(f"docker compose config gave invalid JSON: {exc}") from exc
     if not isinstance(model, dict):
         raise ValueError("docker compose config gave no JSON object")
-    return model
+    return cast("dict[str, Any]", model)
 
 
 def override_path(state_base: Path, cfg: DockerConfig) -> Path:
@@ -402,7 +406,7 @@ def write_override(path: Path, override: dict[str, Any]) -> None:
 
 def port_hint(output: str) -> str:
     """Add a hint line to a failed `up` output when a port is taken."""
-    if "address already in use" in output:
+    if "address already in use" in output or "port is already allocated" in output:
         return (
             output + "\nHint: a host port is taken (a dev stack on :80/:443?). "
             "Please stop your dev stack and try again."
