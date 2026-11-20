@@ -17,6 +17,9 @@ from claude_workflow.runners import HostStop, RunContext, run
 from claude_workflow.sandbox import SANDBOX_CACHE_DIR, SANDBOX_SCRATCH_GIT, SandboxSpec
 
 
+HOST = "unix:///var/lib/cw-docker-sock/docker.sock"
+
+
 def _git(repo: Path, *args: str) -> None:
     subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
 
@@ -69,6 +72,8 @@ def _ctx(tmp_path: Path, wt: Path, base: str = "HEAD", **overrides: Any) -> RunC
         default_config(),
         repo_path=main,
         docker=DockerConfig(project_name="proj", protected_paths=()),
+        docker_host=HOST,
+        worktree_base=tmp_path / "worktrees",
     )
     spec = SandboxSpec(
         repo_dir=wt,
@@ -490,3 +495,79 @@ def test_symlink_appearing_after_up_stops_the_host_run(tmp_path: Path) -> None:
     ):
         run(cmd, _sh("./bin/run.sh"), ctx)
     assert len(rec.calls) == 1 and _is_up(rec.calls[0]["argv"])
+
+
+def test_container_command_passes_docker_host(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DOCKER_HOST", "unix:///var/run/docker.sock")
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    rec = _Recorder()
+    with patch("claude_workflow.runners.run_command", rec):
+        run(_cmd(run_in="container", container="web-1"), _sh("true"), ctx)
+    assert rec.calls[0]["env"] is not None
+    assert rec.calls[0]["env"]["DOCKER_HOST"] == HOST
+
+
+def test_container_command_stops_without_docker_host(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    ctx = replace(ctx, config=replace(ctx.config, docker_host=None))
+    rec = _Recorder()
+    with (
+        patch("claude_workflow.runners.run_command", rec),
+        pytest.raises(HostStop, match="docker-host"),
+    ):
+        run(_cmd(run_in="container", container="web-1"), _sh("true"), ctx)
+    assert rec.calls == []
+
+
+def test_host_command_with_compose_config_stops_without_docker_host(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    ctx = replace(ctx, config=replace(ctx.config, docker_host=None))
+    rec = _Recorder()
+    with (
+        patch("claude_workflow.runners.run_command", rec),
+        pytest.raises(HostStop, match="docker-host"),
+    ):
+        run(_cmd(run_in="host", command="./bin/run.sh"), _sh("./bin/run.sh"), ctx)
+    assert rec.calls == []
+
+
+def test_host_command_passes_docker_host(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    rec = _Recorder()
+    with patch("claude_workflow.runners.run_command", rec):
+        run(_cmd(run_in="host", command="./bin/run.sh"), _sh("./bin/run.sh"), ctx)
+    assert rec.calls[0]["env"]["DOCKER_HOST"] == HOST
+
+
+def test_compose_up_stops_without_docker_host(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    ctx = replace(ctx, config=replace(ctx.config, docker_host=None))
+    cmd = _cmd(run_in="container", container="web-1", needs_compose_stack=True)
+    rec = _Recorder()
+    with (
+        patch("claude_workflow.runners.run_command", rec),
+        pytest.raises(HostStop, match="docker-host"),
+    ):
+        run(cmd, _sh("true"), ctx)
+    assert rec.calls == []  # `up` never called
+
+
+def test_compose_up_stops_for_worktree_base_in_home(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    ctx = replace(ctx, config=replace(ctx.config, worktree_base=Path.home() / "wt"))
+    cmd = _cmd(run_in="container", container="web-1", needs_compose_stack=True)
+    rec = _Recorder()
+    with (
+        patch("claude_workflow.runners.run_command", rec),
+        pytest.raises(HostStop, match="cw-docker can't read"),
+    ):
+        run(cmd, _sh("true"), ctx)
+    assert rec.calls == []

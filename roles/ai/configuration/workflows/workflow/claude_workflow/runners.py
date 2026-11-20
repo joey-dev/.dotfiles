@@ -24,9 +24,11 @@ from claude_workflow.docker_stack import (
     UP_BUILD_HEADROOM,
     base_script_copy,
     compose_env,
+    docker_env,
     guard_patterns,
     guard_violations,
     prepare_worktree,
+    require_rootless,
     run_command,
     symlink_violations,
     up_command,
@@ -130,6 +132,14 @@ def _line(argv: list[str]) -> str:
     return argv[2]
 
 
+def _docker_host(ctx: RunContext) -> str:
+    """The rootless Docker socket, or HostStop with a message for the human."""
+    try:
+        return require_rootless(ctx.config.docker_host, ctx.config.worktree_base)
+    except ValueError as exc:
+        raise HostStop(str(exc)) from exc
+
+
 def _ensure_stack(ctx: RunContext, cmd: Command) -> tuple[str, str] | None:
     """Start the compose stack once per run. Returns a FAIL result if it is not up."""
     docker = ctx.config.docker
@@ -139,6 +149,7 @@ def _ensure_stack(ctx: RunContext, cmd: Command) -> tuple[str, str] | None:
             f"command {cmd.name!r} needs the compose stack, but the config has no "
             "docker-compose section.",
         )
+    docker_host = _docker_host(ctx)
     if ctx.stack.result is None:
         _check_guard(ctx, cmd)
         repo = ctx.config.repo_path
@@ -151,7 +162,7 @@ def _ensure_stack(ctx: RunContext, cmd: Command) -> tuple[str, str] | None:
         ctx.stack.result = run_command(
             up_argv,
             cwd=ctx.worktree,
-            env=compose_env(docker, ctx.worktree, repo),
+            env=compose_env(docker, ctx.worktree, repo, docker_host),
             timeout=docker.up_timeout + UP_BUILD_HEADROOM,
         )
     status, output = ctx.stack.result
@@ -190,7 +201,7 @@ def _run_host(cmd: Command, argv: list[str], ctx: RunContext) -> tuple[str, str]
             return failed
     docker = ctx.config.docker
     if docker is not None:
-        env = compose_env(docker, ctx.worktree, ctx.config.repo_path)
+        env = compose_env(docker, ctx.worktree, ctx.config.repo_path, _docker_host(ctx))
     # Checked again right before running: the stack runs worktree code.
     _check_guard(ctx, cmd)
     with TemporaryDirectory(prefix="cw-host-") as scratch:
@@ -212,6 +223,7 @@ def _run_container(cmd: Command, argv: list[str], ctx: RunContext) -> tuple[str,
         failed = _ensure_stack(ctx, cmd)
         if failed is not None:
             return failed
+    host = _docker_host(ctx)
     docker_argv = [
         "docker",
         "exec",
@@ -222,7 +234,7 @@ def _run_container(cmd: Command, argv: list[str], ctx: RunContext) -> tuple[str,
         "-c",
         line,
     ]
-    return run_command(docker_argv, cwd=None, env=None, timeout=cmd.timeout)
+    return run_command(docker_argv, cwd=None, env=docker_env(host), timeout=cmd.timeout)
 
 
 def run(cmd: Command, argv: list[str], ctx: RunContext) -> tuple[str, str]:

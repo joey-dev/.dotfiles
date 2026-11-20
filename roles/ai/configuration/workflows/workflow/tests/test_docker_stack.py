@@ -13,13 +13,18 @@ from claude_workflow.config import DEFAULT_PROTECTED_PATHS, DockerConfig
 from claude_workflow.docker_stack import (
     base_script_copy,
     compose_env,
+    docker_env,
     guard_patterns,
     guard_violations,
     prepare_worktree,
+    require_rootless,
     run_command,
     symlink_violations,
     up_command,
 )
+
+
+HOST = "unix:///var/lib/cw-docker-sock/docker.sock"
 
 
 def _git(repo: Path, *args: str) -> None:
@@ -99,10 +104,10 @@ def test_compose_env_uses_main_env_file_not_worktree(tmp_path: Path) -> None:
     repo.mkdir()
     wt.mkdir()
     cfg = DockerConfig(project_name="dfs")
-    assert "COMPOSE_ENV_FILES" not in compose_env(cfg, wt, repo)
+    assert "COMPOSE_ENV_FILES" not in compose_env(cfg, wt, repo, HOST)
     assert "--env-file" not in up_command(cfg, wt, repo)
     (repo / ".env").write_text("A=1\n")
-    env = compose_env(cfg, wt, repo)
+    env = compose_env(cfg, wt, repo, HOST)
     assert env["COMPOSE_ENV_FILES"] == str(repo / ".env")
     assert env["COMPOSE_PROJECT_NAME"] == "dfs"
     assert env["COMPOSE_FILE"] == str(wt / "docker-compose.yml")
@@ -396,3 +401,61 @@ def test_run_command_reports_start_errors(tmp_path: Path) -> None:
     assert status.startswith("FAIL (could not start: ") and output == ""
     gone = run_command(["true"], cwd=tmp_path / "gone", env=None, timeout=5)
     assert gone[0].startswith("FAIL (could not start: ")
+
+
+def test_require_rootless_returns_host() -> None:
+    assert require_rootless(HOST, Path("/srv/w")) == HOST
+
+
+def test_require_rootless_refuses_missing_host() -> None:
+    with pytest.raises(ValueError, match="docker-host"):
+        require_rootless(None, Path("/srv/w"))
+
+
+def test_inherited_docker_host_does_not_count_as_rootless(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DOCKER_HOST", HOST)
+    with pytest.raises(ValueError, match="docker-host"):
+        require_rootless(None, Path("/srv/w"))
+
+
+@pytest.mark.parametrize("uri", ["unix:///var/run/docker.sock", "unix:///run/docker.sock"])
+def test_require_rootless_refuses_root_socket(uri: str) -> None:
+    with pytest.raises(ValueError, match="root Docker"):
+        require_rootless(uri, Path("/srv/w"))
+
+
+def test_require_rootless_refuses_symlink_to_root_socket(tmp_path: Path) -> None:
+    link = tmp_path / "s"
+    link.symlink_to("/var/run/docker.sock")
+    with pytest.raises(ValueError, match="root Docker"):
+        require_rootless(f"unix://{link}", Path("/srv/w"))
+
+
+@pytest.mark.parametrize("uri", ["tcp://127.0.0.1:2375", "unix://relative.sock", "/x/d.sock"])
+def test_require_rootless_refuses_non_unix_uri(uri: str) -> None:
+    with pytest.raises(ValueError, match="unix://"):
+        require_rootless(uri, Path("/srv/w"))
+
+
+def test_require_rootless_refuses_worktree_base_in_home() -> None:
+    with pytest.raises(ValueError, match="cw-docker can't read"):
+        require_rootless(HOST, Path.home() / "wt")
+
+
+def test_docker_env_overrides_inherited(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DOCKER_HOST", "unix:///var/run/docker.sock")
+    assert docker_env("unix:///x/d.sock")["DOCKER_HOST"] == "unix:///x/d.sock"
+
+
+def test_compose_env_sets_docker_host_and_override(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DOCKER_HOST", "unix:///var/run/docker.sock")
+    repo, wt = tmp_path / "repo", tmp_path / "wt"
+    cfg = DockerConfig(project_name="dfs")
+    env = compose_env(cfg, wt, repo, HOST)
+    assert env["DOCKER_HOST"] == HOST
+    assert env["COMPOSE_FILE"] == f"{wt}/docker-compose.yml"
+    override = tmp_path / "override.yml"
+    env = compose_env(cfg, wt, repo, HOST, override=override)
+    assert env["COMPOSE_FILE"] == f"{wt}/docker-compose.yml:{override}"

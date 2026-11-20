@@ -22,6 +22,49 @@ from claude_workflow.git_host import ignored_paths, touched_paths
 # Extra seconds for `up` to build images before `--wait-timeout` starts counting.
 UP_BUILD_HEADROOM = 600
 
+# Sockets of the root Docker daemon. The workflow must never talk to these.
+ROOT_DOCKER_SOCKETS = (Path("/var/run/docker.sock"), Path("/run/docker.sock"))
+
+
+def require_rootless(docker_host: str | None, worktree_base: Path) -> str:
+    """Return docker_host if it is safe to use; raise ValueError (for the human) if not.
+
+    Refused: no host configured (an inherited DOCKER_HOST does not count), a host that is
+    not a `unix://` URI with an absolute path, a socket that resolves (symlinks
+    included) to a root Docker socket, and a worktree base inside $HOME (the rootless
+    daemon runs as another user and cannot read it).
+    """
+    if not docker_host:
+        raise ValueError(
+            "no docker-host is configured. Set docker-host to the rootless Docker socket "
+            "(unix:///var/lib/cw-docker-sock/docker.sock); the workflow never uses root Docker."
+        )
+    if not docker_host.startswith("unix:///"):
+        raise ValueError(
+            f"docker-host must be a unix:// URI with an absolute path, got {docker_host!r}"
+        )
+    socket = Path(docker_host.removeprefix("unix://"))
+    if socket.resolve() in {root.resolve() for root in ROOT_DOCKER_SOCKETS}:
+        raise ValueError(
+            f"docker-host {docker_host!r} points at root Docker; use the rootless "
+            "cw-docker socket instead."
+        )
+    home = Path.home().resolve()
+    base = worktree_base.resolve()
+    if base == home or home in base.parents:
+        raise ValueError(
+            f"worktree-base {worktree_base} is inside your home folder, which cw-docker "
+            "can't read. Set worktree-base to a folder outside $HOME that cw-docker can read."
+        )
+    return docker_host
+
+
+def docker_env(docker_host: str) -> dict[str, str]:
+    """Copy of the environment with DOCKER_HOST set (overrides an inherited one)."""
+    env = dict(os.environ)
+    env["DOCKER_HOST"] = docker_host
+    return env
+
 
 def _under(path: str, entry: str) -> bool:
     return path == entry or path.startswith(entry + "/")
@@ -232,11 +275,21 @@ def prepare_worktree(cfg: DockerConfig, worktree: Path, repo: Path) -> None:
         _safe_path(worktree, entry).mkdir(parents=True, exist_ok=True)
 
 
-def compose_env(cfg: DockerConfig, worktree: Path, repo: Path) -> dict[str, str]:
-    """Environment for compose; the .env comes from the main checkout, never the worktree."""
-    env = dict(os.environ)
+def compose_env(
+    cfg: DockerConfig,
+    worktree: Path,
+    repo: Path,
+    docker_host: str,
+    override: Path | None = None,
+) -> dict[str, str]:
+    """Environment for compose; the .env comes from the main checkout, never the worktree.
+
+    With `override`, it is appended to COMPOSE_FILE after the worktree's compose file.
+    """
+    env = docker_env(docker_host)
     env["COMPOSE_PROJECT_NAME"] = cfg.project_name
-    env["COMPOSE_FILE"] = str(worktree / "docker-compose.yml")
+    compose_file = str(worktree / "docker-compose.yml")
+    env["COMPOSE_FILE"] = f"{compose_file}:{override}" if override is not None else compose_file
     env["COMPOSE_PROFILES"] = cfg.profile
     env_file = repo / ".env"
     if env_file.is_file():

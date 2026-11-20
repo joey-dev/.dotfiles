@@ -250,6 +250,30 @@ def test_bwrap_clears_env_and_sets_given_vars(tmp_path: Path, monkeypatch: Any) 
     assert cmd.index("--clearenv") < cmd.index("--setenv")
 
 
+def test_bwrap_does_not_pass_docker_host(tmp_path: Path, monkeypatch: Any) -> None:
+    fake_home = tmp_path / "host_home"
+    fake_home.mkdir()
+    monkeypatch.setattr(Path, "home", lambda: fake_home)
+    monkeypatch.setenv("DOCKER_HOST", "unix:///var/lib/cw-docker-sock/docker.sock")
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    spec = SandboxSpec(
+        repo_dir=None,
+        repo_access=RepoAccess.NONE,
+        state_dir=state_dir,
+        skills_dirs=(),
+        kb_dir=None,
+        allow_network=True,
+        workdir=state_dir,
+    )
+
+    for env in (None, {"TERM": "xterm"}):
+        cmd = build_bwrap_command(spec, ["true"], env=env)
+        assert "--clearenv" in cmd
+        assert "DOCKER_HOST" not in cmd
+        assert not any("cw-docker-sock" in arg for arg in cmd)
+
+
 def _minimal_spec(tmp_path: Path) -> SandboxSpec:
     state_dir = tmp_path / "state"
     state_dir.mkdir(exist_ok=True)

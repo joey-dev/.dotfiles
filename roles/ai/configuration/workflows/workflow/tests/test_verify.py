@@ -85,6 +85,8 @@ def _verify_ctx(
     worktree = tmp_path / "worktree"
     worktree.mkdir()
     config.setdefault("commands", _COMMANDS)
+    config.setdefault("docker_host", "unix:///var/lib/cw-docker-sock/docker.sock")
+    config.setdefault("worktree_base", tmp_path / "worktrees")
     cfg = replace(default_config(), state_base=tmp_path / "state-base", verify=verify, **config)
     state = TicketState("PROJ-1", worktree_path=worktree, base_commit=_commit_runner(worktree))
     if tests is not None:
