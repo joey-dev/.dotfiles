@@ -83,7 +83,7 @@
 ### How it works with your dev stack
 
 - **Two daemons:** your normal root Docker (your dev stack) and `cw-docker`'s rootless Docker (the workflow).
-- They are **separate**, so a Verify run can't "take over" your containers anymore. Both stacks want ports 80/443, so **Verify must stop your dev stack first** (`docker compose down` on your daemon). Or you move your dev stack to the rootless daemon too, if you want one stack again.
+- They are **separate**, so a Verify run can't "take over" your containers anymore. Both stacks want ports 80/443, so **in option 2 Verify must stop your dev stack first** (`docker compose down` on your daemon). Running both at once is a **later step, not part of option 2**: see "Later, after option 2: both stacks at once" at the end.
 - **Databases are separate** (separate volumes). For the tests that's fine: `test_customer` is seeded on every run.
 
 ### Variant: a small VM instead of a user
@@ -124,7 +124,7 @@
 | **Tests left to CI only** | Integration, API, acceptance | Only what the workflow doesn't list (e.g. Playwright) |
 | **Can Claude-written code reach your home folder?** | No: it only runs in the bwrap sandbox | No: the Docker daemon itself can't reach it (file permissions) |
 | **Where the protection comes from** | Docker is never started | Linux permissions, plus the plan-11 checks as extra layers |
-| **Your dev stack** | Untouched | Separate; Verify stops it first (ports 80/443), or you move it to the rootless daemon |
+| **Your dev stack** | Untouched | Separate; Verify stops it first (ports 80/443). Running both at once is a later step (see the last section) |
 | **System changes** | None | New user, rootless daemon, a sysctl for low ports, a shared worktree folder |
 | **Ongoing maintenance** | None | A second image store (disk), registry login for `cw-docker`, keeping two daemons |
 | **Speed of a Verify run** | Fast (no stack) | Slower: stack start, plus image builds on the first run |
@@ -136,3 +136,78 @@
 
 - **Do option 1 now.** It's quick, safe, and lets us finally run a **first real ticket**. Most of the remaining risk is in the stages, not in Docker.
 - **Do option 2 after that,** as its own plan, once the workflow works end to end with unit tests. The switch from option 1 makes the step to option 2 small and reversible.
+
+---
+
+## Later, after option 2: both stacks at once (research, 2026-11-19)
+
+> **Not part of option 2.** This is a **separate follow-up**, planned and built only **after option 2 works end to end**.
+>
+> Until then, option 2 keeps the simple rule: **Verify stops your dev stack first**, and the **sysctl for low ports stays** in option 2. Nothing below is planned or built yet.
+
+**Question:** can we run your dev stack and the `cw-docker` stack **at the same time**, e.g. with Podman?
+
+**Short answer:** **Podman itself does not fix it.** But a separate daemon (rootless Docker *or* Podman) **plus a small compose override** does. So with option 2, both stacks can run side by side.
+
+### What actually conflicts today
+
+Checked with `docker compose --profile dyflexis config legacy-web-debug lighttpd db redis` on the monorepo (the services Verify starts, plus their `depends_on`). Three things clash when two copies run on **one** daemon:
+
+| What | Where | Fixed by a separate daemon? |
+|---|---|---|
+| **Host ports** `0.0.0.0:80, 443, 3306, 6379, 8333` and `127.0.0.1:8888, 23646` | `proxy`, `db`, `redis`, `seaweedfs` (`docker-compose.yml:54-62`, `:129-133`, `:603-606`) | **No** |
+| **Fixed container names** `proxy`, `proxy-companion` | `docker-compose.yml:126`, `:162` | Yes (each daemon has its own names) |
+| **Fixed subnet** `172.31.0.0/16` for network `dfs` | `docker-compose.yml:918-922` | Yes, I expect (see "Not sure" below) |
+
+### Why Podman alone doesn't help
+
+- A host port (`IP:port`) can have **only one listener**, whatever program asks for it. Docker, rootless Docker and Podman all publish ports by **listening on the host**.
+- Rootless Docker publishes through RootlessKit on the host ([Docker docs: rootless tips](https://docs.docker.com/engine/security/rootless/tips/)). Rootless Podman does the same through pasta / `rootlessport` ([Podman docs: podman-network](https://docs.podman.io/en/latest/markdown/podman-network.1.html)).
+- So two stacks that both publish `0.0.0.0:80` clash, **with or without Podman**.
+
+### What does fix it: don't publish ports for the workflow stack
+
+- **The workflow stack doesn't need host ports at all:**
+  - the tests run **inside** the containers via `docker compose exec` (`test_runner.sh:55`, `:63`, `:88`);
+  - the proxy healthcheck curls `dyflexis.dev.wodanbrothers.com` **from inside** the proxy container (`docker-compose.yml:135`);
+  - the app hostnames are **network aliases** of `proxy` on the `dfs` network (`docker-compose.yml:149-154`), so containers reach each other without the host.
+- **The fix:** the workflow adds its **own** override file that removes every `ports:` entry, using Compose's `!reset` tag ([Docker docs: merge, `!reset`](https://docs.docker.com/reference/compose-file/merge/#reset-value)):
+
+```yaml
+# written by the workflow, OUTSIDE the worktree (Claude can't edit it)
+services:
+  proxy:     { ports: !reset [] }
+  db:        { ports: !reset [] }
+  redis:     { ports: !reset [] }
+  seaweedfs: { ports: !reset [] }
+```
+
+- `up_command` passes it as a second `--file`, after the worktree's `docker-compose.yml`.
+- **Side bonus (once this follow-up is done):** no published ports means the **sysctl for ports < 1024** can be removed again.
+- **Better:** generate the list from `docker compose config` (every service that has `ports`), so a new service with ports in the repo doesn't break it.
+
+### Result once this follow-up is done (on top of option 2)
+
+- **Your dev stack:** your root Docker, ports 80/443/3306/… as now. **Untouched, can stay up.**
+- **Workflow stack:** `cw-docker`'s own daemon, own container names, own networks, **no host ports**.
+- **Verify no longer has to stop your dev stack.** You don't have to pause the workflow either.
+
+### Podman vs rootless Docker for the `cw-docker` daemon
+
+This is a **separate choice** from the port question. Both give the same isolation (a non-root user that can't read `/home/joey`).
+
+| | **Rootless Docker** | **Podman (rootless)** |
+|---|---|---|
+| Works with `docker compose` | Yes, native | Via Podman's Docker-compatible socket ([podman-system-service](https://docs.podman.io/en/latest/markdown/podman-system-service.1.html)); mostly works, edge cases differ |
+| `docker.sock` mount for `proxy` / `proxy-companion` | Mount the rootless socket instead | Mount Podman's socket; nginx-proxy then reads Podman's Docker-API. **Not sure** it reads all events/labels the same |
+| Daemon | A long-running `dockerd` per user | No daemon; a socket-activated API service |
+| Same tool as your dev stack | Yes | No: a second tool to learn and debug |
+
+- **My recommendation: stay with rootless Docker** for option 2. (This daemon choice **is** part of option 2; only the port fix is for later.) Same tool, fewer compose surprises, and the port fix above works the same way. Podman gives no extra benefit here.
+
+### Not sure / to confirm in the follow-up plan
+
+- **Subnet `172.31.0.0/16` twice.** I expect it's fine: rootless Docker creates its networks inside its own network namespace, so they don't overlap with the root daemon's bridges. **Confirm:** start both stacks and check `docker network inspect` on each.
+- **`!reset` support.** Your Compose is v5.4.0; the docs don't state the minimum version. **Confirm:** `docker compose -f docker-compose.yml -f override.yml config` shows no `ports`.
+- **`extra_hosts: host.docker.internal:host-gateway`** (`docker-compose.yml:224`). In rootless mode this points to the rootless namespace, not your real host. Only matters for Xdebug, which the workflow doesn't use. **Confirm** nothing in the tests calls it.
+- **Not verified at all:** none of this has been run. It's based on reading the compose file, `test_runner.sh` and the docs above.
