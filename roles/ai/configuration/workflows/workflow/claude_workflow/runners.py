@@ -7,7 +7,7 @@
 - `container`: `docker exec` into a running container.
 
 Claude controls the worktree, so the host never runs worktree code outside a sandbox.
-Docker access is host root: Claude never gets it.
+Docker access is a separate rootless daemon (`cw-docker`): Claude never gets it.
 """
 
 from __future__ import annotations

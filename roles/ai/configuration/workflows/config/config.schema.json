@@ -64,7 +64,7 @@
             "project-name": {
               "type": "string",
               "minLength": 1,
-              "description": "Compose project name (docker compose -p). Use the same name as your own stack, so a worktree takes over its containers and volumes. 'docker compose ls' shows it."
+              "description": "Compose project name (docker compose -p). The workflow stack runs in a separate rootless daemon, so it does not share containers or volumes with your own stack, even with the same name. 'docker compose ls' shows it."
             },
             "profile": { "type": "string", "default": "dyflexis", "description": "Compose profile passed to 'docker compose --profile'." },
             "up-timeout": { "$ref": "#/$defs/duration", "default": "15m", "description": "How long 'docker compose up --wait' may take. Image builds get 10 minutes extra." },

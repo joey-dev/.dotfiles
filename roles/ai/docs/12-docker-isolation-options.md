@@ -1,5 +1,7 @@
 # 12. Docker isolation: option 1 vs option 2
 
+> **Status (2026-11-20): option 2 is built** (plan 13, `13-plan-rootless-docker.md`). Tasks 1-6 are done; the first real run (Task 7) is next. This doc keeps the reasoning. Where it differs from what was built, **`13` and `09` win**: socket `/var/lib/cw-docker-sock/docker.sock`, config keys `docker-host` and `worktree-base`, and no registry login for `cw-docker`.
+
 **Why this doc:** the final review of plan 11 found that the Docker stack can leak host files to code Claude wrote (see "The problem" below). These are the two ways forward, with what each one costs.
 
 **Time estimates** are my best guess, **not measured**. "Agent time" is the time I (and my subagents) work. "Your time" is what you have to do or wait for. Docker on a new setup often has surprises, so treat option 2's numbers as uncertain.
@@ -69,15 +71,15 @@
 
 **Workflow code:**
 
-- `worktree_base` moves to the shared folder (today it is under `~/Code/Worktrees`, which `cw-docker` can't reach);
-- every `docker` / `docker compose` call gets `DOCKER_HOST=unix:///run/user/<cw-docker uid>/docker.sock`. You need access to that socket (group permission);
+- the worktree base moves to the shared folder (config key `worktree-base`; before plan 13 it was `~/.local/state/claude-workflow/worktrees`, which `cw-docker` can't reach);
+- every `docker` / `docker compose` call gets `DOCKER_HOST` (built: config key `docker-host`, socket `unix:///var/lib/cw-docker-sock/docker.sock`). You need access to that socket (group permission);
 - `HOST_UID` / `HOST_GID` for the compose file and `test_runner.sh` are set to fit the rootless user mapping;
 - **file ownership:** files that containers write into the worktree (`legacy/cache`, Codeception output) get owned by `cw-docker`. The shared group + ACLs must keep them editable for you and the sandbox;
 - the plan-11 guard, base-copy and symlink checks **stay** as extra layers.
 
 **One-time setup for `cw-docker`:**
 
-- **log in to the GitLab registry** (`registry.gitlab.com/dyflexis/...` images are private). That token lives in `cw-docker`'s Docker config, readable by the daemon but not by containers;
+- **registry login (changed in the spike):** `cw-docker` needs **none**. Your own `docker` client logs in (`~/.docker/config.json`) and pulls through the daemon;
 - **pull/build all images again.** The new daemon has its own image store, so this costs disk space and time on the first run.
 
 ### How it works with your dev stack
@@ -126,7 +128,7 @@
 | **Where the protection comes from** | Docker is never started | Linux permissions, plus the plan-11 checks as extra layers |
 | **Your dev stack** | Untouched | Separate; Verify stops it first (ports 80/443). Running both at once is a later step (see the last section) |
 | **System changes** | None | New user, rootless daemon, a sysctl for low ports, a shared worktree folder |
-| **Ongoing maintenance** | None | A second image store (disk), registry login for `cw-docker`, keeping two daemons |
+| **Ongoing maintenance** | None | A second image store (disk), keeping two daemons (the registry login is yours, client side) |
 | **Speed of a Verify run** | Fast (no stack) | Slower: stack start, plus image builds on the first run |
 | **Agent time to finish** | **~2 hours** | **~6-11 hours** (uncertain) |
 | **Your time** | **~1 hour** | **~3-4 hours** |

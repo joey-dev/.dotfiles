@@ -46,6 +46,24 @@ If the login ever expires, do this again on the host.
 mkdir -p ~/notes/work-kb
 ```
 
+### d. Enable rootless Docker (needed for Verify with Docker)
+
+**What it does:** creates the user `cw-docker` with its own rootless Docker daemon, a shared worktree folder `/srv/claude-workflow/worktrees`, and the socket `/var/lib/cw-docker-sock/docker.sock`. The workflow never uses your root Docker.
+
+1. Set `roles.ai.dockerSandbox.enable = true` (NixOS option in `roles/ai/system.nix`).
+2. Run `sudo nixos-rebuild switch`.
+3. **Log out and in again.** You are added to the group `cw-docker`, and a running session does not know it yet.
+4. Log in to the registry with **your own** user (`docker login`). `cw-docker` needs no login.
+5. Check that `global.config.json` has `docker-host` and `worktree-base` (see 5.5).
+
+After a change to the daemon config, restart it:
+
+```sh
+sudo systemctl --user -M cw-docker@ restart docker
+```
+
+The monorepo `.env` needs `HOST_GID=100`.
+
 ---
 
 ## 5.3 First-time setup (once per repository)
@@ -151,7 +169,7 @@ claude-workflow PROJ-123 --from-stage implement
 ### Where to look
 
 - **Artifacts:** `~/.local/state/claude-workflow/PROJ-123/`
-- **Code changes:** `~/.local/state/claude-workflow/worktrees/PROJ-123/` (branch `proj-123`)
+- **Code changes:** `<worktree-base>/PROJ-123/` (we use `/srv/claude-workflow/worktrees/PROJ-123/`) (branch `proj-123`)
 - **Blocked network calls:** `~/.local/state/claude-workflow/PROJ-123/proxy.log`
 - **Feedback for Retro:** write `~/.local/state/claude-workflow/PROJ-123/feedback.md`
 
@@ -186,6 +204,8 @@ Keys are **kebab-case**. Durations are strings with a unit: `"90s"`, `"15m"`, `"
 | `max-fix-rounds` | Max Verify/Review → Implement rounds |
 | `headless-timeout` | Time per headless Claude call, e.g. `"60m"` |
 | `commit-no-verify` | Skip git hooks for the final commit |
+| `docker-host` | Rootless Docker socket as a `unix://` URI (`null` = not set). Every docker call uses it; a missing or root socket stops Verify |
+| `worktree-base` | Folder for ticket worktrees (default `<state_base>/worktrees`). Must be outside `$HOME`; we use `/srv/claude-workflow/worktrees` |
 | `stages` | Per stage settings (below) |
 
 ### Per repo (`repository/<repo-name>.config.json`)
@@ -228,6 +248,7 @@ For no-network stages, the sandbox also sets `HTTPS_PROXY`, `HTTP_PROXY` and `NO
 ## 5.7 Requirements checklist
 
 - [ ] `ai` role rebuilt
+- [ ] `roles.ai.dockerSandbox.enable` on, `nixos-rebuild switch` done, logged out and in again
 - [ ] Logged in with `claude` on the host
 - [ ] `Atlassian-Rovo-MCP` connected (`claude` in the repo → `/mcp`)
 - [ ] `repository/<repo-name>.config.json` exists and `claude-workflow config check` says ok

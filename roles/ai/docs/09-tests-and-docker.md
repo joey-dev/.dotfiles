@@ -95,8 +95,8 @@ Given by the user:
 
 ## Security concern: Docker
 
-- **Docker socket = root on the host.** Claude must **never** reach Docker from the sandbox.
-- **The worktree is written by Claude.** If the host runs the worktree's `test_runner.sh` or builds from its `docker-compose.yml`, Claude's edits run **outside the sandbox**, possibly as root.
+- **Docker socket = root on the host (with root Docker).** Claude must **never** reach Docker from the sandbox. Since plan 13 the workflow only uses a **rootless daemon** (see "Rootless Docker" below).
+- **The worktree is written by Claude.** If the host runs the worktree's `test_runner.sh` or builds from its `docker-compose.yml`, Claude's edits run **outside the sandbox**, possibly as root (with root Docker; now the rootless daemon, see below).
 - **Remaining risk (accept knowingly):** Claude-written PHP tests run inside the `legacy-web-debug` container, which has network access. That is a container, not the host.
 
 ---
@@ -196,13 +196,31 @@ docker: api SomeCest
   - `06-verify.md` is still written, with the sandbox and `flake:` results and a "Docker tests skipped" section;
   - the pipeline asks **`[c]ontinue / [r]etry stage / [a]bort`**. Continue marks Verify done and goes on to Review;
   - with **`--auto`** it stops (exit 1). Run again without `--auto` to continue or retry.
-- **No new symlinks (final review of plan 11).** Root Docker follows a symlinked bind-mount source. If Claude replaced `./api-documentation` with a link to `$HOME`, Docker would mount `$HOME` into a test container.
+- **No new symlinks (final review of plan 11).** Docker follows a symlinked bind-mount source. If Claude replaced `./api-documentation` with a link to `$HOME`, Docker would mount `$HOME` into a test container.
   - Right before `up` and before **every** host command, the host checks every touched or gitignored path, **and each parent folder** of it, with `lstat`.
   - A symlink stops the run (**`NEEDS_HUMAN`**), unless the base commit has the **same symlink with the same target** at that path.
   - Any doubt (an `lstat` error, an odd path) also stops. Code: `docker_stack.symlink_violations`.
 - **`06-verify.md` shows the `docker compose up` output** (command line plus output), also when `up` passes.
 - **`up` gets 10 extra minutes** on top of `up_timeout` (images build before `--wait-timeout` starts).
 - **The stack is left running** (user decision). After a ticket, the dev site shows the worktree's code until you run `docker compose --profile=dyflexis up -d` from the main checkout.
+
+---
+
+## Rootless Docker (plan 13)
+
+**Replaces** the "root Docker" assumption above. Details: `12` and `13`.
+
+- **The workflow uses its own daemon**, rootless, run by the user `cw-docker`. Your root Docker (dev stack) is not used.
+- **Every docker call** gets `DOCKER_HOST` from the config key `docker-host`. An inherited `DOCKER_HOST` is overridden.
+- **`require_rootless` refuses to start** (Verify returns `NEEDS_HUMAN`) when:
+  - `docker-host` is missing;
+  - it points at the root socket (`/var/run/docker.sock`, `/run/docker.sock`, or a symlink to them);
+  - the worktree base (`worktree-base`) is inside `$HOME`.
+- **Worktrees live outside `$HOME`**, in `/srv/claude-workflow/worktrees`, so `cw-docker` can reach them but not your home folder.
+- **`docker.sock` bind mounts** in the compose file (`proxy`, `proxy-companion`) would point at the root socket. The host runs `docker compose config --format json` and writes an override to `<state_base>/compose/<project-name>.override.json`. `up` gets `--file <override>`.
+- **Port conflict:** if `up` fails with "address already in use", Verify adds a hint to stop the dev stack. Verify does **not** stop it itself.
+- **Registry:** images are pulled with **your** login (`~/.docker/config.json`, client side). `cw-docker` needs no login.
+- **The plan-11 guard, base-copy and symlink checks stay** as extra layers.
 
 ---
 

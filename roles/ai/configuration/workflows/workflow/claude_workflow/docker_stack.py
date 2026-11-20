@@ -3,7 +3,8 @@
 Claude never gets Docker access. The host starts the compose stack from the ticket's
 worktree and runs host commands, but only after `guard_violations` confirms that no
 Docker-related file differs from the base commit, and `symlink_violations` confirms
-that the worktree has no new symlinks (root Docker follows symlinked mount sources).
+that the worktree has no new symlinks (Docker follows symlinked mount sources).
+Docker runs only in the rootless `cw-docker` daemon (see `require_rootless`).
 """
 
 from __future__ import annotations
@@ -192,7 +193,7 @@ def symlink_violations(
 ) -> list[str]:
     """Return sorted worktree paths that are symlinks the base commit does not have.
 
-    Root Docker follows a symlinked bind-mount source (`./api-documentation` ->
+    Docker follows a symlinked bind-mount source (`./api-documentation` ->
     `$HOME`), so no new symlink may sit on any touched or gitignored path, nor on any
     parent folder of one. A symlink that the base commit has at the same path with the
     same target is allowed. Paths strictly inside a host_copies entry are skipped (the
