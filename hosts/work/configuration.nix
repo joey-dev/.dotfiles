@@ -12,6 +12,9 @@ _:
   # (a month-old flameshot single-instance lock stopped its daemon from starting).
   boot.tmp.cleanOnBoot = true;
 
+  # claude-workflow runs its Docker stack in a separate rootless daemon (roles/ai/system.nix).
+  roles.ai.dockerSandbox.enable = true;
+
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
   # on your system were taken. It's perfectly fine and recommended to leave
