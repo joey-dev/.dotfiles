@@ -127,6 +127,7 @@ def _run_verify(
         ),
         patch("claude_workflow.runners.guard_violations", side_effect=guard or [[]] * 9),
         patch("claude_workflow.docker_stack.subprocess.run", side_effect=fake_run),
+        patch("claude_workflow.runners.compose_model", return_value={"services": {}}),
     ):
         result = VerifyStage().run(ctx)
     return result, calls

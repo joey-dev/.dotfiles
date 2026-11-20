@@ -8,6 +8,7 @@ that the worktree has no new symlinks (root Docker follows symlinked mount sourc
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import stat
@@ -15,6 +16,7 @@ import subprocess
 from collections.abc import Callable
 from fnmatch import fnmatch
 from pathlib import Path
+from typing import Any
 
 from claude_workflow.config import DEFAULT_PROTECTED_PATHS, DockerConfig
 from claude_workflow.git_host import ignored_paths, touched_paths
@@ -24,6 +26,11 @@ UP_BUILD_HEADROOM = 600
 
 # Sockets of the root Docker daemon. The workflow must never talk to these.
 ROOT_DOCKER_SOCKETS = (Path("/var/run/docker.sock"), Path("/run/docker.sock"))
+
+
+def socket_path(docker_host: str) -> str:
+    """The socket file of a `unix://` docker host."""
+    return docker_host.removeprefix("unix://")
 
 
 def require_rootless(docker_host: str | None, worktree_base: Path) -> str:
@@ -43,7 +50,7 @@ def require_rootless(docker_host: str | None, worktree_base: Path) -> str:
         raise ValueError(
             f"docker-host must be a unix:// URI with an absolute path, got {docker_host!r}"
         )
-    socket = Path(docker_host.removeprefix("unix://"))
+    socket = Path(socket_path(docker_host))
     if socket.resolve() in {root.resolve() for root in ROOT_DOCKER_SOCKETS}:
         raise ValueError(
             f"docker-host {docker_host!r} points at root Docker; use the rootless "
@@ -297,8 +304,10 @@ def compose_env(
     return env
 
 
-def up_command(cfg: DockerConfig, worktree: Path, repo: Path) -> list[str]:
-    """Build the `docker compose up` argv."""
+def _compose_argv(
+    cfg: DockerConfig, worktree: Path, repo: Path, override: Path | None
+) -> list[str]:
+    """The `docker compose` prefix shared by `config` and `up`."""
     env_file = repo / ".env"
     return [
         "docker",
@@ -309,9 +318,19 @@ def up_command(cfg: DockerConfig, worktree: Path, repo: Path) -> list[str]:
         str(worktree),
         "--file",
         str(worktree / "docker-compose.yml"),
+        *(["--file", str(override)] if override is not None else []),
         *(["--env-file", str(env_file)] if env_file.is_file() else []),
         "--profile",
         cfg.profile,
+    ]
+
+
+def up_command(
+    cfg: DockerConfig, worktree: Path, repo: Path, override: Path | None = None
+) -> list[str]:
+    """Build the `docker compose up` argv (with `override` as a second compose file)."""
+    return [
+        *_compose_argv(cfg, worktree, repo, override),
         "up",
         "-d",
         "--wait",
@@ -319,6 +338,75 @@ def up_command(cfg: DockerConfig, worktree: Path, repo: Path) -> list[str]:
         str(cfg.up_timeout),
         *cfg.services,
     ]
+
+
+# Sources of the root Docker socket in the compose file's bind mounts.
+_ROOT_SOCKET_SOURCES = frozenset(str(path) for path in ROOT_DOCKER_SOCKETS)
+
+
+def socket_override(model: dict[str, Any], socket: str) -> dict[str, Any]:
+    """Compose override that repoints the root `docker.sock` bind mounts at `socket`.
+
+    `model` is the output of `docker compose config --format json`. Only the socket
+    mounts are listed per service (compose merges `volumes` by target); services
+    without one are left out, so a model without socket mounts gives no services.
+    """
+    services: dict[str, Any] = {}
+    for name, service in model.get("services", {}).items():
+        volumes = [
+            {**volume, "source": socket}
+            for volume in service.get("volumes") or []
+            if isinstance(volume, dict) and volume.get("source") in _ROOT_SOCKET_SOURCES
+        ]
+        if volumes:
+            services[name] = {"volumes": volumes}
+    return {"services": services}
+
+
+def compose_model(
+    cfg: DockerConfig, worktree: Path, repo: Path, docker_host: str
+) -> dict[str, Any]:
+    """The resolved compose model (`docker compose config --format json`), read through
+    the rootless daemon's environment. Raises ValueError on a failed command or bad JSON."""
+    argv = [*_compose_argv(cfg, worktree, repo, None), "config", "--format", "json"]
+    status, output = run_command(
+        argv,
+        cwd=worktree,
+        env=compose_env(cfg, worktree, repo, docker_host),
+        timeout=cfg.up_timeout,
+    )
+    if status != "PASS":
+        raise ValueError(f"docker compose config failed: {status}: {output}")
+    # stdout and stderr are merged: skip warnings before the JSON object.
+    start = output.find("{")
+    try:
+        model, _ = json.JSONDecoder().raw_decode(output[start:]) if start >= 0 else (None, 0)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"docker compose config gave invalid JSON: {exc}") from exc
+    if not isinstance(model, dict):
+        raise ValueError("docker compose config gave no JSON object")
+    return model
+
+
+def override_path(state_base: Path, cfg: DockerConfig) -> Path:
+    """Where the generated override lives: outside the worktree and every sandbox bind."""
+    return state_base / "compose" / f"{cfg.project_name}.override.json"
+
+
+def write_override(path: Path, override: dict[str, Any]) -> None:
+    """Write the override as JSON (valid YAML, so compose reads it)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(override, indent=2) + "\n")
+
+
+def port_hint(output: str) -> str:
+    """Add a hint line to a failed `up` output when a port is taken."""
+    if "address already in use" in output:
+        return (
+            output + "\nHint: a host port is taken (a dev stack on :80/:443?). "
+            "Please stop your dev stack and try again."
+        )
+    return output
 
 
 def base_script_copy(

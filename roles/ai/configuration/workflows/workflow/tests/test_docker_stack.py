@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -13,14 +15,19 @@ from claude_workflow.config import DEFAULT_PROTECTED_PATHS, DockerConfig
 from claude_workflow.docker_stack import (
     base_script_copy,
     compose_env,
+    compose_model,
     docker_env,
     guard_patterns,
     guard_violations,
+    override_path,
+    port_hint,
     prepare_worktree,
     require_rootless,
     run_command,
+    socket_override,
     symlink_violations,
     up_command,
+    write_override,
 )
 
 
@@ -459,3 +466,116 @@ def test_compose_env_sets_docker_host_and_override(
     override = tmp_path / "override.yml"
     env = compose_env(cfg, wt, repo, HOST, override=override)
     assert env["COMPOSE_FILE"] == f"{wt}/docker-compose.yml:{override}"
+
+
+# --- compose override for docker.sock mounts ------------------------------------------
+
+SOCK = "/var/lib/cw-docker-sock/docker.sock"
+MODEL: dict[str, Any] = {
+    "services": {
+        "proxy": {
+            "volumes": [
+                {
+                    "type": "bind",
+                    "source": "/var/run/docker.sock",
+                    "target": "/tmp/docker.sock",
+                    "read_only": True,
+                },
+                {"type": "bind", "source": "/w/nginx-proxy/certs", "target": "/etc/nginx/certs"},
+            ]
+        },
+        "db": {"volumes": [{"type": "volume", "source": "db", "target": "/var/lib/mysql"}]},
+    }
+}
+
+
+def test_socket_override_repoints_only_socket_mounts() -> None:
+    assert socket_override(MODEL, SOCK) == {
+        "services": {
+            "proxy": {
+                "volumes": [
+                    {
+                        "type": "bind",
+                        "source": SOCK,
+                        "target": "/tmp/docker.sock",
+                        "read_only": True,
+                    }
+                ]
+            }
+        }
+    }
+
+
+def test_socket_override_also_matches_run_docker_sock() -> None:
+    model = {
+        "services": {
+            "c": {"volumes": [{"type": "bind", "source": "/run/docker.sock", "target": "/s"}]}
+        }
+    }
+    assert socket_override(model, SOCK)["services"]["c"]["volumes"][0]["source"] == SOCK
+
+
+def test_socket_override_without_socket_mounts_is_empty() -> None:
+    assert socket_override({"services": {"db": {}}}, "/s") == {"services": {}}
+    assert socket_override({}, "/s") == {"services": {}}
+
+
+def test_up_command_adds_override_file(tmp_path: Path) -> None:
+    repo, wt = tmp_path / "repo", tmp_path / "wt"
+    repo.mkdir()
+    wt.mkdir()
+    argv = up_command(DockerConfig(project_name="dfs"), wt, repo, override=tmp_path / "o.json")
+    i = argv.index(str(wt / "docker-compose.yml"))
+    assert argv[i + 1 : i + 3] == ["--file", str(tmp_path / "o.json")]
+
+
+def test_override_path_is_under_state_base_compose(tmp_path: Path) -> None:
+    path = override_path(tmp_path / "state", DockerConfig(project_name="dfs"))
+    assert path == tmp_path / "state" / "compose" / "dfs.override.json"
+
+
+def test_write_override_creates_parent_and_json(tmp_path: Path) -> None:
+    path = tmp_path / "a" / "compose" / "x.override.json"
+    write_override(path, {"services": {}})
+    assert json.loads(path.read_text()) == {"services": {}}
+
+
+def test_port_hint() -> None:
+    out = "Bind for 0.0.0.0:80 failed: address already in use"
+    assert "stop your dev stack" in port_hint(out)
+    assert port_hint("other error") == "other error"
+
+
+def _fake_compose(status: str, output: str) -> Any:
+    calls: list[dict[str, Any]] = []
+
+    def fake(
+        argv: list[str], *, cwd: Path | None, env: dict[str, str] | None, timeout: int
+    ) -> tuple[str, str]:
+        calls.append({"argv": argv, "env": env})
+        return status, output
+
+    return fake, calls
+
+
+def test_compose_model_parses_json_with_warnings_and_uses_rootless_env(tmp_path: Path) -> None:
+    repo, wt = tmp_path / "repo", tmp_path / "wt"
+    repo.mkdir()
+    wt.mkdir()
+    fake, calls = _fake_compose("PASS", 'WARN[0000] unset var\n{"services": {"a": {}}}\nWARN x')
+    with patch("claude_workflow.docker_stack.run_command", fake):
+        model = compose_model(DockerConfig(project_name="dfs"), wt, repo, HOST)
+    assert model == {"services": {"a": {}}}
+    assert calls[0]["argv"][-3:] == ["config", "--format", "json"]
+    assert calls[0]["env"]["DOCKER_HOST"] == HOST
+
+
+@pytest.mark.parametrize(
+    ("status", "output"), [("FAIL (exit 1)", "boom"), ("PASS", "not json"), ("PASS", "{broken")]
+)
+def test_compose_model_raises_on_failure_or_bad_json(
+    tmp_path: Path, status: str, output: str
+) -> None:
+    fake, _ = _fake_compose(status, output)
+    with patch("claude_workflow.docker_stack.run_command", fake), pytest.raises(ValueError):
+        compose_model(DockerConfig(project_name="dfs"), tmp_path, tmp_path, HOST)

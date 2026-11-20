@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from dataclasses import replace
@@ -571,3 +572,86 @@ def test_compose_up_stops_for_worktree_base_in_home(tmp_path: Path) -> None:
     ):
         run(cmd, _sh("true"), ctx)
     assert rec.calls == []
+
+
+# --- compose override -----------------------------------------------------------------
+
+_SOCKET_MODEL: dict[str, Any] = {
+    "services": {
+        "proxy": {
+            "volumes": [{"type": "bind", "source": "/var/run/docker.sock", "target": "/t.sock"}]
+        }
+    }
+}
+
+
+@pytest.fixture(autouse=True)
+def _fake_compose_model() -> Any:
+    """`docker compose config` never runs for real; the model has no socket mounts."""
+    with patch("claude_workflow.runners.compose_model", return_value={"services": {}}) as mock:
+        yield mock
+
+
+def test_compose_up_writes_override_and_uses_it(tmp_path: Path, _fake_compose_model: Any) -> None:
+    _fake_compose_model.return_value = _SOCKET_MODEL
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    config = replace(ctx.config, state_base=tmp_path / "state")
+    ctx = replace(ctx, config=config)
+    rec = _Recorder()
+    with patch("claude_workflow.runners.run_command", rec):
+        run(
+            _cmd(run_in="host", command="./bin/run.sh", needs_compose_stack=True),
+            _sh("./bin/run.sh"),
+            ctx,
+        )
+    override = tmp_path / "state" / "compose" / "proj.override.json"
+    assert json.loads(override.read_text())["services"]["proxy"]["volumes"][0]["source"] == (
+        "/var/lib/cw-docker-sock/docker.sock"
+    )
+    up = next(c for c in rec.calls if _is_up(c["argv"]))
+    assert ["--file", str(override)] == up["argv"][
+        up["argv"].index(str(wt / "docker-compose.yml")) + 1 :
+    ][:2]
+    assert up["env"]["COMPOSE_FILE"].endswith(f":{override}")
+    # the host command sees the same override
+    assert rec.calls[-1]["env"]["COMPOSE_FILE"].endswith(f":{override}")
+
+
+def test_compose_up_without_socket_mounts_still_runs(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    ctx = replace(
+        _ctx(tmp_path, wt, base),
+        config=replace(_ctx(tmp_path, wt, base).config, state_base=tmp_path / "state"),
+    )
+    rec = _Recorder()
+    with patch("claude_workflow.runners.run_command", rec):
+        run(_cmd(run_in="container", container="web-1", needs_compose_stack=True), _sh("true"), ctx)
+    override = tmp_path / "state" / "compose" / "proj.override.json"
+    assert json.loads(override.read_text()) == {"services": {}}
+    assert any(_is_up(c["argv"]) for c in rec.calls)
+
+
+def test_compose_up_config_failure_is_host_stop(tmp_path: Path, _fake_compose_model: Any) -> None:
+    _fake_compose_model.side_effect = ValueError("docker compose config failed")
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    rec = _Recorder()
+    with (
+        patch("claude_workflow.runners.run_command", rec),
+        pytest.raises(HostStop, match="compose override"),
+    ):
+        run(_cmd(run_in="container", container="web-1", needs_compose_stack=True), _sh("true"), ctx)
+    assert rec.calls == []
+
+
+def test_compose_up_failure_gets_port_hint(tmp_path: Path) -> None:
+    wt, base = _make_worktree(tmp_path)
+    ctx = _ctx(tmp_path, wt, base)
+    rec = _Recorder([("FAIL (exit 1)", "listen tcp :80: address already in use")])
+    with patch("claude_workflow.runners.run_command", rec):
+        status, output = run(
+            _cmd(run_in="container", container="web-1", needs_compose_stack=True), _sh("true"), ctx
+        )
+    assert status.startswith("FAIL")
+    assert "stop your dev stack" in output

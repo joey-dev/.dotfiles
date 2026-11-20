@@ -24,14 +24,20 @@ from claude_workflow.docker_stack import (
     UP_BUILD_HEADROOM,
     base_script_copy,
     compose_env,
+    compose_model,
     docker_env,
     guard_patterns,
     guard_violations,
+    override_path,
+    port_hint,
     prepare_worktree,
     require_rootless,
     run_command,
+    socket_override,
+    socket_path,
     symlink_violations,
     up_command,
+    write_override,
 )
 from claude_workflow.git_host import GitError
 from claude_workflow.sandbox import SandboxSpec, build_bwrap_command, make_scratch_git
@@ -53,6 +59,7 @@ class StackState:
 
     result: tuple[str, str] | None = None
     command: str | None = None
+    override: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -157,14 +164,22 @@ def _ensure_stack(ctx: RunContext, cmd: Command) -> tuple[str, str] | None:
             prepare_worktree(docker, ctx.worktree, repo)
         except (ValueError, OSError) as exc:  # OSError: e.g. unreadable host files
             raise HostStop(f"preparing the worktree failed: {exc}") from exc
-        up_argv = up_command(docker, ctx.worktree, repo)
+        override = override_path(ctx.config.state_base, docker)
+        try:
+            model = compose_model(docker, ctx.worktree, repo, docker_host)
+            write_override(override, socket_override(model, socket_path(docker_host)))
+        except (ValueError, OSError) as exc:
+            raise HostStop(f"could not prepare the compose override: {exc}") from exc
+        ctx.stack.override = override
+        up_argv = up_command(docker, ctx.worktree, repo, override)
         ctx.stack.command = shlex.join(up_argv)
-        ctx.stack.result = run_command(
+        status, output = run_command(
             up_argv,
             cwd=ctx.worktree,
-            env=compose_env(docker, ctx.worktree, repo, docker_host),
+            env=compose_env(docker, ctx.worktree, repo, docker_host, override),
             timeout=docker.up_timeout + UP_BUILD_HEADROOM,
         )
+        ctx.stack.result = (status, port_hint(output) if status != "PASS" else output)
     status, output = ctx.stack.result
     if status != "PASS":
         return f"FAIL (compose stack did not start: {status})", output
@@ -201,7 +216,9 @@ def _run_host(cmd: Command, argv: list[str], ctx: RunContext) -> tuple[str, str]
             return failed
     docker = ctx.config.docker
     if docker is not None:
-        env = compose_env(docker, ctx.worktree, ctx.config.repo_path, _docker_host(ctx))
+        env = compose_env(
+            docker, ctx.worktree, ctx.config.repo_path, _docker_host(ctx), ctx.stack.override
+        )
     # Checked again right before running: the stack runs worktree code.
     _check_guard(ctx, cmd)
     with TemporaryDirectory(prefix="cw-host-") as scratch:
