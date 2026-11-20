@@ -20,3 +20,9 @@ def schema_path() -> Path:
     if env and Path(env).is_file():
         return Path(env)
     pytest.skip("config.schema.json not available")
+
+
+@pytest.fixture(autouse=True)
+def _isolated_state_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Default state_base must never point at the real ~/.local/state."""
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "xdg-state"))
