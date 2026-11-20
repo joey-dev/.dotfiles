@@ -71,7 +71,10 @@ in
       "d /srv/claude-workflow 0750 ${username} cw-docker -"
       "A+ /srv/claude-workflow - - - - u:${containerUser}:x,g:${containerUser}:x"
       "d /srv/claude-workflow/worktrees 2770 ${username} cw-docker -"
-      "A+ /srv/claude-workflow/worktrees - - - - u:${username}:rwx,g:cw-docker:rwx,u:${containerUser}:rwx,g:${containerUser}:rwx,m::rwx,d:u:${username}:rwx,d:g:cw-docker:rwx,d:u:${containerUser}:rwx,d:g:${containerUser}:rwx,d:m::rwx"
+      # "Other" gets read (+ X = execute only on dirs and executables): images COPY worktree
+      # files with their mode, and services that drop to their own uid (lighttpd, www-data)
+      # must read them. Host users still can't reach it: /srv/claude-workflow is 0750.
+      "A+ /srv/claude-workflow/worktrees - - - - u:${username}:rwx,g:cw-docker:rwx,u:${containerUser}:rwx,g:${containerUser}:rwx,o::rX,m::rwx,d:u:${username}:rwx,d:g:cw-docker:rwx,d:u:${containerUser}:rwx,d:g:${containerUser}:rwx,d:o::rX,d:m::rwx"
     ];
   };
 }
